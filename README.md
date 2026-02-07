@@ -19,8 +19,8 @@
 Ohara is designed for seamless access both at home and remotely:
 
 - **Pi-hole** provides DNS for your local network and remote clients via Tailscale.
-- Your router points to Pi-hole as the default DNS, so all local devices resolve `ohara.com` and service subdomains to your homeserver.
-- **Tailscale** is configured to use Pi-hole for DNS, so when remote, `ohara.com` and all services resolve securely over the Tailscale network.
+- Your router points to Pi-hole as the default DNS, so all local devices resolve `nutrajan.in` and service subdomains to your homeserver.
+- **Tailscale** is configured to use Pi-hole for DNS, so when remote, `nutrajan.in` and all services resolve securely over the Tailscale network.
 - All services are reverse-proxied via Nginx for unified access, whether on your LAN or remotely.
 
 ---

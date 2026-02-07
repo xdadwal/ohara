@@ -43,7 +43,7 @@ links:
   #   target: "_blank"
   # - name: "Uptime Kuma Status"
   #   icon: "fas fa-tachometer-alt"
-  #   url: "http://kuma.ohara.com/status/ohara"
+  #   url: "http://kuma.nutrajan.in/status/ohara"
   #   target: "_blank"
 
 # Services
@@ -57,7 +57,7 @@ services:
       - name: "Jellyfin"
         logo: "https://raw.githubusercontent.com/NX211/homer-icons/7f15a0ec749f4604b9f18e5bd4ee955002d8c896/svg/jellyfin.svg"
         subtitle: "Jellyfin & Chill!"
-        url: "http://jellyfin.ohara.com"
+        url: "http://jellyfin.nutrajan.in"
         target: "_blank"
 
   # Games
@@ -67,7 +67,7 @@ services:
       - name: "Chess"
         logo: "https://chesskit.org/favicon-32x32.png"
         subtitle: "Chess evaluation engine"
-        url: "http://chess.ohara.com"
+        url: "http://chess.nutrajan.in"
         target: "_blank"
 
   # Tools
@@ -77,17 +77,17 @@ services:
       - name: "Radarr"
         logo: "https://raw.githubusercontent.com/NX211/homer-icons/7f15a0ec749f4604b9f18e5bd4ee955002d8c896/png/radarr.png"
         subtitle: "Search movies here"
-        url: "http://radarr.ohara.com"
+        url: "http://radarr.nutrajan.in"
         target: "_blank"
       - name: "qBit"
         logo: "https://raw.githubusercontent.com/NX211/homer-icons/7f15a0ec749f4604b9f18e5bd4ee955002d8c896/svg/qbittorrent.svg"
         subtitle: "Torrent client"
-        url: "http://qbit.ohara.com"
+        url: "http://qbit.nutrajan.in"
         target: "_blank"
       - name: "copyparty"
         logo: "https://github.com/NX211/homer-icons/blob/master/png/filebrowser.png?raw=true"
         subtitle: "File Explorer"
-        url: "http://copyparty.ohara.com"
+        url: "http://copyparty.nutrajan.in"
         target: "_blank"
 
   # Monitoring & Alerts
@@ -97,12 +97,12 @@ services:
       # - name: "Uptime Kuma"
       #   logo: "https://github.com/louislam/uptime-kuma/raw/master/public/icon.svg"
       #   subtitle: "Uptime & status monitoring"
-      #   url: "http://kuma.ohara.com"
+      #   url: "http://kuma.nutrajan.in"
       #   target: "_blank"
       - name: "OpenSpeedTest"
         logo: "https://github.com/NX211/homer-icons/blob/master/png/openspeedtest.png?raw=true"
         subtitle: "Check download & upload speed"
-        url: "http://ost.ohara.com"
+        url: "http://ost.nutrajan.in"
         target: "_blank"
 
   # Networking
@@ -112,5 +112,5 @@ services:
       - name: "Pihole"
         logo: "https://github.com/NX211/homer-icons/blob/master/png/pi-hole.png?raw=true"
         subtitle: "Local DNS"
-        url: "http://pihole.ohara.com/admin"
+        url: "http://pihole.nutrajan.in/admin"
         target: "_blank"
