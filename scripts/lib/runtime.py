@@ -122,7 +122,9 @@ def status(c, root):
         http = False
         if running:
             try:
-                with urllib.request.urlopen(f'http://127.0.0.1:{port}{path}', timeout=5) as response:
+                request = urllib.request.Request(f'http://127.0.0.1:{port}{path}',
+                                                 headers={'Host': c['DOMAIN']} if name == 'homepage' else {})
+                with urllib.request.urlopen(request, timeout=5) as response:
                     http = response.status < 400
             except urllib.error.HTTPError as error:
                 http = error.code in (401, 403)  # protected page is reachable
