@@ -1,13 +1,13 @@
 """Managed Nginx bootstrap, explicit ACME activation, rollback-safe config updates."""
 import fcntl
 import os
+import re
 from pathlib import Path
 import tempfile
 
 from runtime import run
 
 TARGET = Path('/etc/nginx/conf.d/ohara.conf')
-HEADERS = Path('/etc/nginx/ohara-proxy-headers.conf')
 RENEW_HOOK = '#!/bin/sh\n/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx\n'
 
 
@@ -70,6 +70,26 @@ def bootstrap(c, root):
     apply_config(render(c, root))
 
 
+def configured_names(text):
+    names = set()
+    for group in re.findall(r'^\s*server_name\s+([^;]+);', text, re.MULTILINE):
+        names.update(n for n in group.split() if n != '_')
+    return names
+
+
+def challenge_config(old, c):
+    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST']}
+    missing = sorted(names - configured_names(old))
+    if not missing:
+        return old
+    return old + ("\n# Temporary ACME routes for new names; existing HTTPS stays active.\n"
+                  "server {\n    listen 80;\n    server_name " + ' '.join(missing) + ";\n"
+                  "    location ^~ /.well-known/acme-challenge/ {\n"
+                  "        root /var/lib/ohara/acme;\n        default_type text/plain;\n"
+                  "        try_files $uri =404;\n    }\n"
+                  "    location / { return 503; }\n}\n")
+
+
 def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     if not agree:
         raise ValueError('Supply --agree-tos after reviewing the ACME subscriber agreement')
@@ -77,7 +97,11 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
         raise ValueError('Complete local owner/authentication setup, then supply --accounts-ready')
     if not TARGET.exists() or not TARGET.read_text().startswith('# Managed by Ohara\n'):
         raise ValueError('Run scripts/setup first to install the managed HTTP bootstrap')
-    names = [c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST']]
+    previous = TARGET.read_text()
+    challenge = challenge_config(previous, c)
+    # Retain old names in the certificate during cutover so restoring the previous
+    # HTTPS config still serves a certificate covering its original names.
+    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST']})
     args = ['certbot', 'certonly', '--webroot', '-w', '/var/lib/ohara/acme',
             '--non-interactive', '--agree-tos', '--email', c['ACME_EMAIL'],
             '--cert-name', 'ohara', '--keep-until-expiring', '--expand']
@@ -87,12 +111,27 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
         # Staging certificates never replace production state or activate routes.
         args += ['--staging', '--config-dir', '/etc/letsencrypt-staging',
                  '--work-dir', '/var/lib/letsencrypt-staging', '--logs-dir', '/var/log/letsencrypt-staging']
-        run(args, timeout=300)
+        if challenge != previous:
+            apply_config(challenge)
+        try:
+            run(args, timeout=300)
+        finally:
+            if challenge != previous:
+                apply_config(previous)
         print('ACME staging succeeded. Production HTTPS remains unchanged.')
         return
-    run(args, timeout=300)
+    if challenge != previous:
+        apply_config(challenge)
+    try:
+        run(args, timeout=300)
+    except Exception:
+        if challenge != previous:
+            apply_config(previous)
+        raise
     for name in ['fullchain.pem', 'privkey.pem']:
         if not (Path('/etc/letsencrypt/live/ohara') / name).is_file():
+            if challenge != previous:
+                apply_config(previous)
             raise ValueError('Production certificate files are missing; current Nginx configuration preserved')
     hook = Path('/etc/letsencrypt/renewal-hooks/deploy/ohara-nginx')
     hook.parent.mkdir(parents=True, exist_ok=True)

@@ -14,7 +14,14 @@ def main():
     parser.add_argument('--non-interactive', action='store_true', help='fail instead of prompting (default behavior)')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    host.prepare(config.load(root / '.env'), root, args.dry_run)
+    c = config.load(root / '.env')
+    if args.dry_run:
+        host.prepare(c, root, True)
+    else:
+        host.require_root()
+        from proxy import lock
+        with lock():
+            host.prepare(c, root)
 
 if __name__ == '__main__':
     try:

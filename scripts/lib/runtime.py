@@ -82,8 +82,16 @@ def check(c, root, *, static=False):
         for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty']] + [Path(c['FILES_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
+        for path, uid, gid in [
+            (Path(c['DATA_ROOT']) / 'seerr', 1000, 1000),
+            (Path(c['DATA_ROOT']) / 'copyparty', int(c['RUN_UID']), int(c['RUN_GID'])),
+            (Path(c['FILES_ROOT']), int(c['RUN_UID']), int(c['RUN_GID'])),
+        ]:
+            if not config.directory_writable(path, uid, gid):
+                raise ValueError(f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually')
+        import re
         text = (root / 'local/copyparty.conf').read_text()
-        if 'r: *' in text or 'rw: *' in text or 'rwmda: *' in text:
+        if re.search(r'^\s*[rwmdagAG.]+\s*:\s*[^#\n]*\*', text, re.MULTILINE):
             raise ValueError('Copyparty anonymous permissions are prohibited')
     print('Configuration valid' + (' (static only; local storage/secrets not checked)' if static else ''))
 

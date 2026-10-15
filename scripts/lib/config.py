@@ -77,3 +77,10 @@ def create_file(path, content, mode=0o600):
     with os.fdopen(descriptor, 'w') as stream:
         stream.write(content)
     return True
+
+
+def directory_writable(path, uid, gid):
+    """Check mode permissions for the container's single UID/GID, not host root."""
+    state = Path(path).stat()
+    shift = 6 if state.st_uid == uid else 3 if state.st_gid == gid else 0
+    return ((state.st_mode >> shift) & 7) == 7

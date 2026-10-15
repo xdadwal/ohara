@@ -72,3 +72,33 @@ class HostTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class StorageSafetyTests(unittest.TestCase):
+    def test_private_symlink_rejected_before_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / 'local').mkdir()
+            target = root / 'target'
+            target.write_text('private-value')
+            (root / 'local/credentials').symlink_to(target)
+            c = config.load(ROOT / '.env.example')
+            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'))
+            with self.assertRaisesRegex(ValueError, 'Symlink private'):
+                host.prepare_storage(c, root)
+            self.assertEqual(target.read_text(), 'private-value')
+
+class PreflightTests(unittest.TestCase):
+    def test_missing_ss_does_not_block_fresh_host(self):
+        from unittest.mock import MagicMock
+        with patch('shutil.which', return_value=None), patch.object(host.socket, 'socket') as sock, patch.object(host, 'run') as runner:
+            sock.return_value.__enter__.return_value = MagicMock()
+            host.check_web_ports()
+            runner.assert_not_called()
+            self.assertEqual(sock.return_value.__enter__.return_value.bind.call_count, 2)
+
+    def test_missing_storage_parent_is_not_silently_created(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory).resolve() / 'unmounted' / 'ohara'
+            with self.assertRaisesRegex(ValueError, 'parent'):
+                host.ensure_directory(missing, 1000, 1000)
+            self.assertFalse(missing.parent.exists())

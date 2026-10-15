@@ -185,3 +185,10 @@ relying on it for your personal archive.
 - https://letsencrypt.org/docs/challenge-types/
 - https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates
 - https://docs.immich.app/install/docker-compose/
+
+See [verification.md](verification.md) for evidence collected during implementation.
+During a hostname change, ACME challenge routes are temporarily added for new
+names while existing HTTPS stays active; issuance failure restores the prior
+config. The certificate retains prior names for rollback safety, so keep their
+DNS/challenge paths working during the transition. Retiring old certificate names
+entirely requires a separately planned cutover rather than automatic removal.

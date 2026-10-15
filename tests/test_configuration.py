@@ -60,3 +60,14 @@ class ConfigurationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class PermissionTests(unittest.TestCase):
+    def test_access_is_checked_as_container_user(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            path.chmod(0o700)
+            self.assertTrue(config.directory_writable(path, os.getuid(), os.getgid()))
+            self.assertFalse(config.directory_writable(path, os.getuid() + 1, os.getgid() + 1))
+            path.chmod(0o777)
+            self.assertTrue(config.directory_writable(path, os.getuid() + 1, os.getgid() + 1))

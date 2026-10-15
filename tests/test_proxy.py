@@ -69,3 +69,34 @@ class ProxyTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class AcmeMigrationTests(unittest.TestCase):
+    def test_new_names_get_challenge_handler_without_removing_https(self):
+        c = config.load(ROOT / '.env.example')
+        old = proxy.render(c, ROOT, https=True)
+        c['FILES_HOST'] = 'share.xdadwal.in'
+        candidate = proxy.challenge_config(old, c)
+        self.assertTrue(candidate.startswith(old))
+        addition = candidate[len(old):]
+        self.assertIn('server_name share.xdadwal.in;', addition)
+        self.assertIn('/.well-known/acme-challenge/', addition)
+        self.assertNotIn('proxy_pass', addition)
+        self.assertEqual(proxy.challenge_config(candidate, c), candidate)
+
+    def test_failed_acme_restores_working_routes(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'ohara.conf'
+            c = config.load(ROOT / '.env.example')
+            old = proxy.render(c, ROOT, https=True)
+            target.write_text(old)
+            c['FILES_HOST'] = 'share.xdadwal.in'
+            def apply(text):
+                target.write_text(text)
+            def failed_issuance(args, **kwargs):
+                self.assertIn('server_name share.xdadwal.in;', target.read_text())
+                raise RuntimeError('ACME failed')
+            with patch.object(proxy, 'TARGET', target), patch.object(proxy, 'apply_config', side_effect=apply), patch.object(proxy, 'run', side_effect=failed_issuance):
+                with self.assertRaisesRegex(RuntimeError, 'ACME failed'):
+                    proxy.activate(c, ROOT, accounts_ready=True, agree=True)
+            self.assertEqual(target.read_text(), old)

@@ -1,7 +1,6 @@
 """Conservative Debian/Ubuntu bootstrap. No network/SSH/resolver reconfiguration."""
 import base64
 import hashlib
-import ipaddress
 import os
 from pathlib import Path
 import secrets
@@ -57,7 +56,9 @@ def ensure_directory(path, uid, gid, mode=0o750):
         if not path.is_dir():
             raise ValueError(f'Storage is not a directory: {path}')
         return
-    path.mkdir(parents=True, mode=mode)
+    if not path.parent.is_dir():
+        raise ValueError(f'Storage parent is missing; mount or create it deliberately first: {path.parent}')
+    path.mkdir(mode=mode)
     if os.geteuid() == 0:
         os.chown(path, uid, gid)
 
@@ -82,12 +83,17 @@ def prepare_storage(c, root):
         ensure_directory(Path(c['DATA_ROOT']) / name, user, grp)
     ensure_directory(c['FILES_ROOT'], uid, gid)
     credentials = local / 'credentials'
+    for path in [credentials, local / 'copyparty.conf', local / 'pihole.env']:
+        if path.is_symlink():
+            raise ValueError('Symlink private configuration is unsupported')
+    created = []
     if not credentials.exists():
         # Do not silently rotate one credential when the recovery file was removed.
         if (local / 'copyparty.conf').exists() or (local / 'pihole.env').exists():
             raise ValueError('Private configuration exists without local/credentials; restore it before setup')
-        config.create_file(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
-                           + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n')
+        if config.create_file(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
+                              + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n'):
+            created.append((credentials, owner, group))
     data = config.parse(credentials, {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
     # Restrict generated credentials so no control characters/config syntax is possible.
     import re
@@ -97,18 +103,13 @@ def prepare_storage(c, root):
     if not cp.exists():
         salt = secrets.token_hex(24)
         template = (root / 'configs/copyparty/config.example').read_text()
-        config.create_file(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), 0o640)
-    config.create_file(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n')
+        if config.create_file(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), 0o640):
+            created.append((cp, owner, gid))
+    if config.create_file(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n'):
+        created.append((local / 'pihole.env', owner, group))
     if os.geteuid() == 0:
-        # These are configuration files, not existing user data. Preserve existing ownership.
-        for path in [credentials, local / 'pihole.env']:
-            if path.stat().st_uid == 0 and owner != 0:
-                os.chown(path, owner, group)
-        if cp.stat().st_uid == 0:
-            os.chown(cp, owner, gid)
-    for path in [local, credentials, cp, local / 'pihole.env']:
-        if path.is_symlink():
-            raise ValueError('Symlink private configuration is unsupported')
+        for path, user, grp in created:
+            os.chown(path, user, grp)
     print('Storage ready; generated credentials are in local/credentials (not printed).')
 
 
@@ -128,14 +129,33 @@ def preflight(c):
             # Existing Ohara DNS is fine on a repeat run; only a running matching project qualifies.
             if not pihole_running(c):
                 raise ValueError('LAN_IP:53 unavailable or IP not assigned; inspect ss -lntup and resolver settings') from error
+    check_web_ports()
     for name in ['download.docker.com', 'registry-1.docker.io']:
         run(['getent', 'ahosts', name], capture=True, timeout=15)
     return architecture
 
 
+def check_web_ports():
+    import shutil
+    if shutil.which('ss'):
+        listeners = run(['ss', '-H', '-ltnp'], capture=True)
+        for line in listeners.splitlines():
+            if any(part.rsplit(':', 1)[-1] in ('80', '443') for part in line.split()[:4]):
+                if 'nginx' not in line:
+                    raise ValueError('Host port 80/443 is occupied by another process; inspect ss -lntup')
+        return
+    # Minimal hosts may not have iproute2 until the package phase. Socket probes
+    # allow a fresh host through without mutating anything during dry-run.
+    for port in (80, 443):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                probe.bind(('0.0.0.0', port))
+        except OSError:
+            raise ValueError('Host port 80/443 is occupied; install iproute2 to inspect listeners before retrying') from None
+
+
 def pihole_running(c):
     try:
-        import json
         text = run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=ohara',
                     '--filter', 'label=com.docker.compose.service=pihole', '--format', '{{json .Ports}}'], capture=True, timeout=15)
         return c['LAN_IP'] + ':53->53/tcp' in text
