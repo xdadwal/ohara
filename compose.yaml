@@ -1,0 +1,82 @@
+name: ohara
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+services:
+  seerr:
+    <<: *defaults
+    image: ${SEERR_IMAGE:?Run scripts/check}
+    init: true
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: info
+    ports:
+      - "127.0.0.1:5055:5055"
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/seerr
+        target: /app/config
+        bind:
+          create_host_path: false
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, wget, --quiet, --tries=1, --spider, http://127.0.0.1:5055/api/v1/settings/public]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 60s
+  copyparty:
+    <<: *defaults
+    image: ${COPYPARTY_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    ports:
+      - "127.0.0.1:3923:3923"
+    volumes:
+      - type: bind
+        source: ./local/copyparty.conf
+        target: /cfg/copyparty.conf
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DATA_ROOT}/copyparty
+        target: /cfg/state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FILES_ROOT}
+        target: /w
+        bind:
+          create_host_path: false
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  speedtest:
+    <<: *defaults
+    image: ${SPEED_IMAGE:?Run scripts/check}
+    ports:
+      - "127.0.0.1:3000:3000"
+    security_opt: ["no-new-privileges:true"]
+  pihole:
+    <<: *defaults
+    image: ${PIHOLE_IMAGE:?Run scripts/check}
+    environment:
+      TZ: ${TZ}
+      FTLCONF_dns_listeningMode: all
+      FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
+    env_file:
+      - ./local/pihole.env
+    ports:
+      - "${LAN_IP}:53:53/tcp"
+      - "${LAN_IP}:53:53/udp"
+      - "127.0.0.1:8888:80"
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/pihole
+        target: /etc/pihole
+        bind:
+          create_host_path: false
