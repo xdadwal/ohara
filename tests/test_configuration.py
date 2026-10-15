@@ -42,7 +42,7 @@ class ConfigurationTests(unittest.TestCase):
         base = (ROOT / '.env.example').read_text()
         for replacement in ['files.xdadwal.in', 'other.example.com']:
             with self.assertRaises(ValueError):
-                self.load(base.replace('requests.xdadwal.in', replacement))
+                self.load(base.replace('watch.xdadwal.in', replacement))
 
     def test_dns_address_must_be_private_ipv4(self):
         base = (ROOT / '.env.example').read_text()

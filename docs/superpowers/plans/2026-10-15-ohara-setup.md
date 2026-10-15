@@ -39,7 +39,7 @@ Copyparty requires service-specific upload and client-IP handling, with authenti
 | Endpoint | Destination | Access |
 |---|---|---|
 | `xdadwal.in` | Homepage, `127.0.0.1:3002` | HTTPS with password login once activated |
-| `requests.xdadwal.in` | Seerr, `127.0.0.1:5055` | Public after owner setup |
+| `watch.xdadwal.in` | Seerr, `127.0.0.1:5055` | Public after owner setup |
 | `files.xdadwal.in` | Copyparty, `127.0.0.1:3923` | Public with application login |
 | `speed.xdadwal.in` | OpenSpeedTest, `127.0.0.1:3000` | Public after explicit activation |
 | LAN DNS | Pi-hole, `${LAN_IP}:53` TCP/UDP | LAN only; never router-forwarded |

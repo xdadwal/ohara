@@ -8,7 +8,7 @@
   installation. Upstream release announcement: https://docs.seerr.dev/blog/seerr-release/.
 - Keep Pi-hole, Copyparty, and OpenSpeedTest. Remove the previous media download
   stack, monitoring, Tailscale, Chesskit, Homer, and standalone Redis definitions.
-- Proposed names: requests.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
+- Proposed names: watch.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
   Configure in .env before issuance. The HTTPS apex runs Homepage with password
   authentication and a proxy rate limit on password attempts.
 - Homepage was selected on 2026-10-15: gethomepage/homepage v2.5.0, pinned by

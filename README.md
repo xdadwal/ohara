@@ -6,7 +6,7 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Service | Purpose | Access |
 |---|---|---|
 | Homepage | Password-protected service dashboard | `xdadwal.in` after activation |
-| Seerr | Media discovery and requests; successor to Jellyseerr | `requests.xdadwal.in` after activation |
+| Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
 | Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Pi-hole | LAN DNS and ad blocking | LAN DNS; private administration |
