@@ -1,8 +1,0 @@
-# Replace with /etc/networ/interfaces
-auto wlp2s0
-iface wlp2s0 inet static
-	address 192.168.1.111
-	subnet 255.255.255.0
-	gateway 192.168.1.1
-	wpa-essid Airtel_ohara
-	wpa-psk BrownBread@44

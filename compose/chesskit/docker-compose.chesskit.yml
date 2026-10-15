@@ -1,8 +1,0 @@
-services:
-  chesskit:
-    build:
-      context: .
-    container_name: chesskit
-    ports:
-      - 3002:3000
-    entrypoint: /bin/sh -c "cd /app/Chesskit && npm install && npm run dev"

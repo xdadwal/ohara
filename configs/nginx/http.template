@@ -1,0 +1,20 @@
+# Managed by Ohara
+# HTTP bootstrap: no application routes until explicit HTTPS activation.
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
+}
+server {
+    listen 80;
+    server_name @HOSTS@;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/lib/ohara/acme;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / {
+        default_type text/plain;
+        return 503 "Ohara is being configured.\n";
+    }
+}

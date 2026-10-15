@@ -1,0 +1,98 @@
+# Managed by Ohara
+# HTTPS active: setup must preserve this configuration on subsequent runs.
+limit_req_zone $binary_remote_addr zone=ohara_homepage_login:10m rate=5r/m;
+map $http_upgrade $ohara_connection_upgrade {
+    default upgrade;
+    '' close;
+}
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
+}
+server {
+    listen 443 ssl default_server;
+    ssl_reject_handshake on;
+    server_name _;
+    return 444;
+}
+server {
+    listen 80;
+    server_name @HOSTS@;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/lib/ohara/acme;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / { return 301 https://$host$request_uri; }
+}
+server {
+    listen 443 ssl;
+    server_name @DOMAIN@;
+    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    location = /api/auth/callback/credentials {
+        limit_req zone=ohara_homepage_login burst=5 nodelay;
+        limit_req_status 429;
+        proxy_pass http://127.0.0.1:3002;
+        include /etc/nginx/ohara-proxy-headers.conf;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:3002;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $ohara_connection_upgrade;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name @REQUESTS_HOST@;
+    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 10m;
+    location / {
+        proxy_pass http://127.0.0.1:5055;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $ohara_connection_upgrade;
+        proxy_read_timeout 300s;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name @FILES_HOST@;
+    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    # Explicit 50 GiB upload limit, not an unlimited request body.
+    client_max_body_size 50g;
+    location / {
+        proxy_pass http://127.0.0.1:3923;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        proxy_set_header Connection "";
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name @SPEED_HOST@;
+    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 40m;
+    gzip off;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        proxy_set_header Connection "";
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+}

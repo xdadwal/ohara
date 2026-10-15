@@ -1,0 +1,19 @@
+# scripts/setup creates local/copyparty.conf; this template contains no password.
+[global]
+  e2dsa
+  e2ts
+  hist: /cfg/state
+  ah-alg: scrypt
+  ah-salt: @SALT@
+  # Host nginx connects through Docker's bridge. Only nginx publishes this header;
+  # the backend is loopback-bound and cannot be reached from the LAN/WAN.
+  xff-hdr: x-real-ip
+  rproxy: 1
+
+[accounts]
+  admin: @HASH@
+
+[/]
+  /w
+  accs:
+    rwmda: admin
