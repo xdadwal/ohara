@@ -12,7 +12,7 @@ interfaces, mounted disks, free space, user/group IDs, installed dependencies, a
 port conflicts. Avoid exposing private configuration while inspecting it.
 
 Reuse settled choices: Asia/Kolkata timezone, xdadwal.in for Homepage,
-watch.xdadwal.in for Seerr, files.xdadwal.in for Copyparty, speed.xdadwal.in for
+watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, files.xdadwal.in for Copyparty, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
 Pi-hole administration remains private. Do not ask the user to choose these again
 unless the target's existing configuration conflicts with them.
@@ -30,7 +30,7 @@ dependencies, or provide user/group IDs you can inspect.
 | Storage | The dedicated file/data directories or disk selection are unknown. Present detected mounted disks and a suggested path; wait for the choice before creating storage on that disk. Do not format disks, migrate existing data, or change mounts without an explicit request. |
 | ACME email | No actual certificate-contact email has been supplied. The example email is not a confirmed identity. This blocks certificate issuance, not independent local checks. |
 | Application owner identity | Seerr, or later Immich, requires an owner email/name or an existing media account. Reuse supplied identity details; otherwise ask for the missing fields. Generate a new password locally when creating a local account. |
-| External media setup | Seerr needs a media-server endpoint/account and, for automated fulfillment, external acquisition services. Ask whether those exist when configuring Seerr; never invent endpoints or silently restore removed services. |
+| Media setup | The local stack includes Jellyfin and acquisition services. Confirm media mount/capacity and real owner email, then use scripts/media-setup. Ask for indexer/source choices and any external credentials; never invent them. |
 | DNS/router access | Public DNS or forwarding cannot be inspected/configured through authorized tools. Give exact records/ports and request completion, then verify externally. Keep public activation pending until prerequisites work. |
 | Immich storage/backups | When implementing Immich, confirm media/database paths, capacity, and backup destination. Inspect hardware where possible. Do not block the utility stack on a future Immich decision. |
 
@@ -52,7 +52,7 @@ account merely because the agent does not know its password.
 | Homepage | Setup generates its password and session secret in local/homepage.env. |
 | Copyparty | Setup generates its admin password in local/credentials and writes a salted password hash to local/copyparty.conf. |
 | Pi-hole | Setup generates its admin password in local/credentials and supplies it through local/pihole.env. |
-| Seerr | The current setup does not create its owner. Complete the supported first-run UI/API flow using the user's supplied identity/media account; generate any new local password securely. If interaction requires the user, explain the exact step and resume after completion. |
+| Jellyfin and Seerr | scripts/media-setup creates the Jellyfin admin and Seerr owner through supported APIs using generated credentials and the supplied owner email. See media.md for connections, indexers and playback acceptance. |
 | Immich | Not implemented yet. Include account/bootstrap support in its own deployment work; do not claim its credentials or owner already exist. |
 | OpenSpeedTest | Has no application account; no credential needs generating. |
 
@@ -100,3 +100,18 @@ set it solely because containers are running.
 Report which accounts were created versus reused, private credential retrieval
 paths, reachable URLs, pending integrations/user steps, and the exact verification
 scope. Distinguish local success from public DNS/HTTPS and LAN-client verification.
+
+## Media stack inputs and setup
+
+Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are now included. Follow
+[media.md](media.md). Inspect media mounts/capacity, RUN_UID/RUN_GID and existing
+state first. Ask for the actual Seerr owner email if unknown, chosen indexers,
+and any required external account/API credentials. Generate local passwords
+automatically. Never choose a source or create an external account by inference.
+Run scripts/media-setup after scripts/up; then verify private logins, both
+download-client tests, Prowlarr application sync, Seerr default profiles/root
+folders, Jellyfin libraries and external URL. Keep admin UIs private. Before
+public activation, set Jellyfin Known Proxies to the actual host gateway and
+check permissions with an ordinary viewing account. A healthy empty stack does
+not prove request fulfillment: require a permitted movie/episode import and
+HTTPS playback plus Seerr availability sync.

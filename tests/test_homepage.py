@@ -17,7 +17,7 @@ class HomepageTests(unittest.TestCase):
             import shutil
             shutil.copytree(ROOT / 'configs', root / 'configs')
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'),
+            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'),
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             host.prepare_storage(c, root)
             settings = root/'data/homepage/settings.yaml'
