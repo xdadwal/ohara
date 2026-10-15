@@ -14,7 +14,7 @@ Linux machine as Ohara**, as confirmed by the user. Keep an independent Compose 
 3. Database path on local SSD storage, not a network share.
 4. An independent backup destination for originals and database, and a restore
    test. A second directory on the same disk is not an off-host backup.
-5. Suggested hostname `photos.xdadwal.in`, plus whether access will be public.
+5. Confirmed hostname: `immich.xdadwal.in`. Confirm whether access will be public.
    Reuse host Nginx for HTTPS and bind the Immich web port to loopback.
 
 ## Implementation scope
