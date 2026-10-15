@@ -21,7 +21,7 @@ Bootstrap target: **Ubuntu 24.04 LTS or Debian 13**, systemd, amd64/arm64. Reser
 a stable LAN IP and prepare your storage mounts first. Ansible is not required.
 
 ```sh
-git clone https://github.com/thebrownbreadtoast/ohara.git
+git clone https://github.com/xdadwal/ohara.git
 cd ohara
 sudo ./scripts/setup
 # First run creates .env and stops. Edit LAN_IP, paths, IDs, domain/email.
