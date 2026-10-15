@@ -24,6 +24,8 @@ docs/superpowers/plans/.
 - Setup prepares a supported Linux host; `up` starts local services; TLS activation
   is a separate explicit step after owner/account setup. Do not deploy to a live
   host merely because a code change was requested.
+- For Pi-hole setup, follow the DNS workflow in docs/agent-setup.md: distinguish
+  container deployment from resolver/filter configuration and router/client cutover.
 - Backend web ports bind to loopback. Pi-hole DNS binds only to the LAN IP;
   its administration interface must never get a public Nginx route.
 - Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,

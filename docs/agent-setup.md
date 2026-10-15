@@ -67,6 +67,29 @@ login, ownership, and expected permissions. Preserve existing .env values and
 configuration edits on reruns. Request a deliberate recovery/rotation decision
 when existing credentials are missing or fail, rather than silently replacing them.
 
+## Pi-hole configuration and LAN cutover
+
+When tasked with initial Pi-hole setup, the agent can configure the service;
+container startup and password generation are only the first steps. Inspect
+existing settings and preserve custom records, lists, and allow/block rules.
+Use the installed version's supported UI/API/CLI and keep configuration consistent
+with the Compose environment. The current upstream defaults are 1.1.1.1/1.0.0.1;
+ask about alternate resolvers or custom filtering only when those choices matter.
+Do not silently add aggressive third-party blocklists or replace existing lists.
+
+If local resolution is needed, map the deployed Ohara hostnames to the confirmed
+LAN IP and verify each record. Do not advertise Immich as available before its
+separate project is deployed. Local records do not replace public provider DNS.
+Test ordinary lookups over UDP and TCP and verify an expected blocked-domain
+case against the configured lists before changing client DNS.
+
+If router access is authorized and available, configure its DHCP DNS setting for
+the reserved Pi-hole LAN address within the deployment task. Otherwise provide
+the exact address/setting and identify this as a user step. Preserve a working
+host resolver and fallback recovery path. Verify resolution from a second LAN
+client after the change; a DNS query inside the container alone does not establish
+that clients are using Pi-hole. Keep DNS and administration off public forwarding.
+
 ## Finish with verified outcomes
 
 Run configuration checks, start the local stack only within the user's requested

@@ -15,8 +15,8 @@
   digest, non-root, loopback port 3002. Start with service links, no Docker socket
   or API keys. Seed config only when absent and preserve operator edits.
 - Immich will run on the same machine, as confirmed by the user, in a separate
-  Compose project. Storage, hardware capacity, backup destination and hostname
-  remain to be configured. See immich-next.md.
+  Compose project. Hostname is confirmed as immich.xdadwal.in. Storage, hardware capacity and
+  backup destination remain to be configured. See immich-next.md.
 - Seerr requires media-server setup; automatic fulfillment also needs external
   Radarr/Sonarr. None are supplied here; do not report fulfillment as ready.
 - Bootstrap targets Ubuntu 24.04 and Debian 13, amd64/arm64 with systemd.

@@ -34,7 +34,7 @@ Linux machine as Ohara**, as confirmed by the user. Keep an independent Compose 
   download, playback, metadata and representative large videos.
 - Back up both media and database, restore into an isolated instance and verify
   representative albums/assets before treating deployment as ready.
-- Add a Homepage link only after its actual hostname and deployment are known.
+- Add the immich.xdadwal.in Homepage link once deployment is verified.
 
 ## Current primary references (checked 2026-10-15)
 
