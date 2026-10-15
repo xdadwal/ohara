@@ -22,3 +22,8 @@
 - Bootstrap targets Ubuntu 24.04 and Debian 13, amd64/arm64 with systemd.
   This support target is distinct from evidence of installation on actual VMs;
   current verification and remaining deployment checks are in operations.md.
+
+- Shared authentication (Authelia/Authentik) is deferred by user choice. Use
+  agent-generated unique per-service credentials. Initial setup agents collect
+  only missing machine/account inputs using docs/agent-setup.md; generated
+  credentials and application account provisioning are distinct steps.

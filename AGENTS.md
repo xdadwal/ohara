@@ -10,6 +10,13 @@ docs/superpowers/plans/.
   Immich will share this machine in its own Compose project; deployment is pending
   storage/hardware/backup details. See docs/immich-next.md.
   Do not introduce removed media/download services or additional infrastructure.
+- Use independent per-service credentials; a shared authentication service is
+  explicitly deferred. Generate strong unique passwords/secrets automatically,
+  preserve existing credentials, and keep values out of chat, logs, and Git.
+- When tasked with initial setup, follow docs/agent-setup.md: inspect the target
+  machine and existing configuration first, then ask only for missing facts or
+  choices that cannot be safely inferred. Do not assume example IPs/emails are real.
+  Continue independent checks while waiting; do not guess required answers.
 - `compose.yaml`, `.env.example`, and `versions.env` define deployment;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
 - Commands resolve their own repository path. Use `scripts/setup --help`,

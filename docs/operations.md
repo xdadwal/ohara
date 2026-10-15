@@ -2,6 +2,9 @@
 
 ## Host preparation
 
+For an agent-led installation, follow [agent-setup.md](agent-setup.md) for
+input collection, credential generation, and account setup boundaries.
+
 Support target: Ubuntu 24.04 LTS or Debian 13 with systemd, amd64/arm64. Bootstrap
 installs missing Docker Engine/Buildx/Compose from Docker's official apt repository
 and distribution Nginx/Certbot. It preserves existing package versions and fails
@@ -56,7 +59,7 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
 
 ## Public DNS and HTTPS
 
-1. Set A records for the apex and configured requests/files/speed subdomains to
+1. Set A records for the apex and configured watch/files/speed subdomains to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
