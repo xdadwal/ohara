@@ -69,7 +69,10 @@ services:
       FTLCONF_dns_listeningMode: all
       FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
     env_file:
-      - ./local/pihole.env
+      - path: ./local/pihole.env
+        # Static rendering must work without secrets, including Compose 2.38.
+        # scripts/check and scripts/up still require this file before startup.
+        required: false
     ports:
       - "${LAN_IP}:53:53/tcp"
       - "${LAN_IP}:53:53/udp"

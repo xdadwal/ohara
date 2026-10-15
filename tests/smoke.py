@@ -160,6 +160,13 @@ def main():
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)
+            # Linux preserves container UIDs on bind-mounted dummy files. Restore
+            # only this generated fixture's data ownership before tempfile cleanup.
+            cp_image = config.images(root / 'versions.env')['COPYPARTY_IMAGE']
+            runtime.run(docker + ['run', '--rm', '--user', '0:0', '--entrypoint', '/bin/ash',
+                                 '-v', f'{root / "data"}:/fixture', cp_image,
+                                 '-c', 'chown -R "$1:$2" /fixture', 'fixture-cleanup',
+                                 str(os.getuid()), str(os.getgid())], timeout=60)
 
 if __name__ == '__main__':
     main()

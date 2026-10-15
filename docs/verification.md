@@ -2,7 +2,7 @@
 
 Implementation verification on 2026-10-15:
 
-- 28 Python tests passed, covering strict configuration, command-injection rejection,
+- 29 Python tests passed, covering strict configuration, command-injection rejection,
   configuration preservation, package conflicts/failures, privilege checks, missing
   optional preflight tooling, storage permissions, Nginx rollback, and ACME hostname
   migration/failure recovery.
@@ -32,3 +32,8 @@ or deletion of existing application data was performed by this implementation.
 Local macOS tests use Homebrew Python (Apple's system Python lacks scrypt). Host
 bootstrap is Linux-only; supported Linux Python provides the required OpenSSL
 scrypt implementation.
+
+Hosted amd64 smoke behavior passed on the first run, but cleanup failed because
+Linux preserves container-owned fixture files. Cleanup now restores ownership only
+inside generated test data. Compose 2.38.2 static validation without secret files
+was also reproduced and fixed; the test suite covers absent private configuration.
