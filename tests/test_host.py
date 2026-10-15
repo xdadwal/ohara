@@ -1,0 +1,74 @@
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import config
+import host
+
+class HostTests(unittest.TestCase):
+    def test_supported_and_unsupported_hosts(self):
+        self.assertEqual(host.os_info('ID=ubuntu\nVERSION_ID="24.04"\n'), ('ubuntu', 'noble'))
+        self.assertEqual(host.os_info('ID=debian\nVERSION_ID="13"\n'), ('debian', 'trixie'))
+        for text in ['ID=arch\nVERSION_ID=1', 'ID=ubuntu\nVERSION_ID="22.04"']:
+            with self.assertRaises(ValueError):
+                host.os_info(text)
+
+    def test_prepare_preserves_config_and_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / 'configs/copyparty').mkdir(parents=True)
+            (root / 'configs/copyparty/config.example').write_text((ROOT / 'configs/copyparty/config.example').read_text())
+            c = config.load(ROOT / '.env.example')
+            c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'),
+                     RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
+            host.prepare_storage(c, root)
+            files = [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/credentials']
+            before = [p.read_bytes() for p in files]
+            mode = files[0].stat().st_mode
+            host.prepare_storage(c, root)
+            self.assertEqual(before, [p.read_bytes() for p in files])
+            self.assertEqual(mode, files[0].stat().st_mode)
+            self.assertNotIn('r: *', files[0].read_text())
+
+    def test_conflicting_docker_packages_are_not_removed(self):
+        calls = []
+        def fake(args, **kwargs):
+            calls.append(args)
+            if args[0] == 'dpkg-query':
+                return 'install ok installed'
+            return ''
+        with patch.object(host, 'run', side_effect=fake), self.assertRaises(RuntimeError):
+            host.reject_conflicts()
+        self.assertFalse(any('remove' in a for a in calls))
+
+    def test_package_failure_aborts(self):
+        with patch.object(host, 'run', side_effect=RuntimeError('install failed')):
+            with self.assertRaises(RuntimeError):
+                host.ensure_packages(['nginx'])
+
+    def test_existing_packages_do_not_reinstall(self):
+        calls = []
+        def fake(args, **kwargs):
+            calls.append(args)
+            return 'install ok installed'
+        with patch.object(host, 'run', side_effect=fake):
+            host.ensure_packages(['nginx', 'certbot'])
+        self.assertTrue(all(c[0] == 'dpkg-query' for c in calls))
+
+    def test_missing_privileges_fails_without_mutation(self):
+        with patch.object(host.os, 'geteuid', return_value=1000), self.assertRaises(RuntimeError):
+            host.require_root()
+
+    def test_symlink_storage_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'linked'
+            path.symlink_to(Path(directory), target_is_directory=True)
+            with self.assertRaises(ValueError):
+                host.ensure_directory(path, 1000, 1000)
+
+if __name__ == '__main__':
+    unittest.main()

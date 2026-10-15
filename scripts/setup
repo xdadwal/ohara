@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+case "${1:-}" in
+  --help|-h)
+    echo 'Usage: sudo scripts/setup [--dry-run] [--non-interactive]'
+    echo 'First run copies .env.example without overwriting .env, then stops for editing.'
+    echo 'Ubuntu 24.04 / Debian 13, systemd, amd64/arm64. Does not start applications.'
+    exit 0 ;;
+esac
+for arg in "$@"; do
+  case "$arg" in --dry-run|--non-interactive) ;; *) echo 'Unknown setup argument' >&2; exit 2 ;; esac
+done
+if [[ ! -e "$ROOT_DIR/.env" ]]; then
+  if [[ " $* " == *' --dry-run '* ]]; then
+    echo 'Missing .env: copy .env.example and edit LAN_IP/storage first.' >&2
+    exit 1
+  fi
+  (umask 077; set -C; cat "$ROOT_DIR/.env.example" > "$ROOT_DIR/.env")
+  if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" ]]; then
+    chown "$SUDO_UID:$SUDO_GID" "$ROOT_DIR/.env"
+  fi
+  echo 'Created .env. Edit LAN_IP, storage paths and email, then rerun setup.'
+  exit 1
+fi
+# Bootstrap Python itself when absent; never execute the operator's dotenv file.
+if ! command -v python3 >/dev/null 2>&1; then
+  if [[ " $* " == *' --dry-run '* ]]; then
+    echo 'Python 3 is missing; setup would install it (no changes made).'
+    exit 1
+  fi
+  if [[ $EUID -ne 0 ]]; then echo 'Run sudo scripts/setup to install Python 3.' >&2; exit 1; fi
+  # /etc/os-release is host-owned metadata, not user configuration.
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  if [[ "${ID:-}:${VERSION_ID:-}" != ubuntu:24.04 && "${ID:-}:${VERSION_ID:-}" != debian:13 ]]; then
+    echo 'Unsupported OS; use Ubuntu 24.04 or Debian 13.' >&2; exit 1
+  fi
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y python3
+fi
+exec python3 "$SCRIPT_DIR/bootstrap.py" "$@"
