@@ -5,8 +5,10 @@ before changing deployment behavior. The approved migration plan is under
 docs/superpowers/plans/.
 
 - Active applications: Seerr (Jellyseerr's successor), Pi-hole, Copyparty,
-  OpenSpeedTest. Nginx and Certbot run on the host. Domain: xdadwal.in.
-- Homepage is undecided. Immich belongs to a separate follow-up deployment.
+  OpenSpeedTest, and Homepage. Nginx and Certbot run on the host. Domain: xdadwal.in.
+- Homepage serves the apex with password login; no Docker socket or API keys.
+  Immich will share this machine in its own Compose project; deployment is pending
+  storage/hardware/backup details. See docs/immich-next.md.
   Do not introduce removed media/download services or additional infrastructure.
 - `compose.yaml`, `.env.example`, and `versions.env` define deployment;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.

@@ -37,3 +37,14 @@ Hosted amd64 smoke behavior passed on the first run, but cleanup failed because
 Linux preserves container-owned fixture files. Cleanup now restores ownership only
 inside generated test data. Compose 2.38.2 static validation without secret files
 was also reproduced and fixed; the test suite covers absent private configuration.
+
+## Homepage addition
+
+33 unit tests now include Homepage config/auth seeding and preservation, safe
+ownership after partial setup failure, and rejection of disabled login or wildcard
+host validation. Homepage v2.5.0's index was checked for amd64/arm64 and pinned.
+The expanded five-application smoke test verifies anonymous redirect, a real
+password/CSRF login, signed session access to configured service links, and
+Nginx's password-attempt rate limit, alongside the previous file/DNS/speed checks.
+Immich is confirmed for the same machine but remains unimplemented pending
+hardware capacity, storage and backup details.

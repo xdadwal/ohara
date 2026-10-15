@@ -49,6 +49,7 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
 
 def validate_model(model, c):
     expected = {
+        'homepage': {('127.0.0.1', 3002, 3000, 'tcp')},
         'seerr': {('127.0.0.1', 5055, 5055, 'tcp')},
         'copyparty': {('127.0.0.1', 3923, 3923, 'tcp')},
         'speedtest': {('127.0.0.1', 3000, 3000, 'tcp')},
@@ -58,6 +59,10 @@ def validate_model(model, c):
     services = model['services']
     if set(services) != set(expected):
         raise ValueError('Unexpected application inventory in compose.yaml')
+    hp = services['homepage'].get('environment', {})
+    if (hp.get('HOMEPAGE_AUTH_ENABLED') != 'true' or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['DOMAIN']
+            or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['DOMAIN']):
+        raise ValueError('Homepage must require login, allow only DOMAIN, and use its HTTPS URL')
     for name, service in services.items():
         ports = {(p.get('host_ip'), int(p['published']), int(p['target']), p.get('protocol', 'tcp'))
                  for p in service.get('ports', [])}
@@ -76,19 +81,23 @@ def check(c, root, *, static=False):
                                capture=True, docker=['docker']))
     validate_model(model, c)
     if not static:
-        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env']:
+        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env']:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
-        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty']] + [Path(c['FILES_ROOT'])]:
+        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty', 'homepage']] + [Path(c['FILES_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
         for path, uid, gid in [
             (Path(c['DATA_ROOT']) / 'seerr', 1000, 1000),
             (Path(c['DATA_ROOT']) / 'copyparty', int(c['RUN_UID']), int(c['RUN_GID'])),
             (Path(c['FILES_ROOT']), int(c['RUN_UID']), int(c['RUN_GID'])),
+            (Path(c['DATA_ROOT']) / 'homepage', int(c['RUN_UID']), int(c['RUN_GID'])),
         ]:
             if not config.directory_writable(path, uid, gid):
                 raise ValueError(f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually')
+        hp = config.parse(root / 'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'})
+        if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or min(len(hp[k]) for k in ['HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD']) < 32:
+            raise ValueError('Homepage authentication must be enabled with strong generated credentials')
         import re
         text = (root / 'local/copyparty.conf').read_text()
         if re.search(r'^\s*[rwmdagAG.]+\s*:\s*[^#\n]*\*', text, re.MULTILINE):
@@ -106,7 +115,7 @@ def status(c, root):
         rows = [json.loads(line) for line in data.splitlines() if line.strip()]
     by_name = {r['Service']: r for r in rows}
     good = True
-    for name, port, path in [('seerr', 5055, '/api/v1/settings/public'), ('copyparty', 3923, '/'),
+    for name, port, path in [('homepage', 3002, '/api/healthcheck'), ('seerr', 5055, '/api/v1/settings/public'), ('copyparty', 3923, '/'),
                               ('speedtest', 3000, '/'), ('pihole', 8888, '/admin/')]:
         running = by_name.get(name, {}).get('State') == 'running'
         health = by_name.get(name, {}).get('Health', '')

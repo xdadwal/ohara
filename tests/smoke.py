@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import uuid
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
@@ -56,13 +57,13 @@ def main():
         # Real container runs as 1000 in both production and disposable Linux CI.
         if os.geteuid() == 0:
             os.chown(root / 'data/seerr', 1000, 1000)
-        for path in [root / 'data', root / 'files', root / 'data/seerr', root / 'data/copyparty']:
+        for path in [root / 'data', root / 'files', root / 'data/seerr', root / 'data/copyparty', root / 'data/homepage']:
             path.chmod(0o777)  # disposable fixture only, never a production setup behavior
         (root / 'local/copyparty.conf').chmod(0o644)
         override = root / 'smoke.yaml'
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
-            for name, port in [('seerr',5055),('copyparty',3923),('speedtest',3000)]
+            for name, port in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000)]
         ) + '\n  pihole:\n    ports: !override\n      - "127.0.0.1::80"\n      - "127.0.0.1::53/udp"\n      - "127.0.0.1::53/tcp"\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
@@ -73,13 +74,22 @@ def main():
         nginx_name = identifier + '-proxy'
         try:
             print('Starting isolated application stack...', flush=True)
-            compose(['up', '-d', '--wait', '--wait-timeout', '180'], timeout=900)
-            ports = {name: port(name, number) for name, number in [('seerr',5055),('copyparty',3923),('speedtest',3000),('pihole',80)]}
+            try:
+                compose(['up', '-d', '--wait', '--wait-timeout', '180'], timeout=900)
+            except RuntimeError:
+                diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
+                for path, keys in [(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
+                    for value in config.parse(path, keys).values():
+                        if len(value) > 10:
+                            diagnostic = diagnostic.replace(value, '<redacted>')
+                print(diagnostic, flush=True)
+                raise
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('pihole',80)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
                     try:
-                        code, _ = request(value, 'localhost', '/api/v1/settings/public' if name == 'seerr' else '/')
+                        code, _ = request(value, 'localhost', '/api/v1/settings/public' if name == 'seerr' else '/api/healthcheck' if name == 'homepage' else '/')
                         if code < 500:
                             break
                     except (OSError, http.client.HTTPException):
@@ -116,6 +126,7 @@ def main():
                          '-out', str(certificates/'fullchain.pem')], timeout=60)
             nginx_config = root / 'nginx.conf'
             text = proxy.render(c, ROOT, https=True)
+            text = text.replace('127.0.0.1:3002', 'homepage:3000')
             for name, number in [('seerr',5055),('copyparty',3923),('speedtest',3000)]:
                 text = text.replace(f'127.0.0.1:{number}', f'{name}:{number}')
             nginx_config.write_text('events {}\nhttp {\n' + text + '\n}\n')
@@ -126,7 +137,7 @@ def main():
             tls_port = int(runtime.run(docker + ['port', nginx_name, '443'], capture=True).strip().rsplit(':',1)[1])
             http_port = int(runtime.run(docker + ['port', nginx_name, '80'], capture=True).strip().rsplit(':',1)[1])
             # SNI must match a known name; patch socket target while preserving hostname/SNI.
-            def tls_request(name, path='/', method='GET', body=None, hdr=None):
+            def tls_request(name, path='/', method='GET', body=None, hdr=None, full=False):
                 context = ssl._create_unverified_context()
                 raw = socket.create_connection(('127.0.0.1', tls_port), timeout=20)
                 wrapped = context.wrap_socket(raw, server_hostname=name)
@@ -135,19 +146,43 @@ def main():
                 try:
                     conn.request(method, path, body, hdr or {})
                     response = conn.getresponse()
-                    return response.status, response.read()
+                    result = (response.status, response.read())
+                    return result + (response.getheaders(),) if full else result
                 finally:
                     conn.close()
             deadline = time.monotonic()+30
             while True:
                 try:
                     runtime.run(docker+['exec',nginx_name,'nginx','-t'])
-                    assert tls_request(c['DOMAIN'])[0] == 503
+                    assert tls_request(c['DOMAIN'])[0] in (302, 307)
                     break
                 except (OSError, RuntimeError, http.client.HTTPException):
                     if time.monotonic()>deadline:
                         raise
                     time.sleep(1)
+            code, body, denied_headers = tls_request(c['DOMAIN'], '/api/services', full=True)
+            redirect = dict((k.lower(),v) for k,v in denied_headers).get('location','')
+            assert code in (401,403) or (code in (302,307) and '/auth/signin' in redirect), f'Homepage anonymous API returned {code}'
+            code, body, csrf_headers = tls_request(c['DOMAIN'], '/api/auth/csrf', full=True)
+            assert code == 200, 'Homepage CSRF endpoint failed'
+            csrf = json.loads(body)['csrfToken']
+            cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
+            hp = config.parse(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
+            payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
+                                               'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
+            code, body, login_headers = tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', payload,
+                                                   {'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie}, full=True)
+            assert code == 200 and 'error' not in json.loads(body).get('url',''), 'Homepage password login failed'
+            session = '; '.join(value.split(';', 1)[0] for key,value in login_headers if key.lower() == 'set-cookie')
+            assert session, 'Homepage session cookie missing'
+            code, body = tls_request(c['DOMAIN'], '/api/services', hdr={'Cookie':session})
+            assert code == 200 and b'Seerr' in body and b'Copyparty' in body, 'Homepage authenticated service list failed'
+            rejected = urllib.parse.urlencode({'csrfToken':csrf, 'password':'not-the-password',
+                                                'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
+            attempts = [tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', rejected,
+                                    {'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie})[0]
+                        for _ in range(8)]
+            assert 429 in attempts, 'Homepage proxy login rate limit was not enforced'
             assert request(http_port, c['FILES_HOST'])[0] == 301
             assert tls_request(c['REQUESTS_HOST'], '/api/v1/settings/public')[0] == 200
             assert tls_request(c['FILES_HOST'], '/probe.txt', hdr=headers) == (200, b'ohara probe')
@@ -156,7 +191,7 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: four apps, authenticated file upload/download, anonymous denial, LAN DNS fixture, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: five apps, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, LAN DNS fixture, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

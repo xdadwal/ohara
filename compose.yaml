@@ -7,6 +7,33 @@ x-defaults: &defaults
       max-size: "10m"
       max-file: "3"
 services:
+  homepage:
+    <<: *defaults
+    image: ${HOMEPAGE_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    environment:
+      TZ: ${TZ}
+      HOMEPAGE_ALLOWED_HOSTS: ${DOMAIN}
+      HOMEPAGE_AUTH_ENABLED: "true"
+      HOMEPAGE_EXTERNAL_URL: https://${DOMAIN}
+      HOMEPAGE_VAR_REQUESTS_HOST: ${REQUESTS_HOST}
+      HOMEPAGE_VAR_FILES_HOST: ${FILES_HOST}
+      HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
+    env_file:
+      - path: ./local/homepage.env
+        required: false
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/homepage
+        target: /app/config
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /app/.next/cache:uid=${RUN_UID},gid=${RUN_GID}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
   seerr:
     <<: *defaults
     image: ${SEERR_IMAGE:?Run scripts/check}

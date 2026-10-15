@@ -79,21 +79,36 @@ def prepare_storage(c, root):
     ensure_directory(local, owner, group, 0o700)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     ensure_directory(c['DATA_ROOT'], owner, group)
-    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('pihole', 0, 0)]:
+    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('pihole', 0, 0), ('homepage', uid, gid)]:
         ensure_directory(Path(c['DATA_ROOT']) / name, user, grp)
     ensure_directory(c['FILES_ROOT'], uid, gid)
     credentials = local / 'credentials'
     for path in [credentials, local / 'copyparty.conf', local / 'pihole.env']:
         if path.is_symlink():
             raise ValueError('Symlink private configuration is unsupported')
-    created = []
+    def create_owned(path, content, user, grp, mode=0o600):
+        if not config.create_file(path, content, mode):
+            return
+        if os.geteuid() == 0:
+            os.chown(path, user, grp)
+
+    hp = local / 'homepage.env'
+    if hp.is_symlink():
+        raise ValueError('Symlink private configuration is unsupported')
+    create_owned(hp, 'HOMEPAGE_AUTH_ENABLED=true\n'
+                 + 'HOMEPAGE_AUTH_SECRET=' + secrets.token_urlsafe(48) + '\n'
+                 + 'HOMEPAGE_AUTH_PASSWORD=' + secrets.token_urlsafe(32) + '\n', owner, group)
+    for template in (root / 'configs/homepage').glob('*.yaml'):
+        destination = Path(c['DATA_ROOT']) / 'homepage' / template.name
+        if destination.is_symlink():
+            raise ValueError('Symlink Homepage configuration is unsupported')
+        create_owned(destination, template.read_text(), uid, gid, 0o640)
     if not credentials.exists():
         # Do not silently rotate one credential when the recovery file was removed.
         if (local / 'copyparty.conf').exists() or (local / 'pihole.env').exists():
             raise ValueError('Private configuration exists without local/credentials; restore it before setup')
-        if config.create_file(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
-                              + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n'):
-            created.append((credentials, owner, group))
+        create_owned(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
+                     + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n', owner, group)
     data = config.parse(credentials, {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
     # Restrict generated credentials so no control characters/config syntax is possible.
     import re
@@ -103,14 +118,9 @@ def prepare_storage(c, root):
     if not cp.exists():
         salt = secrets.token_hex(24)
         template = (root / 'configs/copyparty/config.example').read_text()
-        if config.create_file(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), 0o640):
-            created.append((cp, owner, gid))
-    if config.create_file(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n'):
-        created.append((local / 'pihole.env', owner, group))
-    if os.geteuid() == 0:
-        for path, user, grp in created:
-            os.chown(path, user, grp)
-    print('Storage ready; generated credentials are in local/credentials (not printed).')
+        create_owned(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), owner, gid, 0o640)
+    create_owned(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n', owner, group)
+    print('Storage ready; credentials are in local/credentials and local/homepage.env (not printed).')
 
 
 def preflight(c):

@@ -8,7 +8,7 @@ KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
         'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE'}
+IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE'}
 
 
 def parse(path, keys):

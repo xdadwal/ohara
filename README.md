@@ -5,15 +5,17 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 
 | Service | Purpose | Access |
 |---|---|---|
+| Homepage | Password-protected service dashboard | `xdadwal.in` after activation |
 | Seerr | Media discovery and requests; successor to Jellyseerr | `requests.xdadwal.in` after activation |
 | Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Pi-hole | LAN DNS and ad blocking | LAN DNS; private administration |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
-The homepage is undecided; the apex returns a maintenance response. Immich is a
-separate follow-up for personal photos/videos. Seerr does not stream or download
-media: connect an external media server, and external Radarr/Sonarr if desired.
+The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
+Seerr, Copyparty, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
+it will share the Ohara machine, with storage and backup paths still to be confirmed.
+Seerr does not stream or download media: connect an external media server, and external Radarr/Sonarr if desired.
 
 ## Fresh-host quick start
 
@@ -35,15 +37,19 @@ sudo ./scripts/setup --non-interactive
 
 If Docker requires elevated access, the commands try `sudo -n docker`; refresh
 sudo authentication with `sudo -v` first. Users are not added to the Docker group.
-Credentials are written to `local/credentials` with restrictive permissions and
-are never printed by setup. Use `sudo` to read the file if you ran setup as root.
+Service credentials are written to `local/credentials`; Homepage credentials are
+in `local/homepage.env`. Both files have restrictive permissions and are never
+printed by setup. Use `sudo` to read the file if you ran setup as root.
 
 Complete service accounts using SSH forwarding before exposing applications:
 
 ```sh
 ssh -L 5055:127.0.0.1:5055 -L 3923:127.0.0.1:3923 \
-    -L 3000:127.0.0.1:3000 -L 8888:127.0.0.1:8888 user@server
+    -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 -L 8888:127.0.0.1:8888 user@server
 ```
+
+Homepage uses its own password login at the HTTPS apex; it has no Docker socket
+access or private service widgets. See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
 router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.

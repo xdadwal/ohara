@@ -29,7 +29,7 @@ Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation 
 disables only the package default site just installed by that invocation. If an
 existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
-53 TCP/UDP on LAN_IP, loopback 3000/3923/5055/8888, and host 80/443 for Nginx.
+53 TCP/UDP on LAN_IP, loopback 3000/3002/3923/5055/8888, and host 80/443 for Nginx.
 
 ## Checks and local startup
 
@@ -62,7 +62,7 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
-   ports deliberately while preserving SSH access. Never forward 53, 3000, 3923,
+   ports deliberately while preserving SSH access. Never forward 53, 3000, 3002, 3923,
    5055, or 8888. Docker-published ports can bypass UFW; loopback/LAN bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
@@ -75,8 +75,8 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
    of account configuration. This accepts Let's Encrypt's subscriber agreement.
 7. Verify trusted HTTPS and hostname matching on all four names externally,
    login/logout, denied anonymous file access, a large upload/download, and a
-   complete speed test. The apex maintenance HTTP 503 is expected until a
-   homepage is chosen. Rejecting an unknown hostname is intentional.
+   complete speed test. The HTTPS apex should show Homepage password login;
+   confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
 
 HTTP-01 needs public TCP 80, including for renewals; it cannot issue wildcard
 certificates. Certbot uses host webroot `/var/lib/ohara/acme`, lineage
@@ -134,7 +134,7 @@ external credentials automatically.
 ## Backups, upgrades, and recovery
 
 Back up `.env`, `local/`, Copyparty files and state, Pi-hole data, Seerr config/
-SQLite database, managed Nginx config, and `/etc/letsencrypt` (including renewal
+SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
 config and deploy hook). Encrypt backups and keep an off-host copy; credentials
 and certificate private keys are sensitive. Stop database writers for consistent
 filesystem backups or follow each service's supported backup/export procedure.
@@ -165,7 +165,7 @@ architecture availability is not the same as tested performance on your hardware
 
 ## Immich follow-up
 
-Confirm host placement, hardware, storage capacity, backup location and photo
+See [immich-next.md](immich-next.md) for the scope and pending choices. Confirm host placement, hardware, storage capacity, backup location and photo
 hostname first. Use the official release-matched Compose deployment, including
 its required database/cache services; keep PostgreSQL on suitable local storage.
 Do not share its database or expose its photo directory through Copyparty by
@@ -192,3 +192,33 @@ names while existing HTTPS stays active; issuance failure restores the prior
 config. The certificate retains prior names for rollback safety, so keep their
 DNS/challenge paths working during the transition. Retiring old certificate names
 entirely requires a separately planned cutover rather than automatic removal.
+
+## Homepage
+
+Homepage serves the HTTPS apex. Setup writes a unique password and cookie-signing
+secret to `local/homepage.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
+After activation, sign in at `https://xdadwal.in` with that password. Authentication
+cookies are secure; use the configured HTTPS hostname for login, not a raw IP or
+an HTTP tunnel. Local health is `http://127.0.0.1:3002/api/healthcheck`.
+
+Nginx limits password callback attempts to five per minute per client IP, with a
+burst of five. Homepage's allowed host is the configured apex. It runs without
+root privileges, without Docker socket access, and without service API keys.
+Links do not grant access to the applications: each service retains its own login.
+Pi-hole administration is intentionally absent from the publicly served dashboard.
+
+Edit `${DATA_ROOT}/homepage/*.yaml` to customize links, settings, and widgets.
+Setup seeds files from `configs/homepage` only when absent and preserves edits;
+restart Homepage after changes using `scripts/up`. Service hostnames are supplied
+through environment variables, so changing `.env` does not require rewriting
+links. Setup does not overwrite an existing authentication file or silently rotate
+passwords. Keep it with your encrypted backups. Removing it creates a new password
+and invalidates old sessions on the next setup/restart.
+
+After updating an existing checkout to include Homepage, rerun setup before up.
+That creates its configuration directory and private auth file without changing
+existing service credentials. Rerun explicit HTTPS activation to replace an older
+apex maintenance route. The HTTP bootstrap remains maintenance-only until then.
+
+Upstream: https://gethomepage.dev/installation/ and
+https://gethomepage.dev/installation/docker/.

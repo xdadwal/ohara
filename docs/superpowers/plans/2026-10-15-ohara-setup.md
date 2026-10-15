@@ -15,8 +15,8 @@
 - Domain: `xdadwal.in`; timezone: `Asia/Kolkata`.
 - Keep Pi-hole, Copyparty, OpenSpeedTest; add Nginx and the current successor to Jellyseerr, proposed as Seerr.
 - Remove Jellyfin, Radarr, Prowlarr, qBittorrent, Uptime Kuma, Tailscale, Chesskit, standalone Redis, and Homer from the active configuration.
-- Homepage remains unselected. The apex returns a plain maintenance response, not an invented homepage.
-- Immich is planned separately for the new photo server; do not start it on this host or add an unreachable proxy route. Confirm placement before implementing its separate deployment.
+- Homepage (gethomepage/homepage) serves the HTTPS apex with password login. HTTP bootstrap remains maintenance-only before activation.
+- Immich will share the Ohara machine in an independent Compose project; do not deploy it until hardware, storage and backup details are confirmed.
 - Initial bootstrap support: Ubuntu 24.04 LTS and Debian 13, amd64/arm64, systemd. Additional distributions/releases require explicit testing and documented support.
 - Do not change host network interfaces, router settings, SSH policy, existing resolver settings, or unrelated Nginx sites automatically.
 - No destructive data cleanup, volume deletion, recursive ownership changes across existing storage, or Git history rewriting.
@@ -38,13 +38,13 @@ Copyparty requires service-specific upload and client-IP handling, with authenti
 
 | Endpoint | Destination | Access |
 |---|---|---|
-| `xdadwal.in` | Nginx maintenance response | Public HTTPS once activated |
+| `xdadwal.in` | Homepage, `127.0.0.1:3002` | HTTPS with password login once activated |
 | `requests.xdadwal.in` | Seerr, `127.0.0.1:5055` | Public after owner setup |
 | `files.xdadwal.in` | Copyparty, `127.0.0.1:3923` | Public with application login |
 | `speed.xdadwal.in` | OpenSpeedTest, `127.0.0.1:3000` | Public after explicit activation |
 | LAN DNS | Pi-hole, `${LAN_IP}:53` TCP/UDP | LAN only; never router-forwarded |
 | Pi-hole administration | `127.0.0.1:8888`, via SSH forwarding | Private; no public hostname route |
-| Photos | Future Immich host | Separate deployment decision |
+| Photos | Future Immich project on this host | Storage/backup details pending |
 
 Hostnames above are proposed defaults, configurable before activation. Public DNS is managed at the domain's DNS provider; Pi-hole supplies local resolution. Router forwarding covers TCP 80/443 only. Check CGNAT/double NAT and ISP port restrictions before promising reachability. IPv6 exposure requires its own firewall/reachability check; do not publish AAAA records until that path is verified. A changing public IP requires a separate provider-specific DDNS decision.
 
@@ -96,7 +96,7 @@ Commands resolve paths from the repository location, work from any current direc
 - [ ] Define parsing as literal `KEY=value`, with comments/blank lines allowed. Reject duplicate/unknown keys, invalid hostnames/IPs, newline injection, and unsafe paths. Never `source` user configuration or interpolate it into shell commands.
 - [ ] Add focused tests using `python3 -m unittest discover -s tests -v`. Include malicious values containing command substitution, changed config preservation, and secret-free failure messages. Check a temporary sentinel file is never created by malicious input.
 - [ ] Add ignored paths for `.env`, `local/`, rendered configuration, logs, and `.DS_Store`; remove tracked credential-bearing examples in Task 5 without displaying their contents.
-- [ ] Record proposed subdomains, unsupported external integrations, pending homepage, and separate Immich scope in `docs/decisions.md`.
+- [ ] Record proposed subdomains, unsupported external integrations, selected homepage, and separate Immich project scope in `docs/decisions.md`.
 - [ ] Commit the configuration and agent-documentation deliverable.
 
 ## Task 2: Replace the fragmented application stack
@@ -177,4 +177,15 @@ Sources: [recommended Compose installation](https://docs.immich.app/install/dock
 
 ## Completion criteria
 
-An unfamiliar agent can identify the desired services, configure a fresh supported host, run non-mutating checks, start the local stack, and explain the separate public-activation steps using repository documentation alone. Repeated setup preserves user configuration/data. No removed services are deployed. Backend web ports and DNS administration are not public. HTTPS renewal is verified when a real deployment environment exists. Homepage and external media integrations are accurately described as unconfigured, not silently assumed complete.
+An unfamiliar agent can identify the desired services, configure a fresh supported host, run non-mutating checks, start the local stack, and explain the separate public-activation steps using repository documentation alone. Repeated setup preserves user configuration/data. No removed services are deployed. Backend web ports and DNS administration are not public. HTTPS renewal is verified when a real deployment environment exists. Homepage authentication is verified; external media integrations remain unconfigured unless tested.
+
+## Approved scope update: 2026-10-15
+
+The user selected gethomepage/homepage after the initial implementation. Add its
+pinned container on loopback port 3002, seed operator-editable YAML configuration,
+and route the HTTPS apex to it. Enable password authentication with private
+generated credentials and rate-limit login attempts in Nginx. Do not mount the
+Docker socket or configure API-key widgets. Preserve all existing configuration.
+The user confirmed Immich will share this machine. The earlier separate-host
+treatment was an assumption. Confirm hardware capacity, storage and backups
+before implementing its own Compose project.

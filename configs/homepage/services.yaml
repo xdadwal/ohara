@@ -1,0 +1,14 @@
+- Media:
+    - Seerr:
+        icon: jellyseerr.png
+        href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
+        description: Discover and request movies and shows
+- Tools:
+    - Copyparty:
+        icon: copyparty.png
+        href: "https://{{HOMEPAGE_VAR_FILES_HOST}}"
+        description: Browse and share files
+    - OpenSpeedTest:
+        icon: openspeedtest.png
+        href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
+        description: Test your connection to Ohara

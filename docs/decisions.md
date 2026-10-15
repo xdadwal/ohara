@@ -9,9 +9,14 @@
 - Keep Pi-hole, Copyparty, and OpenSpeedTest. Remove the previous media download
   stack, monitoring, Tailscale, Chesskit, Homer, and standalone Redis definitions.
 - Proposed names: requests.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
-  Configure in .env before issuance. Apex remains a maintenance response.
-- Homepage selection is open. Immich is a separate follow-up: confirm which
-  machine, storage, backup destination, and hostname before deploying it.
+  Configure in .env before issuance. The HTTPS apex runs Homepage with password
+  authentication and a proxy rate limit on password attempts.
+- Homepage was selected on 2026-10-15: gethomepage/homepage v2.5.0, pinned by
+  digest, non-root, loopback port 3002. Start with service links, no Docker socket
+  or API keys. Seed config only when absent and preserve operator edits.
+- Immich will run on the same machine, as confirmed by the user, in a separate
+  Compose project. Storage, hardware capacity, backup destination and hostname
+  remain to be configured. See immich-next.md.
 - Seerr requires media-server setup; automatic fulfillment also needs external
   Radarr/Sonarr. None are supplied here; do not report fulfillment as ready.
 - Bootstrap targets Ubuntu 24.04 and Debian 13, amd64/arm64 with systemd.
