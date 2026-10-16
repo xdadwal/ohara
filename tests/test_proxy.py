@@ -15,12 +15,25 @@ class ProxyTests(unittest.TestCase):
         c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
         rendered = proxy.render(c, ROOT, https=True, acme_names={'files.xdadwal.in'})
         deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
-        # New music route/log protection intentionally extend the deployed baseline.
+        # DNS-mode migration appends protected music routes while preserving the
+        # existing shared HTTP block and other server ordering.
         self.assertIn('listen [::]:443 ssl;', proxy.navidrome_config(c, ROOT))
         self.assertIn('access_log off;\n    error_log /dev/null;', rendered)
         rendered = rendered.replace('\n'+proxy.navidrome_config(c, ROOT), '')
         rendered = rendered.replace(c['NAVIDROME_HOST']+' ', '')
         rendered = rendered.replace('    access_log off;\n    error_log /dev/null;\n', '')
+        blocks = re.findall(r'(?ms)^server \{\n.*?^\}\n?', deployed)
+        music = [block for block in blocks if 'server_name '+c['NAVIDROME_HOST']+';' in block]
+        self.assertEqual(len(music), 2)
+        for block in music:
+            self.assertIn('access_log off;', block)
+            self.assertIn('error_log /dev/null;', block)
+            if 'listen 443 ssl;' in block:
+                expected = proxy.navidrome_config(c, ROOT)
+                self.assertEqual(block.replace('/live/ohara-wildcard/', '/live/ohara/').split(), expected.split())
+            else:
+                self.assertIn('return 301 https://$host$request_uri;', block)
+            deployed = deployed.replace(block, '')
         def normalize(text):
             # Localhost uses certificates that fresh hosts do not yet have.
             # Ignore only these two explicit host-specific blocks and harmless

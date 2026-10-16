@@ -1,13 +1,14 @@
 # Stable xdadwal.in Nginx baseline
 
-These non-secret reference files originate from `/etc/nginx/conf.d/` on the
-xdadwal.in server, captured on 2026-10-16 at the owner's request. The tracked
-Jellyfin hostname has since been updated to `tv.xdadwal.in`; this does not
-mean the live server or public DNS has been changed. They contain
+These non-secret files match `/etc/nginx/conf.d/` on the xdadwal.in server after
+the authorized music/subtitles deployment on 2026-10-17. The Jellyfin hostname
+cutover to `tv.xdadwal.in` and Navidrome activation have been applied. They contain
 public routes and certificate paths, never private keys or application credentials.
 
 - `ohara.conf`: wildcard HTTPS, portfolio apex, Homepage at ohara.xdadwal.in,
-  Seerr/Jellyfin/OpenSpeedTest, IPv4/IPv6, localhost redirects and local TLS.
+  Seerr/Jellyfin/OpenSpeedTest/Navidrome, IPv4/IPv6, localhost redirects and local TLS.
+  Jellyfin is at tv.xdadwal.in; Navidrome is at music.xdadwal.in. The dedicated
+  music HTTP redirect and HTTPS route suppress URL-bearing access/error logs.
 - `ohara-public-ip-test.conf`: HTTP-only reachability probe for 45.120.160.21.
   It returns a fixed message and exposes no application data.
 
