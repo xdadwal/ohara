@@ -3,14 +3,73 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import copy
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
 import credential_fixtures
+import media
 
 class MediaTests(unittest.TestCase):
+    def test_storage_policy_preserves_torrents_and_custom_settings_on_rerun(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            credential_fixtures.write(root)
+            preferences = {'auto_tmm_enabled': False, 'unrelated': 'preserved'}
+            categories = {'movies': {'savePath': '/data/downloads/complete/movies'}}
+            settings = {'radarr': {'copyUsingHardlinks': False, 'recycleBin': '', 'custom': 42},
+                        'sonarr': {'copyUsingHardlinks': True, 'recycleBin': '/data/custom-bin',
+                                   'recycleBinCleanupDays': 30}}
+            calls = []
+            cleanup = {'radarr': True, 'sonarr': True}
+            class Client:
+                def __init__(self, url, key=None):
+                    self.headers = {}
+                    self.name = next(n for n, p in [('radarr','7878'), ('sonarr','8989'), ('qbittorrent','8081')] if p in url)
+                def call(self, path, body=None, method=None, form=False):
+                    calls.append(path)
+                    if path.endswith('/preferences'): return copy.deepcopy(preferences)
+                    if path.endswith('/setPreferences'):
+                        # A zero seed limit must never be enabled while Arr can
+                        # delete a completed torrent and its original files.
+                        if any(cleanup.values()):
+                            raise AssertionError('Cleanup must be disabled before seeding limits')
+                        preferences.update(json.loads(body['json']))
+                    if path.endswith('/categories'): return copy.deepcopy(categories)
+                    if path == '/api/v3/downloadclient':
+                        return [{'id':1, 'name':'Ohara qBittorrent', 'removeCompletedDownloads':cleanup[self.name]}]
+                    if path == '/api/v3/downloadclient/1': cleanup[self.name] = body['removeCompletedDownloads']
+                    if path.endswith('/createCategory'): categories[body['category']] = {'savePath': body['savePath']}
+                    if path.endswith('/mediamanagement'):
+                        if body is not None: settings[self.name] = copy.deepcopy(body)
+                        return copy.deepcopy(settings[self.name])
+            with patch.object(media, 'Client', Client):
+                media.configure_storage(root)
+                media.configure_storage(root)
+            self.assertTrue(preferences['auto_tmm_enabled'])
+            self.assertTrue(preferences['max_ratio_enabled'])
+            self.assertEqual(preferences['max_ratio'], 0)
+            self.assertEqual(preferences['max_ratio_act'], 0)
+            self.assertTrue(preferences['max_seeding_time_enabled'])
+            self.assertEqual(preferences['max_seeding_time'], 0)
+            self.assertEqual(preferences['unrelated'], 'preserved')
+            self.assertEqual(settings['radarr']['recycleBin'], '/data/recycle-bin/movies')
+            self.assertEqual(settings['radarr']['recycleBinCleanupDays'], 7)
+            self.assertEqual(settings['radarr']['custom'], 42)
+            self.assertTrue(settings['radarr']['copyUsingHardlinks'])
+            self.assertEqual(settings['sonarr']['recycleBin'], '/data/custom-bin')
+            self.assertEqual(settings['sonarr']['recycleBinCleanupDays'], 30)
+            self.assertEqual(calls.count('/api/v2/app/setPreferences'), 1)
+            self.assertEqual(calls.count('/api/v2/torrents/createCategory'), 1)
+            self.assertFalse(any('/torrents/set' in p for p in calls))
+            categories['movies']['savePath'] = '/data/custom-downloads'
+            with patch.object(media, 'Client', Client), self.assertRaisesRegex(ValueError, 'review relocation'):
+                media.configure_storage(root)
+
     def test_old_configuration_has_media_defaults(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / '.env'
@@ -30,11 +89,13 @@ class MediaTests(unittest.TestCase):
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            credentials = root/'local/media-credentials'
+            credentials = root/'.env'
             before = credentials.read_bytes()
             self.assertEqual(credentials.stat().st_mode & 0o777, 0o600)
             self.assertTrue((root/'media/library/movies').is_dir())
             self.assertTrue((root/'media/library/tv').is_dir())
+            self.assertTrue((root/'media/recycle-bin/movies').is_dir())
+            self.assertTrue((root/'media/recycle-bin/tv').is_dir())
             arr = root/'data/radarr/config.xml'
             arr.write_text(arr.read_text() + '\n<!-- operator edit -->\n')
             edited = arr.read_bytes()

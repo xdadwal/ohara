@@ -6,7 +6,7 @@ from media import Client
 
 
 def apply(root, *, urls=None):
-    values = credentials.read(root / 'local/media-credentials', credentials.MEDIA_KEYS)
+    _, values = credentials.load(root)
     profile = json.loads((root / 'configs/media/ohara.json').read_text())
     if (set(profile) != {'indexers', 'rename'} or profile['rename'] is not True
             or not isinstance(profile['indexers'], list)

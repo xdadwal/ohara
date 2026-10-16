@@ -62,13 +62,13 @@ class ReplicationTests(unittest.TestCase):
                         if body is not None: naming[self.name] = copy.deepcopy(body)
                         return copy.deepcopy(naming[self.name])
                     return {}
-            before = (root / 'local/media-credentials').read_bytes()
+            before = (root / '.env').read_bytes()
             with patch.object(media_profile, 'Client', Client):
                 media_profile.apply(root)
                 media_profile.apply(root)
             self.assertEqual(len(indexers), 3)
             self.assertFalse(indexers[0]['enable'])
-            self.assertEqual((root / 'local/media-credentials').read_bytes(), before)
+            self.assertEqual((root / '.env').read_bytes(), before)
             for name, row in naming.items():
                 self.assertEqual(row['format'], 'operator-custom-format')
                 self.assertTrue(row['renameMovies' if name == 'radarr' else 'renameEpisodes'])

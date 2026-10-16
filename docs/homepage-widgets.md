@@ -7,14 +7,14 @@ Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 ## Connect media widgets
 
 Complete media setup first, then copy the actual application-issued keys into
-local/homepage.env using a private editor. Keep mode 0600; never send keys in chat,
+.env using a private editor. Keep mode 0600; never send keys in chat,
 commit them, invent replacements, or use the Jellyfin account password as an API key.
 
 - Jellyfin: Dashboard > Advanced > API Keys. Add
   HOMEPAGE_VAR_JELLYFIN_API_KEY with the application's key.
 - Seerr: Settings > General > API Key. Add HOMEPAGE_VAR_SEERR_API_KEY with that key.
 
-The commented entries in configs/credentials/homepage.env.example show the names.
+The commented entries in .env.example show the names.
 They are optional during bootstrap because the applications must be initialized
 first. Missing keys leave the corresponding widgets disconnected; links and
 Homepage login still work. After adding keys, run scripts/check and scripts/up

@@ -42,7 +42,7 @@ class ConfigurationTests(unittest.TestCase):
         base = (ROOT / '.env.example').read_text()
         for replacement in ['speed.xdadwal.in', 'other.example.com']:
             with self.assertRaises(ValueError):
-                self.load(base.replace('watch.xdadwal.in', replacement))
+                self.load(base.replace('seerr.xdadwal.in', replacement))
 
     def test_exclusive_write_preserves_existing_file(self):
         with tempfile.TemporaryDirectory() as directory:

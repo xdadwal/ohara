@@ -7,7 +7,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | Component | Role | Configured access |
 |---|---|---|
 | Homepage | Password-protected dashboard | HOMEPAGE_HOST (default xdadwal.in); loopback 3002 |
-| Seerr | Discover/request movies and series | https://watch.xdadwal.in; loopback 5055 |
+| Seerr | Discover/request movies and series | https://seerr.xdadwal.in; loopback 5055 |
 | Jellyfin | Media libraries and playback | https://jellyfin.xdadwal.in; loopback 8096 |
 | OpenSpeedTest | On-demand browser speed test, linked from Homepage | https://speed.xdadwal.in; loopback 3000 |
 | Radarr | Movie acquisition/import | Private loopback 7878 |
@@ -23,7 +23,7 @@ process from its own repository, not a ninth Compose application. See replicatio
 
 Only router TCP 80/443 is forwarded to Ohara. Application ports remain loopback-only;
 private administration uses SSH forwarding. There is no shared authentication service.
-Credentials come from user-created local/homepage.env and local/media-credentials.
+Credentials come from user-created .env.
 See credentials.md for empty templates and validation. Homepage includes native
 Jellyfin/Seerr widgets, clock, Open-Meteo weather and container/storage resources;
 media widgets need the actual application API keys supplied privately. See

@@ -8,8 +8,7 @@ import credentials
 def write(root):
     local = root/'local'
     local.mkdir(mode=0o700, exist_ok=True)
-    files = [('homepage.env', credentials.HOMEPAGE_KEYS),
-             ('media-credentials', credentials.MEDIA_KEYS)]
+    files = [('.env', credentials.HOMEPAGE_KEYS | credentials.MEDIA_KEYS)]
     for name, keys in files:
         text = ''
         for index, key in enumerate(sorted(keys)):
@@ -17,6 +16,7 @@ def write(root):
                      f'{index+1:032x}' if key.endswith('_API_KEY') else
                      'Disposable test only '+key+' $ # = !')
             text += key+'='+value+'\n'
-        path = local/name
-        path.write_text(text)
+        path = root/name
+        existing = path.read_text() if path.exists() else ''
+        path.write_text(existing + '\n' + text)
         path.chmod(0o600)

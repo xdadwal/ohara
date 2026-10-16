@@ -17,7 +17,7 @@ media settings on another machine, or to migrate private state safely.
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
-| Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
+| Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
@@ -41,7 +41,7 @@ cd ohara
 sudo ./scripts/setup
 # First run creates .env and stops. Edit paths, IDs, domain/email.
 # Use an editor; .env is literal KEY=value, not a shell script.
-# Create/fill the two private files described in docs/credentials.md first.
+# Create/fill the private .env file described in docs/credentials.md first.
 sudo ./scripts/setup --dry-run
 sudo ./scripts/setup --non-interactive
 ./scripts/check
@@ -51,10 +51,12 @@ sudo ./scripts/setup --non-interactive
 
 If Docker requires elevated access, the commands try `sudo -n docker`; refresh
 sudo authentication with `sudo -v` first. Users are not added to the Docker group.
-Credentials must be supplied in user-created `local/homepage.env` and
-`local/media-credentials`. Setup never generates or
+Credentials must be supplied in user-created `.env`. Setup never generates or
 replaces these values. Follow [credential setup](docs/credentials.md) to copy
 empty templates, fill them privately, and set permissions before rerunning setup.
+For an existing deployment using split credential files, run
+`scripts/migrate-credentials` before check/up. It preserves values and archives the
+old files privately; see [migration instructions](docs/credentials.md#migrate-the-old-files).
 
 Run `scripts/media-setup --owner-email YOUR_REAL_EMAIL` to initialize media accounts
 and connections, then add indexers through private administration ([instructions](docs/media.md)).

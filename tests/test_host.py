@@ -26,7 +26,7 @@ class HostTests(unittest.TestCase):
                      RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            files = [root / 'local/homepage.env', root / 'local/media-credentials']
+            files = [root / '.env']
             before = [p.read_bytes() for p in files]
             mode = files[0].stat().st_mode
             host.prepare_storage(c, root)
@@ -79,7 +79,7 @@ class StorageSafetyTests(unittest.TestCase):
             (root / 'local').mkdir()
             target = root / 'target'
             target.write_text('private-value')
-            (root / 'local/homepage.env').symlink_to(target)
+            (root / '.env').symlink_to(target)
             c = config.load(ROOT / '.env.example')
             c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
             with self.assertRaisesRegex(ValueError, 'Symlink private'):

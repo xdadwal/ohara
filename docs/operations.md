@@ -22,8 +22,7 @@ Mount disks before setup. DATA_ROOT holds application state; MEDIA_ROOT holds
 media downloads and libraries. Setup creates new application directories but
 never recursively changes existing ownership. Seerr needs UID 1000 write access;
 other media services and Homepage need RUN_UID/RUN_GID access. Review existing
-permissions manually. User credential inputs live in local/homepage.env and
-local/media-credentials. Keep secrets, .env, backups and private diagnostics out of Git.
+permissions manually. User credential inputs live in .env. Keep secrets, .env, backups and private diagnostics out of Git.
 
 Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation it
 disables only the package default site just installed by that invocation. If an
@@ -65,6 +64,12 @@ Portfolio code/CSS updates and service restart instructions are in the portfolio
 checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
+The exact stable host configuration, including localhost redirects and the
+public-IP probe, is tracked under [configs/nginx/deployed](../configs/nginx/deployed/README.md).
+These are reviewed host-specific baselines; generic setup does not automatically
+install their local-certificate or static-IP assumptions. Reusable templates match
+the shared IPv6 and Jellyfin settings. Compare both deployed files after a change
+and update the baseline deliberately; rerunning setup preserves existing HTTPS.
 
 1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin names to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
@@ -243,9 +248,9 @@ external credentials automatically.
 ## Backups, upgrades, and recovery
 
 Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
-`local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
+`.env` and `local/media-state.json` (see [media.md](media.md)).
 Back up `.env`, `local/`, Seerr config/
-SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
+SQLite database, Homepage configuration, managed Nginx config, and `/etc/letsencrypt` (including renewal
 config and deploy hook). Encrypt backups and keep an off-host copy; credentials
 and certificate private keys are sensitive. Stop database writers for consistent
 filesystem backups or follow each service's supported backup/export procedure.
@@ -304,7 +309,7 @@ entirely requires a separately planned cutover rather than automatic removal.
 ## Homepage
 
 Homepage serves the HTTPS apex. Supply its password and cookie-signing secret
-in user-created `local/homepage.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
+in user-created `.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
 See [credentials.md](credentials.md) for empty templates and validation.
 After activation, sign in at `https://<HOMEPAGE_HOST>` with that password. Authentication
 cookies are secure; use the configured HTTPS hostname for login, not a raw IP or
