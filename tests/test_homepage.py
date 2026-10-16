@@ -91,6 +91,9 @@ class ConfiguredPasswordTests(unittest.TestCase):
             p.write_text(re.sub(r'^HOMEPAGE_AUTH_PASSWORD=.*$',
                                 'HOMEPAGE_AUTH_PASSWORD=chosen-password-123', p.read_text(), flags=re.M))
             before = p.read_bytes()
+            # Seerr always runs as UID 1000, which can differ from the CI runner.
+            # This disposable fixture is not a production ownership test.
+            (root/'data/seerr').chmod(0o777)
             runtime.check(c, root)
             self.assertEqual(p.read_bytes(), before)
 
