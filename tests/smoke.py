@@ -177,6 +177,13 @@ def main():
             assert session, 'Homepage session cookie missing'
             code, body = tls_request(c['DOMAIN'], '/api/services', hdr={'Cookie':session})
             assert code == 200 and b'Seerr' in body and b'Jellyfin' in body, 'Homepage authenticated service list failed'
+            speed_service = next(service for group in json.loads(body) for service in group['services']
+                                 if service['name'] == 'OpenSpeedTest')
+            speed_widget = speed_service['widgets'][0]
+            assert speed_widget['type'] == 'iframe', 'Speed test iframe missing from authenticated dashboard'
+            assert speed_widget['src'] == 'https://'+c['SPEED_HOST']+'/', 'Speed test must use the browser-reachable HTTPS hostname'
+            assert speed_widget['loadingStrategy'] == 'lazy', 'Speed test iframe should load lazily'
+            assert not speed_widget.get('refreshInterval'), 'Do not reload or interrupt a running speed test'
             rejected = urllib.parse.urlencode({'csrfToken':csrf, 'password':'not-the-password',
                                                 'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
             attempts = [tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', rejected,
@@ -186,11 +193,14 @@ def main():
             assert request(http_port, c['REQUESTS_HOST'])[0] == 301
             assert tls_request(c['JELLYFIN_HOST'], '/System/Info/Public')[0] == 200
             assert tls_request(c['REQUESTS_HOST'], '/api/v1/settings/public')[0] == 200
-            assert tls_request(c['SPEED_HOST'])[0] == 200
+            speed_code, speed_body, speed_headers = tls_request(c['SPEED_HOST'], full=True)
+            assert speed_code == 200 and b'OpenSpeedTest' in speed_body
+            frame_options = dict((k.lower(),v) for k,v in speed_headers).get('x-frame-options','').upper()
+            assert frame_options not in ('DENY','SAMEORIGIN'), 'Speed test response blocks dashboard embedding'
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session and OpenSpeedTest iframe configuration, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

@@ -143,3 +143,20 @@ GoDaddy public DNS, deployed container shutdown, old certificate retirement/rene
 operator-edited Homepage config and production access remain deployment checks.
 No live share data, credentials, containers or public DNS records were changed.
 See stack.md for current applications and the pending Immich follow-up.
+
+## Homepage OpenSpeedTest widget (2026-10-16)
+
+The existing OpenSpeedTest card now embeds its configured HTTPS hostname using
+Homepage v2.5.0's supported iframe widget. It loads lazily with no autostart query
+or refresh timer and keeps the full-page header link. No new service or credentials.
+The pinned Homepage image includes the configured h-96 height utility; the pinned
+OpenSpeedTest response does not deny cross-origin framing.
+
+48 unit tests and static checks pass. The expanded eight-service arm64 smoke
+passes, including authenticated Homepage API delivery of the iframe type, resolved
+HTTPS source, lazy loading and no refresh interval, plus speed endpoint frame-header
+checks and an actual 35 MiB proxy upload. Independent review found no blocking issues.
+No browser session was available: rendered layout at desktop/mobile widths, clicking
+Start and completing an in-frame measurement remain manual browser acceptance.
+Existing edited dashboards require merging the documented widget block; setup
+preserves those operator edits. No live deployment was changed.
