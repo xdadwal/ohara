@@ -8,16 +8,19 @@ docs/superpowers/plans/.
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
   the separate portfolio service serves the apex; no Docker socket. Media widgets
-  read application-issued API keys supplied in local/homepage.env. See docs/homepage-widgets.md.
+  read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
   Immich will share this machine in its own Compose project; deployment is pending
   storage/hardware/backup details. See docs/immich-next.md.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
-- Use independent per-service credentials; a shared authentication service is
-  explicitly deferred. Read user-created credential files as documented in
+- Use independent per-service credentials in the single private `.env`; a shared
+  authentication service is explicitly deferred. Read `.env` as documented in
   docs/credentials.md. Never invent or generate passwords, API keys or session
   secrets. If files/values are missing, ask the user to fill the private files;
   never request values in chat. Preserve inputs and keep values out of logs/Git.
+  Migrate legacy split files with `scripts/migrate-credentials` before setup/up;
+  never source `.env` or pass the whole file to containers. Media setup preserves
+  account state; changing input values alone does not rotate existing passwords.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.
@@ -32,13 +35,15 @@ docs/superpowers/plans/.
 - For media setup, confirm the real owner email and mounted media storage; run
   scripts/media-setup after local startup. Ask for chosen indexers and required
   external account/API credentials; never invent them. Credentials are in
-  local/media-credentials; preserve the setup journal. Verify permitted movie/TV
+  .env; preserve the setup journal. Verify permitted movie/TV
   acquisition, import, playback and availability sync before declaring it ready.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
   A completed command or cached Available label is not evidence of a present file:
   verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
   Preserve source torrents; never redownload or delete library files to fix metadata.
+  Disable managed Arr completed-download cleanup before applying qBittorrent
+  seeding limits, because reaching a limit can immediately trigger source deletion.
 - Use `scripts/media-setup --quality-only` for the bounded HD-1080p policy on
   existing accounts. Size definitions affect all profiles; preserve existing
   files and do not search/redownload to enforce future acquisition preferences.

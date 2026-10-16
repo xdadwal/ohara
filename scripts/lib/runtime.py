@@ -38,11 +38,23 @@ def docker_prefix():
 def compose(c, root, args, *, capture=False, timeout=60, docker=None):
     # Do not let ambient COMPOSE_* variables or shell interpolation override config.
     env = {k: v for k, v in os.environ.items()
-           if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES}
+           if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES | credential_files.ALL_KEYS}
     env.update(c)
+    # Never give Compose the unified dotenv: it would parse/interpolate secrets.
+    # Static rendering deliberately uses empty placeholders. Real operations pass
+    # only Homepage's allowlisted values through the subprocess environment.
+    if 'config' not in args:
+        homepage, _ = credential_files.load(root)
+        env.update(homepage)
     env.update(config.images(root / 'versions.env'))
     env['COMPOSE_DISABLE_ENV_FILE'] = '1'
-    command = (docker if docker is not None else docker_prefix()) + [
+    prefix = docker if docker is not None else docker_prefix()
+    if prefix[:2] == ['sudo', '-n']:
+        # sudo normally drops the validated interpolation environment. Preserve
+        # names only (never values in argv), including only Homepage credentials.
+        allowed = config.KEYS | config.IMAGES | credential_files.HOMEPAGE_KEYS | credential_files.WIDGET_KEYS | {'COMPOSE_DISABLE_ENV_FILE'}
+        prefix = prefix[:2]+['--preserve-env='+','.join(sorted(allowed))]+prefix[2:]
+    command = prefix + [
         'compose', '--project-directory', str(root), '--env-file', '/dev/null',
         '-f', str(root / 'compose.yaml')] + args
     return run(command, capture=capture, timeout=timeout, env=env)
@@ -85,7 +97,7 @@ def check(c, root, *, static=False):
     validate_model(model, c)
     if not static:
         credential_files.load(root)
-        for path in [root / 'local/homepage.env', root / 'local/media-credentials'] + [
+        for path in [root / '.env'] + [
                 Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','prowlarr')
                 ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf']:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):

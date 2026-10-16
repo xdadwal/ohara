@@ -25,6 +25,7 @@ class MediaTests(unittest.TestCase):
                         'sonarr': {'copyUsingHardlinks': True, 'recycleBin': '/data/custom-bin',
                                    'recycleBinCleanupDays': 30}}
             calls = []
+            cleanup = {'radarr': True, 'sonarr': True}
             class Client:
                 def __init__(self, url, key=None):
                     self.headers = {}
@@ -32,9 +33,16 @@ class MediaTests(unittest.TestCase):
                 def call(self, path, body=None, method=None, form=False):
                     calls.append(path)
                     if path.endswith('/preferences'): return copy.deepcopy(preferences)
-                    if path.endswith('/setPreferences'): preferences.update(json.loads(body['json']))
+                    if path.endswith('/setPreferences'):
+                        # A zero seed limit must never be enabled while Arr can
+                        # delete a completed torrent and its original files.
+                        if any(cleanup.values()):
+                            raise AssertionError('Cleanup must be disabled before seeding limits')
+                        preferences.update(json.loads(body['json']))
                     if path.endswith('/categories'): return copy.deepcopy(categories)
-                    if path == '/api/v3/downloadclient': return []
+                    if path == '/api/v3/downloadclient':
+                        return [{'id':1, 'name':'Ohara qBittorrent', 'removeCompletedDownloads':cleanup[self.name]}]
+                    if path == '/api/v3/downloadclient/1': cleanup[self.name] = body['removeCompletedDownloads']
                     if path.endswith('/createCategory'): categories[body['category']] = {'savePath': body['savePath']}
                     if path.endswith('/mediamanagement'):
                         if body is not None: settings[self.name] = copy.deepcopy(body)
@@ -81,7 +89,7 @@ class MediaTests(unittest.TestCase):
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            credentials = root/'local/media-credentials'
+            credentials = root/'.env'
             before = credentials.read_bytes()
             self.assertEqual(credentials.stat().st_mode & 0o777, 0o600)
             self.assertTrue((root/'media/library/movies').is_dir())

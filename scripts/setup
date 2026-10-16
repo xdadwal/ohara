@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 case "${1:-}" in
   --help|-h)
     echo 'Usage: sudo scripts/setup [--dry-run] [--non-interactive]'
-    echo 'Requires user-created credential files; see docs/credentials.md.'
+    echo 'Requires private .env configuration and credentials; see docs/credentials.md.'
     echo 'First run copies .env.example without overwriting .env, then stops for editing.'
     echo 'Ubuntu 24.04 / Debian 13, systemd, amd64/arm64. Does not start applications.'
     exit 0 ;;
@@ -22,16 +22,14 @@ if [[ ! -e "$ROOT_DIR/.env" ]]; then
   if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" ]]; then
     chown "$SUDO_UID:$SUDO_GID" "$ROOT_DIR/.env"
   fi
-  echo 'Created .env. Edit storage paths, IDs, domain and email, then rerun setup.'
+  echo 'Created .env. Fill storage paths, IDs, domain, email and credential entries, then rerun setup.'
   exit 1
 fi
-# Require user-created input files before installing even the Python dependency.
-for name in homepage.env media-credentials; do
-  if [[ ! -f "$ROOT_DIR/local/$name" || -L "$ROOT_DIR/local/$name" || -L "$ROOT_DIR/local" ]]; then
-    echo "Missing/invalid user-created local/$name; follow docs/credentials.md." >&2
-    exit 1
-  fi
-done
+# Require the private input before installing even the Python dependency.
+if [[ ! -f "$ROOT_DIR/.env" || -L "$ROOT_DIR/.env" ]]; then
+  echo 'Missing/invalid user-created .env; follow docs/credentials.md.' >&2
+  exit 1
+fi
 # Bootstrap Python itself when absent; never execute the operator's dotenv file.
 if ! command -v python3 >/dev/null 2>&1; then
   if [[ " $* " == *' --dry-run '* ]]; then

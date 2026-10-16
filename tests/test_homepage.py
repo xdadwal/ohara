@@ -23,7 +23,7 @@ class HomepageTests(unittest.TestCase):
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
             settings = root/'data/homepage/settings.yaml'
-            secrets = root/'local/homepage.env'
+            secrets = root/'.env'
             self.assertTrue(settings.is_file())
             text = secrets.read_text()
             self.assertIn('HOMEPAGE_AUTH_ENABLED=true', text)
@@ -52,14 +52,15 @@ class HomepageRecoveryTests(unittest.TestCase):
             root = Path(directory).resolve()
             shutil.copytree(ROOT/'configs', root/'configs')
             credential_fixtures.write(root)
-            (root/'local/media-credentials').write_text('malformed\n')
+            with (root/'.env').open('a') as stream:
+                stream.write('malformed\n')
             c = config.load(ROOT/'.env.example')
             c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
-            before = (root/'local/homepage.env').read_bytes()
+            before = (root/'.env').read_bytes()
             with self.assertRaises(ValueError):
                 host.prepare_storage(c, root)
             self.assertFalse((root/'data').exists())
-            self.assertEqual((root/'local/homepage.env').read_bytes(), before)
+            self.assertEqual((root/'.env').read_bytes(), before)
 
 class HomepageExposureTests(unittest.TestCase):
     def test_model_rejects_disabled_login_or_wildcard_host(self):
@@ -86,7 +87,7 @@ class ConfiguredPasswordTests(unittest.TestCase):
             c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            p = root/'local/homepage.env'
+            p = root/'.env'
             p.write_text(re.sub(r'^HOMEPAGE_AUTH_PASSWORD=.*$',
                                 'HOMEPAGE_AUTH_PASSWORD=chosen-password-123', p.read_text(), flags=re.M))
             before = p.read_bytes()
@@ -122,7 +123,7 @@ class WidgetCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             credential_fixtures.write(root)
-            path = root/'local/homepage.env'
+            path = root/'.env'
             before = path.read_bytes()
             credentials.load(root)
             with path.open('a') as stream:
@@ -137,7 +138,7 @@ class WidgetCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             credential_fixtures.write(root)
-            path = root/'local/homepage.env'
+            path = root/'.env'
             with path.open('a') as stream:
                 stream.write('HOMEPAGE_VAR_SEERR_API_KEY=invalid secret value\n')
             with self.assertRaises(ValueError) as error:
@@ -149,7 +150,7 @@ class WidgetCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             credential_fixtures.write(root)
-            path = root/'local/homepage.env'
+            path = root/'.env'
             token = 'Disposable/Seerr+Token=' * 3
             with path.open('a') as stream:
                 stream.write('HOMEPAGE_VAR_SEERR_API_KEY='+token+'\n')

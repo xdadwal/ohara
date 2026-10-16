@@ -26,7 +26,7 @@ setup does not mount disks or recursively change existing ownership.
 
 Create and fill the private input files in [credentials.md](credentials.md),
 then run host setup and `scripts/up`. Your supplied media passwords and API keys
-are read from `local/media-credentials` (0600). The initial username is `admin`.
+are read from `.env` (0600). The initial username is `admin`.
 Jellyfin's password is also used for its Seerr media-server login, as required by
 that integration; other services have separate passwords. Neither passwords nor
 API keys are printed. Keep this recovery file in encrypted backups.
@@ -207,7 +207,7 @@ through HTTPS. Check both a movie and a series episode. Check library availabili
 sync in Seerr. Indexer credentials and real download/playback acceptance remain
 operator steps; no automatic external download is performed by repository tests.
 
-Back up all application config directories, `local/media-credentials`,
+Back up all application config directories, `.env`,
 `local/media-state.json`, and media you cannot replace. Stop database writers or
 use supported exports for consistent backups. Media images run directly as RUN_UID/RUN_GID using supported non-root operation,
 so their initialization does not recursively change existing ownership. Ohara's

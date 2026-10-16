@@ -45,14 +45,14 @@ it must not hang waiting for terminal input or invent answers.
 ## Read user-managed credentials
 
 Follow [credentials.md](credentials.md). The user must create and fill
-local/homepage.env and local/media-credentials, mode 0600.
+.env, mode 0600.
 Never invent or generate passwords, API keys or Homepage session secrets. If an
 input file/key is missing or invalid, report its path/key and ask the user to
 complete it privately; never ask for the value in chat. Do not copy test fixtures
 or install filled example credentials. Inspect file validity without printing values.
 
 For Homepage media widgets, request actual Jellyfin/Seerr API keys in
-local/homepage.env only after account setup. These optional inputs do not block
+.env only after account setup. These optional inputs do not block
 bootstrap; do not invent them or ask for values in chat. Weather uses browser
 location permission; ask for a city/coordinates only if fixed weather is desired.
 Explain container resource limits and verify sensors on Linux; see homepage-widgets.md.

@@ -74,7 +74,7 @@ class UserCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             path = root/'input'
-            path.write_text((ROOT/'configs/credentials/homepage.env.example').read_text())
+            path.write_text('HOMEPAGE_AUTH_ENABLED=true\nHOMEPAGE_AUTH_PASSWORD=\nHOMEPAGE_AUTH_SECRET=\n')
             path.chmod(0o600)
             with self.assertRaises(ValueError):
                 credentials.read(path, credentials.HOMEPAGE_KEYS)

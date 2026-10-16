@@ -23,7 +23,7 @@ process from its own repository, not a ninth Compose application. See replicatio
 
 Only router TCP 80/443 is forwarded to Ohara. Application ports remain loopback-only;
 private administration uses SSH forwarding. There is no shared authentication service.
-Credentials come from user-created local/homepage.env and local/media-credentials.
+Credentials come from user-created .env.
 See credentials.md for empty templates and validation. Homepage includes native
 Jellyfin/Seerr widgets, clock, Open-Meteo weather and container/storage resources;
 media widgets need the actual application API keys supplied privately. See

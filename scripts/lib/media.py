@@ -10,7 +10,7 @@ SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
 def prepare(c, root, create, directory, owner, group):
-    values = credential_files.read(root/'local/media-credentials', SECRET_KEYS)
+    _, values = credential_files.load(root)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])
     media = Path(c.get('MEDIA_ROOT', str(data / 'media')))
@@ -86,7 +86,7 @@ def fields(resource, values):
 def configure_storage(root, urls=None):
     """Apply storage policy without owner initialization or relocating torrents."""
     import json
-    values = credential_files.read(root/'local/media-credentials', SECRET_KEYS)
+    _, values = credential_files.load(root)
     urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
                     'qbittorrent': 'http://127.0.0.1:8081'}
     qb = Client(urls['qbittorrent'])
@@ -101,6 +101,14 @@ def configure_storage(root, urls=None):
         if category in categories and categories[category].get('savePath') != path:
             # Editing a category can relocate existing automatically managed torrents.
             raise ValueError(f'qBittorrent {category} category has a custom path; review relocation before changing it')
+    # Reaching a seeding limit can immediately trigger Arr's removal of both the
+    # torrent and source. Disable cleanup in both services BEFORE changing limits.
+    for name in ('radarr', 'sonarr'):
+        client = Client(urls[name], values[name.upper()+'_API_KEY'])
+        for download in client.call('/api/v3/downloadclient'):
+            if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
+                download['removeCompletedDownloads'] = False
+                client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
     policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':True, 'max_ratio':0,
               'max_ratio_act':0, 'max_seeding_time_enabled':True, 'max_seeding_time':0}
     if any(preferences.get(key) != value for key, value in policy.items()):
@@ -118,10 +126,6 @@ def configure_storage(root, urls=None):
             settings.update(recycleBin='/data/recycle-bin/'+category, recycleBinCleanupDays=7)
         if settings != before:
             client.call('/api/v3/config/mediamanagement', settings, 'PUT')
-        for download in client.call('/api/v3/downloadclient'):
-            if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
-                download['removeCompletedDownloads'] = False
-                client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
     print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
           'and recycle bins. Existing torrents and custom recycle settings preserved.')
 
@@ -132,10 +136,7 @@ def connect(c, root, email, urls=None):
     import re
     if not re.fullmatch(r'[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,63}', email):
         raise ValueError('Supply the real Seerr owner email with --owner-email')
-    credentials = root/'local/media-credentials'
-    if credentials.is_symlink():
-        raise ValueError('Symlink private configuration is unsupported')
-    values = credential_files.read(credentials, SECRET_KEYS)
+    _, values = credential_files.load(root)
     urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
                     'qbittorrent': 'http://127.0.0.1:8081', 'jellyfin': 'http://127.0.0.1:8096',
                     'seerr': 'http://127.0.0.1:5055'}

@@ -77,6 +77,11 @@ fresh initialization creates `admin`. Do not run initial setup over a restored
 account/database expecting it to migrate or rotate credentials. Preserve
 `local/media-state.json`; the `--profile-only` command can apply the non-secret
 profile without repeating owner/media-server login initialization.
+Run `scripts/migrate-credentials` first for legacy split inputs. After preparing
+storage with setup, apply `scripts/media-setup --storage-only` and
+`scripts/media-setup --quality-only` to restored accounts. See media.md for the
+seeding, recycle-bin and bounded 1080p policies; these commands do not initialize
+Jellyfin/Seerr owners.
 
 Recreate the portfolio service separately. Preserve or deliberately migrate
 existing Nginx routes; DNS renewal configuration does not install new routes.

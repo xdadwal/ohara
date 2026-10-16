@@ -26,7 +26,7 @@ def configure(profile):
 
 
 def apply(root, urls=None):
-    values = credentials.read(root/'local/media-credentials', credentials.MEDIA_KEYS)
+    _, values = credentials.load(root)
     urls = urls or {'radarr':'http://127.0.0.1:7878', 'sonarr':'http://127.0.0.1:8989'}
     plans = []
     for name, minimum, preferred, maximum in [('radarr', 8, 30, 60), ('sonarr', 5, 20, 40)]:
