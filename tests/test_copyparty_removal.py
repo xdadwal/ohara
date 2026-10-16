@@ -49,4 +49,4 @@ class CopypartyRemovalTests(unittest.TestCase):
         self.assertIn('files.xdadwal.in', proxy.configured_names(text))
         self.assertNotIn('server_name files.xdadwal.in;', text)
         self.assertNotIn('3923', text)
-        self.assertIn('server_name files.xdadwal.in jellyfin.xdadwal.in speed.xdadwal.in watch.xdadwal.in xdadwal.in;', text)
+        self.assertIn('server_name files.xdadwal.in jellyfin.xdadwal.in seerr.xdadwal.in speed.xdadwal.in xdadwal.in;', text)

@@ -52,7 +52,7 @@ class DNSTests(unittest.TestCase):
                 dns.credentials(alias)
 
     def test_rejects_wrong_zone_and_bad_challenge(self):
-        for change in ({'CERTBOT_DOMAIN': 'other.in'}, {'CERTBOT_DOMAIN': 'watch.xdadwal.in'},
+        for change in ({'CERTBOT_DOMAIN': 'other.in'}, {'CERTBOT_DOMAIN': 'seerr.xdadwal.in'},
                        {'CERTBOT_VALIDATION': '../bad'}):
             with self.assertRaises(ValueError):
                 dns.challenge(DATA, dict(ENV, **change))

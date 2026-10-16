@@ -17,7 +17,7 @@ media settings on another machine, or to migrate private state safely.
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
-| Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
+| Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 

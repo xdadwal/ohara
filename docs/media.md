@@ -11,7 +11,7 @@ Ohara includes the complete local stack:
 | Prowlarr | `http://prowlarr:9696` | 9696 | Indexer management and sync |
 | qBittorrent | `http://qbittorrent:8081` | 8081 | Downloads |
 
-Only Jellyfin (`jellyfin.xdadwal.in`) and Seerr (`watch.xdadwal.in`) have public
+Only Jellyfin (`jellyfin.xdadwal.in`) and Seerr (`seerr.xdadwal.in`) have public
 Nginx routes. Every backend host port binds to loopback. No peer, discovery, UPnP,
 or DLNA ports are published. Normal outbound torrent connections work; inbound
 peer connectivity is not configured. No VPN service or routing policy is assumed.
