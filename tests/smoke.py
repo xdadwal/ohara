@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import media
 import proxy
 import runtime
 
@@ -51,7 +52,7 @@ def main():
         shutil.copy(ROOT / 'compose.yaml', root / 'compose.yaml')
         shutil.copy(ROOT / 'versions.env', root / 'versions.env')
         c = config.load(ROOT / '.env.example')
-        c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'),
+        c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                  RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
         host.prepare_storage(c, root)
         # Real container runs as 1000 in both production and disposable Linux CI.
@@ -63,7 +64,7 @@ def main():
         override = root / 'smoke.yaml'
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
-            for name, port in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000)]
+            for name, port in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]
         ) + '\n  pihole:\n    ports: !override\n      - "127.0.0.1::80"\n      - "127.0.0.1::53/udp"\n      - "127.0.0.1::53/tcp"\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
@@ -84,7 +85,7 @@ def main():
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
-            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('pihole',80)]}
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('pihole',80),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
@@ -97,6 +98,25 @@ def main():
                     if time.monotonic() > deadline:
                         raise AssertionError(f'{name}: HTTP did not become ready')
                     time.sleep(1)
+            print('Connecting media accounts and APIs...', flush=True)
+            urls = {name: f'http://127.0.0.1:{value}' for name, value in ports.items()}
+            media.connect(c, root, 'smoke@example.com', urls)
+            media.connect(c, root, 'smoke@example.com', urls)
+            media_secrets = config.parse(root/'local/media-credentials', media.SECRET_KEYS)
+            seerr_api = media.Client(urls['seerr'])
+            seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
+            assert seerr_api.call('/api/v1/settings/public')['initialized'], 'Seerr wizard was not completed'
+            assert sum(library['enabled'] for library in seerr_api.call('/api/v1/settings/jellyfin/library')) == 2
+            for name, category in [('radarr','movies'), ('sonarr','tv')]:
+                settings = seerr_api.call('/api/v1/settings/'+name)
+                assert len(settings) == 1 and settings[0]['isDefault'], 'Seerr duplicate/missing default server'
+                assert settings[0]['activeDirectory'] == '/data/library/'+category
+                client = media.Client(urls[name], media_secrets[name.upper()+'_API_KEY'])
+                clients = client.call('/api/v3/downloadclient')
+                assert len(clients) == 1 and clients[0]['enable'], 'Download client was duplicated or disabled'
+                assert request(ports[name], 'localhost', '/api/v3/system/status')[0] in (401,403)
+            prowlarr = media.Client(urls['prowlarr'], media_secrets['PROWLARR_API_KEY'])
+            assert len(prowlarr.call('/api/v1/applications')) == 2, 'Prowlarr application sync duplicated'
             credentials = config.parse(root / 'local/credentials', {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
             auth = 'Basic ' + base64.b64encode(('admin:' + credentials['COPYPARTY_PASSWORD']).encode()).decode()
             headers = {'Authorization': auth}
@@ -127,7 +147,7 @@ def main():
             nginx_config = root / 'nginx.conf'
             text = proxy.render(c, ROOT, https=True)
             text = text.replace('127.0.0.1:3002', 'homepage:3000')
-            for name, number in [('seerr',5055),('copyparty',3923),('speedtest',3000)]:
+            for name, number in [('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]:
                 text = text.replace(f'127.0.0.1:{number}', f'{name}:{number}')
             nginx_config.write_text('events {}\nhttp {\n' + text + '\n}\n')
             runtime.run(docker + ['run', '-d', '--name', nginx_name, '--network', identifier + '_default',
@@ -184,6 +204,7 @@ def main():
                         for _ in range(8)]
             assert 429 in attempts, 'Homepage proxy login rate limit was not enforced'
             assert request(http_port, c['FILES_HOST'])[0] == 301
+            assert tls_request(c['JELLYFIN_HOST'], '/System/Info/Public')[0] == 200
             assert tls_request(c['REQUESTS_HOST'], '/api/v1/settings/public')[0] == 200
             assert tls_request(c['FILES_HOST'], '/probe.txt', hdr=headers) == (200, b'ohara probe')
             assert tls_request(c['FILES_HOST'], '/probe.txt')[0] in (401,403,404)
@@ -191,7 +212,7 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: five apps, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, LAN DNS fixture, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: ten apps, media API connections and rerun preservation, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, LAN DNS fixture, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

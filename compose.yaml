@@ -18,6 +18,7 @@ services:
       HOMEPAGE_EXTERNAL_URL: https://${DOMAIN}
       HOMEPAGE_VAR_REQUESTS_HOST: ${REQUESTS_HOST}
       HOMEPAGE_VAR_FILES_HOST: ${FILES_HOST}
+      HOMEPAGE_VAR_JELLYFIN_HOST: ${JELLYFIN_HOST}
       HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
     env_file:
       - path: ./local/homepage.env
@@ -110,3 +111,104 @@ services:
         target: /etc/pihole
         bind:
           create_host_path: false
+  jellyfin:
+    <<: *defaults
+    image: ${JELLYFIN_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    environment:
+      TZ: ${TZ}
+      JELLYFIN_PublishedServerUrl: https://${JELLYFIN_HOST}
+    ports: ["127.0.0.1:8096:8096"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/jellyfin
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}/library
+        target: /media
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${DATA_ROOT}/jellyfin-cache
+        target: /cache
+        bind: {create_host_path: false}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  radarr:
+    <<: *defaults
+    image: ${RADARR_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+    ports: ["127.0.0.1:7878:7878"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/radarr
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}
+        target: /data
+        bind: {create_host_path: false}
+  sonarr:
+    <<: *defaults
+    image: ${SONARR_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+    ports: ["127.0.0.1:8989:8989"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/sonarr
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}
+        target: /data
+        bind: {create_host_path: false}
+  prowlarr:
+    <<: *defaults
+    image: ${PROWLARR_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+    ports: ["127.0.0.1:9696:9696"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/prowlarr
+        target: /config
+        bind: {create_host_path: false}
+  qbittorrent:
+    <<: *defaults
+    image: ${QBITTORRENT_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+      WEBUI_PORT: "8081"
+    ports: ["127.0.0.1:8081:8081"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/qbittorrent
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}
+        target: /data
+        bind: {create_host_path: false}

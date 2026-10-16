@@ -5,13 +5,13 @@ from pathlib import Path
 import re
 
 KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
-        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST'}
+        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE'}
+IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
 
 
-def parse(path, keys):
+def parse(path, keys, optional=frozenset()):
     values = {}
     for number, raw in enumerate(Path(path).read_text().splitlines(), 1):
         if not raw.strip() or raw.lstrip().startswith('#'):
@@ -22,18 +22,20 @@ def parse(path, keys):
         if not value or any(c.isspace() or ord(c) < 32 for c in value):
             raise ValueError(f'{key}: use a nonempty literal value without whitespace')
         values[key] = value
-    if set(values) != keys:
-        raise ValueError('Missing keys: ' + ', '.join(sorted(keys - set(values))))
+    if keys - set(values) - optional:
+        raise ValueError('Missing keys: ' + ', '.join(sorted(keys - set(values) - optional)))
     return values
 
 
 def load(path):
-    values = parse(path, KEYS)
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST']:
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST'})
+    values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
+    values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
+    for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
         if not HOST.fullmatch(values[key]):
             raise ValueError(f'{key}: invalid DNS hostname')
-    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST']]
-    if len(set(names)) != 4 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
+    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']]
+    if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
     try:
         address = ipaddress.IPv4Address(values['LAN_IP'])
@@ -42,7 +44,7 @@ def load(path):
             raise ValueError()
     except ValueError:
         raise ValueError('LAN_IP: require an RFC1918 LAN IPv4 address') from None
-    for key in ['DATA_ROOT', 'FILES_ROOT']:
+    for key in ['DATA_ROOT', 'FILES_ROOT', 'MEDIA_ROOT']:
         value = values[key]
         if not PATH.fullmatch(value) or value == '/' or '..' in value.split('/') or '//' in value:
             raise ValueError(f'{key}: require a safe absolute path without spaces or traversal')

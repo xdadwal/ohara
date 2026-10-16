@@ -32,7 +32,7 @@ Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation 
 disables only the package default site just installed by that invocation. If an
 existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
-53 TCP/UDP on LAN_IP, loopback 3000/3002/3923/5055/8888, and host 80/443 for Nginx.
+53 TCP/UDP on LAN_IP, loopback 3000/3002/3923/5055/7878/8081/8096/8888/8989/9696, and host 80/443 for Nginx.
 
 ## Checks and local startup
 
@@ -50,8 +50,8 @@ Subprocess output that might contain secrets is suppressed. For a failed Nginx
 operation run `sudo nginx -t`; for applications inspect logs locally, redact them
 before sharing. Do not publish resolved Compose configuration or `docker inspect`.
 
-Use the README's SSH tunnel and open localhost ports. Set the Seerr owner and its
-external media server through its UI. Use `admin` plus the generated Copyparty
+Use the README's SSH tunnel and open localhost ports. Follow [media setup](media.md) to initialize the Jellyfin/Seerr owner and
+connect the acquisition services. Use `admin` plus the generated Copyparty
 password; test authenticated upload, download, move, and delete using a disposable
 file. Confirm an anonymous client cannot list/download/write the file. Sign into
 Pi-hole at `http://localhost:8888/admin/` and test configuration before changing
@@ -59,14 +59,14 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
 
 ## Public DNS and HTTPS
 
-1. Set A records for the apex and configured watch/files/speed subdomains to
+1. Set A records for the apex and configured watch/files/speed/jellyfin subdomains to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
    ports deliberately while preserving SSH access. Never forward 53, 3000, 3002, 3923,
-   5055, or 8888. Docker-published ports can bypass UFW; loopback/LAN bindings
+   5055, 7878, 8081, 8096, 8888, 8989, or 9696. Docker-published ports can bypass UFW; loopback/LAN bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
    paths can be fetched externally, including if the router lacks hairpin NAT.
@@ -76,7 +76,7 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
 6. Activate: `sudo scripts/tls --activate --accounts-ready --agree-tos`.
    `--accounts-ready` is an explicit operator attestation, not an automatic test
    of account configuration. This accepts Let's Encrypt's subscriber agreement.
-7. Verify trusted HTTPS and hostname matching on all four names externally,
+7. Verify trusted HTTPS and hostname matching on all five names externally,
    login/logout, denied anonymous file access, a large upload/download, and a
    complete speed test. The HTTPS apex should show Homepage password login;
    confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
@@ -117,7 +117,8 @@ Changing router/client DNS is a manual deployment step, not done by this repo.
 Before shutdown, inventory old containers, mounts, named volumes, paths, and image
 versions locally; back up configuration and application state without publishing
 secrets. The old stack included Jellyfin, Radarr, Prowlarr, qBittorrent, Kuma,
-Tailscale, Chesskit, Homer, and standalone Redis. Their definitions are retired;
+Tailscale, Chesskit, Homer, and standalone Redis. Jellyfin, Radarr, Prowlarr and qBittorrent now have fresh definitions in this stack;
+other removed definitions remain retired;
 no host containers, files, or volumes are deleted by this code change.
 
 Use a maintenance window to stop only the inventoried old services that conflict.
@@ -136,6 +137,8 @@ external credentials automatically.
 
 ## Backups, upgrades, and recovery
 
+Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
+`local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
 Back up `.env`, `local/`, Copyparty files and state, Pi-hole data, Seerr config/
 SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
 config and deploy hook). Encrypt backups and keep an off-host copy; credentials

@@ -5,11 +5,12 @@ before changing deployment behavior. The approved migration plan is under
 docs/superpowers/plans/.
 
 - Active applications: Seerr (Jellyseerr's successor), Pi-hole, Copyparty,
-  OpenSpeedTest, and Homepage. Nginx and Certbot run on the host. Domain: xdadwal.in.
+  OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves the apex with password login; no Docker socket or API keys.
   Immich will share this machine in its own Compose project; deployment is pending
   storage/hardware/backup details. See docs/immich-next.md.
-  Do not introduce removed media/download services or additional infrastructure.
+  Media services are explicitly approved; follow docs/media.md. Do not introduce
+  additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials; a shared authentication service is
   explicitly deferred. Generate strong unique passwords/secrets automatically,
   preserve existing credentials, and keep values out of chat, logs, and Git.
@@ -20,10 +21,15 @@ docs/superpowers/plans/.
 - `compose.yaml`, `.env.example`, and `versions.env` define deployment;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
 - Commands resolve their own repository path. Use `scripts/setup --help`,
-  `scripts/check`, `scripts/up`, `scripts/status`, and `scripts/tls --help`.
+  `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.
 - Setup prepares a supported Linux host; `up` starts local services; TLS activation
   is a separate explicit step after owner/account setup. Do not deploy to a live
   host merely because a code change was requested.
+- For media setup, confirm the real owner email and mounted media storage; run
+  scripts/media-setup after local startup. Ask for chosen indexers and required
+  external account/API credentials; never invent them. Credentials are in
+  local/media-credentials; preserve the setup journal. Verify permitted movie/TV
+  acquisition, import, playback and availability sync before declaring it ready.
 - For Pi-hole setup, follow the DNS workflow in docs/agent-setup.md: distinguish
   container deployment from resolver/filter configuration and router/client cutover.
 - Backend web ports bind to loopback. Pi-hole DNS binds only to the LAN IP;

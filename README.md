@@ -6,6 +6,10 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Service | Purpose | Access |
 |---|---|---|
 | Homepage | Password-protected service dashboard | `xdadwal.in` after activation |
+| Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
+| Radarr + Sonarr | Movie and series acquisition | Private administration |
+| Prowlarr | Indexer management and sync | Private administration |
+| qBittorrent | Downloads | Private administration |
 | Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
 | Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
@@ -13,9 +17,10 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
-Seerr, Copyparty, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
+Jellyfin, Seerr, Copyparty, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
-Seerr does not stream or download media: connect an external media server, and external Radarr/Sonarr if desired.
+Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
+initialize accounts/connections and add your chosen indexers.
 
 ## Fresh-host quick start
 
@@ -38,9 +43,12 @@ sudo ./scripts/setup --non-interactive
 If Docker requires elevated access, the commands try `sudo -n docker`; refresh
 sudo authentication with `sudo -v` first. Users are not added to the Docker group.
 Service credentials are written to `local/credentials`; Homepage credentials are
-in `local/homepage.env`. Both files have restrictive permissions and are never
+in `local/homepage.env`. Media passwords and API keys are in
+`local/media-credentials`. Both files have restrictive permissions and are never
 printed by setup. Use `sudo` to read the file if you ran setup as root.
 
+Run `scripts/media-setup --owner-email YOUR_REAL_EMAIL` to initialize media accounts
+and connections, then add indexers through private administration ([instructions](docs/media.md)).
 Complete service accounts using SSH forwarding before exposing applications:
 
 ```sh

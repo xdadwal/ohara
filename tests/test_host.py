@@ -23,7 +23,7 @@ class HostTests(unittest.TestCase):
             (root / 'configs/copyparty').mkdir(parents=True)
             (root / 'configs/copyparty/config.example').write_text((ROOT / 'configs/copyparty/config.example').read_text())
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'),
+            c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                      RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
             host.prepare_storage(c, root)
             files = [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/credentials']
@@ -82,7 +82,7 @@ class StorageSafetyTests(unittest.TestCase):
             target.write_text('private-value')
             (root / 'local/credentials').symlink_to(target)
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'))
+            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'))
             with self.assertRaisesRegex(ValueError, 'Symlink private'):
                 host.prepare_storage(c, root)
             self.assertEqual(target.read_text(), 'private-value')

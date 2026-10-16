@@ -17,8 +17,9 @@
 - Immich will run on the same machine, as confirmed by the user, in a separate
   Compose project. Hostname is confirmed as immich.xdadwal.in. Storage, hardware capacity and
   backup destination remain to be configured. See immich-next.md.
-- Seerr requires media-server setup; automatic fulfillment also needs external
-  Radarr/Sonarr. None are supplied here; do not report fulfillment as ready.
+- Seerr uses the included Jellyfin, Radarr and Sonarr. Prowlarr and qBittorrent
+  provide indexer sync and downloads; chosen indexers and a permitted end-to-end
+  request must still be verified before reporting fulfillment as ready.
 - Bootstrap targets Ubuntu 24.04 and Debian 13, amd64/arm64 with systemd.
   This support target is distinct from evidence of installation on actual VMs;
   current verification and remaining deployment checks are in operations.md.
@@ -27,3 +28,12 @@
   agent-generated unique per-service credentials. Initial setup agents collect
   only missing machine/account inputs using docs/agent-setup.md; generated
   credentials and application account provisioning are distinct steps.
+
+## Media stack restored (2026-10-15)
+
+The user explicitly approved the services needed to fulfill Seerr requests.
+Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are included locally; this
+supersedes the earlier decision to remove media/download services. Jellyfin
+uses jellyfin.xdadwal.in, while Seerr stays at watch.xdadwal.in. Acquisition
+UIs remain loopback-only. No indexer accounts, VPN, GPU or inbound peer ports
+are assumed. Shared storage supports consistent paths and hardlinks.
