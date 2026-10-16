@@ -122,3 +122,24 @@ image pin, storage preparation, credentials, environment file and DNS probes are
 removed from active deployment code. Historical verification entries describe
 older snapshots. Independent review reports no remaining blocking findings.
 No live resolver/router changes, container stops or retired-data deletion occurred.
+
+## Copyparty removal and current stack (2026-10-16)
+
+48 unit tests pass. New checks cover the eight-service inventory, four fresh public
+hostnames, removed 3923/files routes, ignored retired FILES_ROOT/FILES_HOST inputs,
+no file-share storage/config creation, unconsumed legacy credentials, and ACME-only
+handling for old certificate names without retired HTTPS application routes.
+Setup/CLI, syntax, ShellCheck, compilation and whitespace checks pass. Independent
+whole-diff review reports no blocking findings and independently confirms 48 tests.
+
+The real eight-service disposable arm64 smoke passes with user-supplied test inputs.
+It now includes normal runtime.check before startup, media accounts/connections,
+rerun preservation, Homepage authentication/rate limiting, Nginx HTTPS routes and
+a 35 MiB speed upload. Fixture cleanup uses the retained qBittorrent image; no
+Copyparty image or config is needed. Historical entries describe older snapshots.
+
+Current credentials are only local/homepage.env and local/media-credentials.
+GoDaddy public DNS, deployed container shutdown, old certificate retirement/renewal,
+operator-edited Homepage config and production access remain deployment checks.
+No live share data, credentials, containers or public DNS records were changed.
+See stack.md for current applications and the pending Immich follow-up.

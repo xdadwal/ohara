@@ -17,7 +17,6 @@ services:
       HOMEPAGE_AUTH_ENABLED: "true"
       HOMEPAGE_EXTERNAL_URL: https://${DOMAIN}
       HOMEPAGE_VAR_REQUESTS_HOST: ${REQUESTS_HOST}
-      HOMEPAGE_VAR_FILES_HOST: ${FILES_HOST}
       HOMEPAGE_VAR_JELLYFIN_HOST: ${JELLYFIN_HOST}
       HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
     env_file:
@@ -59,31 +58,6 @@ services:
       timeout: 3s
       retries: 5
       start_period: 60s
-  copyparty:
-    <<: *defaults
-    image: ${COPYPARTY_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    ports:
-      - "127.0.0.1:3923:3923"
-    volumes:
-      - type: bind
-        source: ./local/copyparty.conf
-        target: /cfg/copyparty.conf
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DATA_ROOT}/copyparty
-        target: /cfg/state
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FILES_ROOT}
-        target: /w
-        bind:
-          create_host_path: false
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
   speedtest:
     <<: *defaults
     image: ${SPEED_IMAGE:?Run scripts/check}

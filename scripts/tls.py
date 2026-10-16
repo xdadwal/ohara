@@ -15,7 +15,7 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--staging', action='store_true', help='ACME test only, no public application routes')
     mode.add_argument('--activate', action='store_true', help='issue production certificate and enable routes')
-    parser.add_argument('--accounts-ready', action='store_true', help='attest local owner setup and file authentication were verified')
+    parser.add_argument('--accounts-ready', action='store_true', help='attest local owner setup and application authentication were verified')
     parser.add_argument('--agree-tos', action='store_true', help='accept the ACME subscriber agreement')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]

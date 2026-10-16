@@ -26,7 +26,7 @@ Linux machine as Ohara**, as confirmed by the user. Keep an independent Compose 
   release. Reuse the Ohara host bootstrap where appropriate; avoid coupling
   photo-service restarts or database state to the small utility stack.
 - Create explicit persistent paths and verify mounts, available capacity and
-  permissions before startup. Do not expose the photo archive through Copyparty
+  permissions before startup. Do not expose the photo archive through a file-sharing service
   or import/delete existing originals by assumption.
 - Configure HTTPS with the supported large-upload/WebSocket proxy settings and
   a dedicated hostname. Do not serve Immich from a URL subpath.

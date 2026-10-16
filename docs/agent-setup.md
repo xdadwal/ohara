@@ -12,7 +12,7 @@ interfaces, mounted disks, free space, user/group IDs, installed dependencies, a
 port conflicts. Avoid exposing private configuration while inspecting it.
 
 Reuse settled choices: Asia/Kolkata timezone, xdadwal.in for Homepage,
-watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, files.xdadwal.in for Copyparty, speed.xdadwal.in for
+watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
 Public DNS is managed at GoDaddy. Do not ask the user to choose these again
 unless the target's existing configuration conflicts with them.
@@ -44,7 +44,7 @@ it must not hang waiting for terminal input or invent answers.
 ## Read user-managed credentials
 
 Follow [credentials.md](credentials.md). The user must create and fill
-local/credentials, local/homepage.env and local/media-credentials, mode 0600.
+local/homepage.env and local/media-credentials, mode 0600.
 Never invent or generate passwords, API keys or Homepage session secrets. If an
 input file/key is missing or invalid, report its path/key and ask the user to
 complete it privately; never ask for the value in chat. Do not copy test fixtures

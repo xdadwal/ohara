@@ -15,7 +15,7 @@ class DnsRemovalTests(unittest.TestCase):
         c = config.load(ROOT/'.env.example')
         model = json.loads(runtime.compose(c, ROOT, ['config','--no-env-resolution','--format','json'], capture=True))
         self.assertTrue('pihole' not in model['services'], 'Removed DNS service is still configured')
-        self.assertEqual(len(model['services']), 9)
+        self.assertEqual(len(model['services']), 8)
         for service in model['services'].values():
             for port in service.get('ports', []):
                 self.assertNotIn(int(port['published']), (53,8888))
@@ -32,8 +32,9 @@ class DnsRemovalTests(unittest.TestCase):
             user_file.write_text(original)
             user_file.chmod(0o600)
             # Retired fields do not require keeping or choosing a DNS password.
-            values = credentials.read(user_file, credentials.BASE_KEYS, ignored={'PIHOLE_PASSWORD'})
-            self.assertEqual(set(values), {'COPYPARTY_PASSWORD'})
+            import credential_fixtures
+            credential_fixtures.write(root)
+            self.assertEqual(len(credentials.load(root)), 2)
             self.assertEqual(user_file.read_text(), original)
 
     def test_status_checks_only_remaining_services(self):
@@ -43,5 +44,5 @@ class DnsRemovalTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(runtime, 'compose', return_value='[]'), contextlib.redirect_stdout(output):
             self.assertEqual(runtime.status(config.load(ROOT/'.env.example'), ROOT), 1)
-        self.assertEqual(output.getvalue().count('container=stopped/missing'), 9)
+        self.assertEqual(output.getvalue().count('container=stopped/missing'), 8)
         self.assertNotIn('pihole', output.getvalue())

@@ -1,5 +1,8 @@
 # Ohara Agent-Friendly Setup Implementation Plan
 
+Copyparty/file-sharing provisions in this historical plan were removed on
+2026-10-16; use docs/stack.md and current deployment code.
+
 Pi-hole/LAN DNS provisions in this historical plan were removed on 2026-10-16.
 Use current compose.yaml, AGENTS.md and operations.md for deployment.
 

@@ -40,7 +40,7 @@ class ConfigurationTests(unittest.TestCase):
 
     def test_hostnames_are_distinct_and_under_domain(self):
         base = (ROOT / '.env.example').read_text()
-        for replacement in ['files.xdadwal.in', 'other.example.com']:
+        for replacement in ['speed.xdadwal.in', 'other.example.com']:
             with self.assertRaises(ValueError):
                 self.load(base.replace('watch.xdadwal.in', replacement))
 
