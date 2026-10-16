@@ -66,7 +66,7 @@ def nginx_config(old, c, root):
                            r'\1 ' + str(CERT_DIR / 'privkey.pem') + ';', block)
         return block
     result = re.sub(r'(?ms)^server \{\n.*?^\}', update, old)
-    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST')}
+    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST')}
     if not required <= changed:
         raise ValueError('Existing HTTPS routes are missing configured names; inspect before DNS activation')
     return result

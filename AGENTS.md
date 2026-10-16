@@ -6,7 +6,8 @@ docs/superpowers/plans/.
 
 - Active applications: Seerr (Jellyseerr's successor), Pi-hole, Copyparty,
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
-- Homepage serves the apex with password login; no Docker socket or API keys.
+- Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
+  the separate portfolio service serves the apex; no Docker socket or API keys.
   Immich will share this machine in its own Compose project; deployment is pending
   storage/hardware/backup details. See docs/immich-next.md.
   Media services are explicitly approved; follow docs/media.md. Do not introduce

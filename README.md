@@ -3,9 +3,14 @@
 A small, agent-friendly homeserver setup for **xdadwal.in**. Docker Compose runs
 applications; Nginx and Certbot on the Linux host provide public HTTPS.
 
+On the current host, the separate portfolio checkout at `/home/akshay/xdadwal.in`
+runs as `portfolio.service` on loopback port 8010 and serves the apex. The password
+protected dashboard is at **ohara.xdadwal.in** (`HOMEPAGE_HOST` in `.env`). Other
+service hostnames are unchanged.
+
 | Service | Purpose | Access |
 |---|---|---|
-| Homepage | Password-protected service dashboard | `xdadwal.in` after activation |
+| Homepage | Password-protected service dashboard | `HOMEPAGE_HOST` (`ohara.xdadwal.in` on this host) |
 | Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Prowlarr | Indexer management and sync | Private administration |
@@ -16,7 +21,7 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Pi-hole | LAN DNS and ad blocking | LAN DNS; private administration |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
-The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
+The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Seerr, Copyparty, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to

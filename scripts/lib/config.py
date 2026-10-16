@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
-        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST'}
+        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
 IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
@@ -28,9 +28,14 @@ def parse(path, keys, optional=frozenset()):
 
 
 def load(path):
-    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST'})
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'})
     values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
     values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
+    values.setdefault('HOMEPAGE_HOST', values['DOMAIN'])
+    if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (values['HOMEPAGE_HOST'] != values['DOMAIN'] and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])):
+        raise ValueError('HOMEPAGE_HOST must be DOMAIN or a subdomain')
+    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST')]:
+        raise ValueError('HOMEPAGE_HOST must not overlap another service')
     for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
         if not HOST.fullmatch(values[key]):
             raise ValueError(f'{key}: invalid DNS hostname')

@@ -59,6 +59,18 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
 
 ## Public DNS and HTTPS
 
+Current host routing: `xdadwal.in` serves the separate FastAPI portfolio
+(`portfolio.service`, `127.0.0.1:8010`); `ohara.xdadwal.in` serves Homepage.
+Set `HOMEPAGE_HOST=ohara.xdadwal.in` in `.env` to preserve its allowed hostname,
+external authentication URL and status checks across container recreation.
+Omitting the optional setting retains the original apex dashboard behavior.
+Use DNS mode below for certificate operations on this deployment: it preserves
+the separate apex route, private ACLs and existing wildcard lineage. HTTP mode
+rejects a separate dashboard hostname rather than replacing the portfolio route.
+Portfolio code/CSS updates and service restart instructions are in the portfolio
+checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
+the current host also keeps a private copy in `local/domain-setup/nginx.conf`.
+
 1. Set A records for the apex and configured watch/files/speed/jellyfin subdomains to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These

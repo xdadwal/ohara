@@ -91,3 +91,23 @@ class ConfiguredPasswordTests(unittest.TestCase):
             before = p.read_bytes()
             runtime.check(c, root)
             self.assertEqual(p.read_bytes(), before)
+
+class DashboardHostnameTests(unittest.TestCase):
+    def test_subdomain_configuration_reaches_compose_proxy_and_status(self):
+        import runtime
+        import json
+        c = config.load(ROOT / '.env.example')
+        c['HOMEPAGE_HOST'] = 'ohara.xdadwal.in'
+        model = json.loads(runtime.compose(c, ROOT, ['config', '--no-env-resolution', '--format', 'json'], capture=True))
+        runtime.validate_model(model, c)
+        self.assertEqual(model['services']['homepage']['environment']['HOMEPAGE_EXTERNAL_URL'], 'https://ohara.xdadwal.in')
+        text = proxy.render(c, ROOT, https=True)
+        self.assertIn('server_name ohara.xdadwal.in;', text)
+        self.assertNotIn('server_name xdadwal.in;', text)
+
+    def test_old_configuration_defaults_to_apex(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config'
+            path.write_text((ROOT / '.env.example').read_text().replace('HOMEPAGE_HOST=xdadwal.in', ''))
+            self.assertEqual(config.load(path)['HOMEPAGE_HOST'], 'xdadwal.in')
