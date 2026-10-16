@@ -63,9 +63,9 @@ def validate_model(model, c):
     if set(services) != set(expected):
         raise ValueError('Unexpected application inventory in compose.yaml')
     hp = services['homepage'].get('environment', {})
-    if (hp.get('HOMEPAGE_AUTH_ENABLED') != 'true' or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['DOMAIN']
-            or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['DOMAIN']):
-        raise ValueError('Homepage must require login, allow only DOMAIN, and use its HTTPS URL')
+    if (hp.get('HOMEPAGE_AUTH_ENABLED') != 'true' or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['HOMEPAGE_HOST']
+            or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['HOMEPAGE_HOST']):
+        raise ValueError('Homepage must require login, allow only HOMEPAGE_HOST, and use its HTTPS URL')
     for name, service in services.items():
         ports = {(p.get('host_ip'), int(p['published']), int(p['target']), p.get('protocol', 'tcp'))
                  for p in service.get('ports', [])}
@@ -128,7 +128,9 @@ def status(c, root):
         http = False
         if running:
             try:
-                with urllib.request.urlopen(f'http://127.0.0.1:{port}{path}', timeout=5) as response:
+                request = urllib.request.Request(f'http://127.0.0.1:{port}{path}',
+                                                 headers={'Host': c['HOMEPAGE_HOST']} if name == 'homepage' else {})
+                with urllib.request.urlopen(request, timeout=5) as response:
                     http = response.status < 400
             except urllib.error.HTTPError as error:
                 http = error.code in (401, 403)  # protected page is reachable

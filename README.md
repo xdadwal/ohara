@@ -3,9 +3,16 @@
 A small, agent-friendly homeserver setup for **xdadwal.in**. Docker Compose runs
 applications; Nginx and Certbot on the Linux host provide public HTTPS.
 
+On the current host, the separate portfolio checkout at `/home/akshay/xdadwal.in`
+runs as `portfolio.service` on loopback port 8010 and serves the apex. The password
+protected dashboard is at **ohara.xdadwal.in** (`HOMEPAGE_HOST` in `.env`). Other
+service hostnames are unchanged.
+See [replication](docs/replication.md) to reproduce both routes and the selected
+media settings on another machine, or to migrate private state safely.
+
 | Service | Purpose | Access |
 |---|---|---|
-| Homepage | Password-protected service dashboard | `xdadwal.in` after activation |
+| Homepage | Password-protected service dashboard | `HOMEPAGE_HOST` (`ohara.xdadwal.in` on this host) |
 | Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Prowlarr | Indexer management and sync | Private administration |
@@ -14,7 +21,7 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
-The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
+The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Seerr, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
@@ -61,7 +68,10 @@ Homepage uses its own password login at the HTTPS apex; it has no Docker socket
 access or private service widgets. See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
-router TCP ports **80 and 443**. Keep backend/admin ports private.
+router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.
+GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
+`scripts/tls --dns-provider godaddy`; see the private-token setup and existing
+certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
 
 ## For agents and contributors
 

@@ -71,3 +71,47 @@ class HomepageExposureTests(unittest.TestCase):
             model['services']['homepage']['environment'][key] = value
             with self.assertRaisesRegex(ValueError,'Homepage'):
                 runtime.validate_model(model,c)
+
+class ConfiguredPasswordTests(unittest.TestCase):
+    def test_operator_password_is_preserved_and_accepted(self):
+        import shutil
+        import runtime
+        import re
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            shutil.copytree(ROOT/'configs', root/'configs')
+            for name in ['compose.yaml', 'versions.env']:
+                shutil.copy(ROOT/name, root/name)
+            c = config.load(ROOT/'.env.example')
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            credential_fixtures.write(root)
+            host.prepare_storage(c, root)
+            p = root/'local/homepage.env'
+            p.write_text(re.sub(r'^HOMEPAGE_AUTH_PASSWORD=.*$',
+                                'HOMEPAGE_AUTH_PASSWORD=chosen-password-123', p.read_text(), flags=re.M))
+            before = p.read_bytes()
+            # Seerr always runs as UID 1000, which can differ from the CI runner.
+            # This disposable fixture is not a production ownership test.
+            (root/'data/seerr').chmod(0o777)
+            runtime.check(c, root)
+            self.assertEqual(p.read_bytes(), before)
+
+class DashboardHostnameTests(unittest.TestCase):
+    def test_subdomain_configuration_reaches_compose_proxy_and_status(self):
+        import runtime
+        import json
+        c = config.load(ROOT / '.env.example')
+        c['HOMEPAGE_HOST'] = 'ohara.xdadwal.in'
+        model = json.loads(runtime.compose(c, ROOT, ['config', '--no-env-resolution', '--format', 'json'], capture=True))
+        runtime.validate_model(model, c)
+        self.assertEqual(model['services']['homepage']['environment']['HOMEPAGE_EXTERNAL_URL'], 'https://ohara.xdadwal.in')
+        text = proxy.render(c, ROOT, https=True)
+        self.assertIn('server_name ohara.xdadwal.in;', text)
+        self.assertNotIn('server_name xdadwal.in;', text)
+
+    def test_old_configuration_defaults_to_apex(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'config'
+            path.write_text((ROOT / '.env.example').read_text().replace('HOMEPAGE_HOST=xdadwal.in', ''))
+            self.assertEqual(config.load(path)['HOMEPAGE_HOST'], 'xdadwal.in')

@@ -13,12 +13,15 @@ RENEW_HOOK = '#!/bin/sh\n/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx\n
 
 def render(c, root, https=False, acme_names=()):
     text = (root / 'configs/nginx' / ('https.template' if https else 'http.template')).read_text()
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
+    if https and int(c.get('PORTFOLIO_PORT', '0')):
+        text += '\n' + (root / 'configs/nginx/portfolio.template').read_text()
+    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']:
         text = text.replace('@' + key + '@', c[key])
-    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']}
+    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']}
     # Keep renewal challenges for certificate names retained for rollback, while
     # never restoring their retired HTTPS application routes.
     text = text.replace('@HOSTS@', ' '.join(sorted(names | set(acme_names))))
+    text = text.replace('@PORTFOLIO_PORT@', c.get('PORTFOLIO_PORT', '0'))
     # Keep header rules visible in rendered output for audits/tests.
     headers = (root / 'configs/nginx/proxy-headers.conf').read_text()
     return text.replace('include /etc/nginx/ohara-proxy-headers.conf;', headers)
@@ -81,7 +84,7 @@ def configured_names(text):
 
 
 def challenge_config(old, c):
-    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']}
+    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']}
     missing = sorted(names - configured_names(old))
     if not missing:
         return old
@@ -94,6 +97,8 @@ def challenge_config(old, c):
 
 
 def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
+    if c['HOMEPAGE_HOST'] != c['DOMAIN']:
+        raise ValueError('Use --dns-provider godaddy when a separate portfolio serves DOMAIN; existing routes must be preserved')
     if not agree:
         raise ValueError('Supply --agree-tos after reviewing the ACME subscriber agreement')
     if not staging and not accounts_ready:
@@ -104,7 +109,7 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     challenge = challenge_config(previous, c)
     # Retain old names in the certificate during cutover so restoring the previous
     # HTTPS config still serves a certificate covering its original names.
-    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']})
+    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']})
     args = ['certbot', 'certonly', '--webroot', '-w', '/var/lib/ohara/acme',
             '--non-interactive', '--agree-tos', '--email', c['ACME_EMAIL'],
             '--cert-name', 'ohara', '--keep-until-expiring', '--expand']

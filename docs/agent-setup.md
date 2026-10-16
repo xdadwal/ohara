@@ -11,7 +11,8 @@ configuration. Inspect the authorized target's OS, architecture, CPU/RAM, networ
 interfaces, mounted disks, free space, user/group IDs, installed dependencies, and
 port conflicts. Avoid exposing private configuration while inspecting it.
 
-Reuse settled choices: Asia/Kolkata timezone, xdadwal.in for Homepage,
+Reuse settled choices: Asia/Kolkata timezone; HOMEPAGE_HOST for Homepage (default apex, or
+ohara.xdadwal.in with the separate apex portfolio profile);
 watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
 Public DNS is managed at GoDaddy. Do not ask the user to choose these again

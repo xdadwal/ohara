@@ -8,6 +8,9 @@ cp "$ROOT_DIR/.env.example" "$TASK_TMP/.env.example"
 for command in setup check up status tls media-setup; do
   (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
 done
+if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi
+if "$TASK_TMP/scripts/tls" --staging --dns-provider godaddy >"$TASK_TMP/out" 2>&1; then exit 1; fi
+if "$TASK_TMP/scripts/media-setup" --profile-only >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/setup" --dry-run >"$TASK_TMP/out" 2>&1; then
   echo 'Expected dry-run to reject missing config' >&2; exit 1
 fi

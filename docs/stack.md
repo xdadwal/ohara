@@ -6,7 +6,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 
 | Component | Role | Configured access |
 |---|---|---|
-| Homepage | Password-protected dashboard | https://xdadwal.in; loopback 3002 |
+| Homepage | Password-protected dashboard | HOMEPAGE_HOST (default xdadwal.in); loopback 3002 |
 | Seerr | Discover/request movies and series | https://watch.xdadwal.in; loopback 5055 |
 | Jellyfin | Media libraries and playback | https://jellyfin.xdadwal.in; loopback 8096 |
 | OpenSpeedTest | On-demand browser speed test, embedded in Homepage | https://speed.xdadwal.in; loopback 3000 |
@@ -16,6 +16,10 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | qBittorrent | Downloads | Private loopback 8081 |
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
 | Certbot (host) | Certificates and renewal | Host service/timer |
+
+The portfolio profile sets HOMEPAGE_HOST=ohara.xdadwal.in and PORTFOLIO_PORT=8010.
+The separate FastAPI portfolio then serves the apex through Nginx; it is a host
+process from its own repository, not a ninth Compose application. See replication.md.
 
 Only router TCP 80/443 is forwarded to Ohara. Application ports remain loopback-only;
 private administration uses SSH forwarding. There is no shared authentication service.
