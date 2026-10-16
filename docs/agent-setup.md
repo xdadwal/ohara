@@ -51,6 +51,12 @@ input file/key is missing or invalid, report its path/key and ask the user to
 complete it privately; never ask for the value in chat. Do not copy test fixtures
 or install filled example credentials. Inspect file validity without printing values.
 
+For Homepage media widgets, request actual Jellyfin/Seerr API keys in
+local/homepage.env only after account setup. These optional inputs do not block
+bootstrap; do not invent them or ask for values in chat. Weather uses browser
+location permission; ask for a city/coordinates only if fixed weather is desired.
+Explain container resource limits and verify sensors on Linux; see homepage-widgets.md.
+
 Setup derives service configuration from those inputs and preserves existing
 files. It does not rotate accounts. Use the supported first-run media APIs with
 the supplied credentials and real owner email. Keep the setup journal. If existing

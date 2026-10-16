@@ -3,3 +3,24 @@
     format:
       dateStyle: long
       timeStyle: short
+- openmeteo:
+    label: Local weather
+    units: metric
+    cache: 15
+- resources:
+    label: Homepage container
+    cpu: true
+    memory: true
+    uptime: true
+    network: true
+    cputemp: true
+    units: metric
+    expanded: true
+    refresh: 10000
+- resources:
+    label: Storage
+    disk:
+      - /app/config
+      - /monitor/media
+    expanded: true
+    refresh: 10000

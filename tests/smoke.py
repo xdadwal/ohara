@@ -109,6 +109,19 @@ def main():
             seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
             assert seerr_api.call('/api/v1/settings/public')['initialized'], 'Seerr wizard was not completed'
             assert sum(library['enabled'] for library in seerr_api.call('/api/v1/settings/jellyfin/library')) == 2
+            # Application-issued tokens in disposable files, never deployment defaults.
+            jf = media.Client(urls['jellyfin'])
+            jf.headers['Authorization'] = 'MediaBrowser Client="Ohara", Device="Test", DeviceId="widget-smoke", Version="1"'
+            account = jf.call('/Users/AuthenticateByName', {'Username':'admin', 'Pw':media_secrets['JELLYFIN_PASSWORD']})
+            widget_keys = {
+                'HOMEPAGE_VAR_JELLYFIN_API_KEY': account['AccessToken'],
+                'HOMEPAGE_VAR_SEERR_API_KEY': seerr_api.call('/api/v1/settings/main')['apiKey'],
+            }
+            with (root/'local/homepage.env').open('a') as stream:
+                for key, value in widget_keys.items():
+                    stream.write(key+'='+value+'\n')
+            credential_files.load(root)
+            compose(['up', '-d', '--force-recreate', 'homepage'])
             for name, category in [('radarr','movies'), ('sonarr','tv')]:
                 settings = seerr_api.call('/api/v1/settings/'+name)
                 assert len(settings) == 1 and settings[0]['isDefault'], 'Seerr duplicate/missing default server'
@@ -168,7 +181,7 @@ def main():
             assert code == 200, 'Homepage CSRF endpoint failed'
             csrf = json.loads(body)['csrfToken']
             cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
-            hp = credential_files.read(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
+            hp = credential_files.read(root/'local/homepage.env', credential_files.HOMEPAGE_KEYS, credential_files.WIDGET_KEYS)
             payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
                                                'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
             code, body, login_headers = tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', payload,
@@ -178,6 +191,7 @@ def main():
             assert session, 'Homepage session cookie missing'
             code, body = tls_request(c['HOMEPAGE_HOST'], '/api/services', hdr={'Cookie':session})
             assert code == 200 and b'Seerr' in body and b'Jellyfin' in body, 'Homepage authenticated service list failed'
+            assert not any(value.encode() in body for value in widget_keys.values()), 'Service list exposed widget credentials'
             speed_service = next(service for group in json.loads(body) for service in group['services']
                                  if service['name'] == 'OpenSpeedTest')
             speed_widget = speed_service['widgets'][0]
@@ -185,6 +199,21 @@ def main():
             assert speed_widget['src'] == 'https://'+c['SPEED_HOST']+'/', 'Speed test must use the browser-reachable HTTPS hostname'
             assert speed_widget['loadingStrategy'] == 'lazy', 'Speed test iframe should load lazily'
             assert not speed_widget.get('refreshInterval'), 'Do not reload or interrupt a running speed test'
+            for service, endpoint, field in [('Jellyfin','CountV2','MovieCount'),
+                                              ('Seerr','request/count','pending'),
+                                              ('Seerr','issue/count','open')]:
+                query = urllib.parse.urlencode({'group':'Media', 'service':service, 'index':0, 'endpoint':endpoint})
+                code, result = tls_request(c['HOMEPAGE_HOST'], '/api/services/proxy?'+query, hdr={'Cookie':session})
+                assert code == 200 and field in json.loads(result), f'{service}: native widget API failed'
+                assert not any(value.encode() in result for value in widget_keys.values()), 'Widget API exposed credentials'
+            for resource in ['cpu', 'memory', 'uptime', 'network', 'cputemp']:
+                query = urllib.parse.urlencode({'type':resource})
+                code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
+                assert code == 200 and isinstance(json.loads(result), dict), f'{resource}: resource API failed'
+            for target in ['/app/config', '/monitor/media']:
+                query = urllib.parse.urlencode({'type':'disk', 'target':target})
+                code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
+                assert code == 200 and json.loads(result)['drive']['size'] > 0, 'Storage capacity unavailable'
             rejected = urllib.parse.urlencode({'csrfToken':csrf, 'password':'not-the-password',
                                                 'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
             attempts = [tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', rejected,

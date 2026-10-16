@@ -311,8 +311,9 @@ cookies are secure; use the configured HTTPS hostname for login, not a raw IP or
 an HTTP tunnel. Local health is `http://127.0.0.1:3002/api/healthcheck`.
 
 Nginx limits password callback attempts to five per minute per client IP, with a
-burst of five. Homepage's allowed host is the configured apex. It runs without
-root privileges, without Docker socket access, and without service API keys.
+burst of five. Homepage's allowed host is HOMEPAGE_HOST. It runs without
+root privileges or Docker socket access. Native Jellyfin/Seerr widgets use
+application-issued API keys supplied privately; see [widget setup](homepage-widgets.md).
 Links do not grant access to the applications: each service retains its own login.
 
 Edit `${DATA_ROOT}/homepage/*.yaml` to customize links, settings, and widgets.

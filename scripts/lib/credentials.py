@@ -5,11 +5,12 @@ import re
 import stat
 
 HOMEPAGE_KEYS = {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'}
+WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR') for suffix in ('_API_KEY', '_PASSWORD')}
 
 
-def read(path, keys):
+def read(path, keys, optional=frozenset()):
     path = Path(path)
     if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
         raise ValueError(f'{path.name}: Symlink private configuration is unsupported')
@@ -27,12 +28,15 @@ def read(path, keys):
             if not line.strip() or line.lstrip().startswith('#'):
                 continue
             key, separator, value = line.partition('=')
-            if not separator or key not in keys or key in seen:
+            if not separator or key not in keys | optional or key in seen:
                 raise ValueError(f'local/{path.name}:{number}: unknown, duplicate or malformed key')
             seen.add(key)
             if any(ord(character) < 32 or ord(character) == 127 for character in value):
                 raise ValueError(f'{key}: control characters are unsupported')
-            if key == 'HOMEPAGE_AUTH_ENABLED':
+            if key in WIDGET_KEYS:
+                if not re.fullmatch(r'[!-~]{20,512}', value):
+                    raise ValueError(f'{key}: copy the actual application API key into the private file')
+            elif key == 'HOMEPAGE_AUTH_ENABLED':
                 if value != 'true':
                     raise ValueError('HOMEPAGE_AUTH_ENABLED must be true')
             elif key.endswith('_API_KEY'):
@@ -44,12 +48,12 @@ def read(path, keys):
                 if len(value) < minimum:
                     raise ValueError(f'{key}: supply at least {minimum} characters')
             values[key] = value
-        if set(values) != keys:
+        if not keys <= set(values):
             raise ValueError(f'local/{path.name}: missing required keys: '+', '.join(sorted(keys-set(values))))
     return values
 
 
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
-    return (read(root/'local/homepage.env', HOMEPAGE_KEYS),
+    return (read(root/'local/homepage.env', HOMEPAGE_KEYS, WIDGET_KEYS),
             read(root/'local/media-credentials', MEDIA_KEYS))

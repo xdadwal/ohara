@@ -46,6 +46,12 @@ control characters, symlinks and group/world-readable files are rejected. Errors
 name files/keys, never the supplied value. Compose consumes Homepage's environment
 with `format: raw` to preserve literal characters.
 
+Optional Homepage widget inputs are `HOMEPAGE_VAR_JELLYFIN_API_KEY` and
+`HOMEPAGE_VAR_SEERR_API_KEY`, copied from the actual applications into
+`local/homepage.env` after media setup. Omit them until available; do not leave
+uncommented empty values. Existing login-only files remain valid. See
+[widget setup](homepage-widgets.md).
+
 ## Setup and preservation
 
 Run `sudo scripts/setup --dry-run`, `sudo scripts/setup --non-interactive`, then
