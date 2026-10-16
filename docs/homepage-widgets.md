@@ -1,7 +1,7 @@
 # Homepage widgets
 
 Fresh installations seed Jellyfin, Seerr, clock, weather and resource widgets.
-OpenSpeedTest remains an on-demand browser-to-Ohara test. No new services are added.
+OpenSpeedTest is a link-only card opening an on-demand browser-to-Ohara test. No new services are added.
 Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
 ## Connect media widgets
@@ -38,31 +38,28 @@ Weather requires outbound access to Open-Meteo.
 
 ## Resources and storage
 
-The resource strip enables CPU, memory, uptime, network and temperature readings
-where supported. It is labeled Homepage container: CPU/RAM/network/uptime must
-not be interpreted as a complete Linux host monitor. Temperature can be unavailable
-in Docker or on unsupported hardware. Full host monitoring would require an
-additional collector such as Glances, which is outside this change.
+The resource strip shows CPU, RAM, uptime and one disk entry, polling every
+10 seconds. CPU/RAM/uptime readings are provided from Homepage's container
+context; this is not a complete host monitoring system.
 
-Storage checks /app/config (the filesystem holding Homepage state) and
-/monitor/media (a read-only bind of MEDIA_ROOT/library). The media bind provides
-filesystem capacity without giving Homepage write access. It does expose library
-contents read-only to Homepage. If both paths share one filesystem, capacity is
-naturally duplicated. Separate mounts beneath the media tree require their own
-explicit monitored paths. Root disks, backup disks, SMART/GPU data and other
-unmounted filesystems are not implicitly monitored. Resource polling is 10 seconds.
+The disk entry uses /app/config to identify the filesystem holding Ohara's
+Homepage state (DATA_ROOT/homepage). With expanded display, it shows used space
+and total filesystem capacity, not the size of that directory. No media-library
+mount is needed. A filesystem's total is not the sum of every physical disk:
+unmounted disks, separate filesystems and other storage pools are not included.
 
 ## Existing installations
 
 Back up DATA_ROOT/homepage/services.yaml and widgets.yaml. Merge the selected
 widget sections from configs/homepage into those files, preserving custom links,
 weather location and other edits. Do not overwrite them automatically. Update the
-checkout/Compose definition and recreate Homepage with scripts/up to add the
-read-only media mount and credential environment, then refresh Homepage.
-Verify login, native widget values and media capacity. Allow browser geolocation
-or configure coordinates and verify weather; check temperature availability on
-the actual Linux hardware. Local container tests do not verify browser permission
-prompts, visual layout or real host sensors.
+checkout/Compose definition and recreate Homepage with scripts/up, then refresh
+Homepage. Remove the OpenSpeedTest widget block while retaining its href, and
+replace the two resource sections with the single section in the seed file.
+The retired /monitor/media Compose mount is removed when Homepage is recreated.
+Verify login, native widget values and filesystem capacity. Allow browser
+geolocation or configure coordinates and verify weather. Local container tests
+do not verify browser permission prompts, visual layout or host-wide telemetry.
 
 ## MySpeed and bandwidth direction
 

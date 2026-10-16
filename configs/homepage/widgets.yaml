@@ -8,19 +8,10 @@
     units: metric
     cache: 15
 - resources:
-    label: Homepage container
+    label: Resources
     cpu: true
     memory: true
     uptime: true
-    network: true
-    cputemp: true
-    units: metric
-    expanded: true
-    refresh: 10000
-- resources:
-    label: Storage
-    disk:
-      - /app/config
-      - /monitor/media
+    disk: /app/config
     expanded: true
     refresh: 10000
