@@ -63,8 +63,11 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
 def validate_model(model, c):
     expected = {
         'jellyfin': {('127.0.0.1', 8096, 8096, 'tcp')},
+        'navidrome': {('127.0.0.1', 4533, 4533, 'tcp')},
         'radarr': {('127.0.0.1', 7878, 7878, 'tcp')},
         'sonarr': {('127.0.0.1', 8989, 8989, 'tcp')},
+        'lidarr': {('127.0.0.1', 8686, 8686, 'tcp')},
+        'bazarr': {('127.0.0.1', 6767, 6767, 'tcp')},
         'prowlarr': {('127.0.0.1', 9696, 9696, 'tcp')},
         'qbittorrent': {('127.0.0.1', 8081, 8081, 'tcp')},
         'homepage': {('127.0.0.1', 3002, 3000, 'tcp')},
@@ -97,12 +100,15 @@ def check(c, root, *, static=False):
     validate_model(model, c)
     if not static:
         credential_files.load(root)
+        bazarr_config = Path(c['DATA_ROOT'])/'bazarr/config/config.yaml'
+        if not bazarr_config.exists() and not bazarr_config.is_symlink():
+            bazarr_config = bazarr_config.with_suffix('.ini')
         for path in [root / '.env'] + [
-                Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','prowlarr')
-                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf']:
+                Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','lidarr','prowlarr')
+                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf', bazarr_config]:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
-        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'homepage', 'jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']] + [Path(c['MEDIA_ROOT'])]:
+        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'homepage', 'jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']] + [Path(c['MEDIA_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
         for path, uid, gid in [
@@ -111,10 +117,10 @@ def check(c, root, *, static=False):
         ]:
             if not config.directory_writable(path, uid, gid):
                 raise ValueError(f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually')
-        for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']:
+        for name in ['jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']:
             if not config.directory_writable(Path(c['DATA_ROOT'])/name, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError(f'{name}: storage is not writable by RUN_UID/RUN_GID; review ownership manually')
-        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'library', 'library/movies', 'library/tv']:
+        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'downloads/complete/music', 'library', 'library/movies', 'library/tv', 'library/music', 'recycle-bin', 'recycle-bin/movies', 'recycle-bin/tv']:
             path = Path(c['MEDIA_ROOT'])/name
             if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
@@ -133,8 +139,8 @@ def status(c, root):
     good = True
     for name, port, path in [('homepage', 3002, '/api/healthcheck'), ('seerr', 5055, '/api/v1/settings/public'),
                               ('speedtest', 3000, '/'),
-                              ('jellyfin', 8096, '/health'), ('radarr', 7878, '/'),
-                              ('sonarr', 8989, '/'), ('prowlarr', 9696, '/'), ('qbittorrent', 8081, '/')]:
+                              ('jellyfin', 8096, '/health'), ('navidrome', 4533, '/ping'), ('radarr', 7878, '/'),
+                              ('sonarr', 8989, '/'), ('lidarr', 8686, '/ping'), ('bazarr', 6767, '/'), ('prowlarr', 9696, '/'), ('qbittorrent', 8081, '/')]:
         running = by_name.get(name, {}).get('State') == 'running'
         health = by_name.get(name, {}).get('Health', '')
         http = False

@@ -14,15 +14,15 @@ import proxy
 import runtime
 
 class CopypartyRemovalTests(unittest.TestCase):
-    def test_only_eight_apps_and_four_public_hostnames(self):
+    def test_only_eleven_apps_and_five_public_hostnames(self):
         c = config.load(ROOT/'.env.example')
         model = json.loads(runtime.compose(c, ROOT, ['config','--no-env-resolution','--format','json'], capture=True))
         self.assertTrue('copyparty' not in model['services'], 'Removed file-sharing service is still configured')
-        self.assertEqual(len(model['services']), 8)
+        self.assertEqual(len(model['services']), 11)
         text = proxy.render(c, ROOT, https=True)
         self.assertNotIn('3923', text)
         self.assertNotIn('files.xdadwal.in', text)
-        self.assertEqual(len(proxy.configured_names(text)), 4)
+        self.assertEqual(len(proxy.configured_names(text)), 5)
 
     def test_retired_files_settings_and_credentials_are_not_consumed(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -49,4 +49,4 @@ class CopypartyRemovalTests(unittest.TestCase):
         self.assertIn('files.xdadwal.in', proxy.configured_names(text))
         self.assertNotIn('server_name files.xdadwal.in;', text)
         self.assertNotIn('3923', text)
-        self.assertIn('server_name files.xdadwal.in jellyfin.xdadwal.in seerr.xdadwal.in speed.xdadwal.in xdadwal.in;', text)
+        self.assertIn('server_name files.xdadwal.in music.xdadwal.in seerr.xdadwal.in speed.xdadwal.in tv.xdadwal.in xdadwal.in;', text)

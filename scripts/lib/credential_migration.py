@@ -23,7 +23,12 @@ def migrate(root, backup=None):
         credentials.load(root)
         return None
     hp = credentials.read(legacy[0], credentials.HOMEPAGE_KEYS, credentials.WIDGET_KEYS)
-    media = credentials.read(legacy[1], credentials.MEDIA_KEYS)
+    # These services were introduced after the legacy credential format. Their
+    # values may already be in .env; validate the complete merged set below.
+    new_media_keys = {'LIDARR_API_KEY', 'LIDARR_PASSWORD', 'BAZARR_API_KEY',
+                      'BAZARR_PASSWORD', 'NAVIDROME_PASSWORD'}
+    media = credentials.read(legacy[1], credentials.MEDIA_KEYS - new_media_keys,
+                             new_media_keys)
     values = {**hp, **media}
     if any(key in existing and existing[key] != value for key, value in values.items()):
         raise ValueError('Conflicting .env and legacy credentials; reconcile privately before migration')

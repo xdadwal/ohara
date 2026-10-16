@@ -69,7 +69,7 @@ Radarr/Sonarr download-client API connection tests, root folders, Prowlarr appli
 connection tests, Jellyfin first-user creation/login and libraries, Seerr first-owner
 login, completed wizard, two enabled libraries, one default server per media type,
 and a second connector run without duplicated download clients/application sync.
-Rendered Nginx reaches jellyfin.xdadwal.in over fixture TLS. Existing Homepage,
+Rendered Nginx reaches tv.xdadwal.in over fixture TLS. Existing Homepage,
 Copyparty, Pi-hole and speed-test acceptance checks also pass.
 
 Current API compatibility fixes were verified in real containers: qBittorrent's

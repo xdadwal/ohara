@@ -27,7 +27,7 @@ class QualityTests(unittest.TestCase):
 
     def test_missing_service_profile_prevents_all_writes(self):
         with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
+            root = Path(d).resolve()
             credential_fixtures.write(root)
             with patch.object(media_quality, 'Client') as client:
                 client.return_value.call.return_value = []
@@ -37,7 +37,7 @@ class QualityTests(unittest.TestCase):
 
     def test_applies_size_limits_without_searching_or_editing_titles(self):
         with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
+            root = Path(d).resolve()
             credential_fixtures.write(root)
             calls = []
             class Client:

@@ -5,7 +5,7 @@ from pathlib import Path
 import secrets
 import credentials as credential_files
 
-PORTS = {'radarr': 7878, 'sonarr': 8989, 'prowlarr': 9696}
+PORTS = {'radarr': 7878, 'sonarr': 8989, 'prowlarr': 9696, 'lidarr': 8686}
 SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
@@ -14,12 +14,12 @@ def prepare(c, root, create, directory, owner, group):
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])
     media = Path(c.get('MEDIA_ROOT', str(data / 'media')))
-    for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']:
+    for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'navidrome']:
         directory(data / name, uid, gid)
     directory(media, uid, gid)
     for name in ['downloads', 'library', 'recycle-bin', 'downloads/incomplete', 'downloads/complete',
-                 'downloads/complete/movies', 'downloads/complete/tv', 'library/movies', 'library/tv',
-                 'recycle-bin/movies', 'recycle-bin/tv']:
+                 'downloads/complete/movies', 'downloads/complete/tv', 'downloads/complete/music',
+                 'library/movies', 'library/tv', 'library/music', 'recycle-bin/movies', 'recycle-bin/tv']:
         directory(media / name, uid, gid)
     for name, port in PORTS.items():
         # API keys permit the connector to set forms authentication through the API.
@@ -31,6 +31,9 @@ def prepare(c, root, create, directory, owner, group):
                '  <AuthenticationRequired>Enabled</AuthenticationRequired>\n'
                '  <LaunchBrowser>False</LaunchBrowser><UpdateMechanism>Docker</UpdateMechanism>\n'
                '</Config>\n', uid, gid)
+    directory(data / 'bazarr/config', uid, gid)
+    import bazarr
+    bazarr.prepare(data, values, create, uid, gid)
     directory(data / 'qbittorrent/qBittorrent', uid, gid)
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac('sha512', values['QBITTORRENT_PASSWORD'].encode(), salt, 100000, 64)
@@ -139,7 +142,7 @@ def connect(c, root, email, urls=None):
     _, values = credential_files.load(root)
     urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
                     'qbittorrent': 'http://127.0.0.1:8081', 'jellyfin': 'http://127.0.0.1:8096',
-                    'seerr': 'http://127.0.0.1:5055'}
+                    'seerr': 'http://127.0.0.1:5055', 'navidrome': 'http://127.0.0.1:4533'}
     statefile = root/'local/media-state.json'
     if statefile.is_symlink():
         raise ValueError('Symlink private configuration is unsupported')
@@ -159,7 +162,7 @@ def connect(c, root, email, urls=None):
                 os.unlink(name_tmp)
     arr = {name: Client(urls[name], values[name.upper()+'_API_KEY']) for name in PORTS}
     for name, client in arr.items():
-        version = '/api/v1' if name == 'prowlarr' else '/api/v3'
+        version = '/api/v1' if name in ('prowlarr', 'lidarr') else '/api/v3'
         if not state.get(name+'-auth'):
             resource = client.call(version+'/config/host')
             resource.update(username='admin', password=values[name.upper()+'_PASSWORD'],
@@ -168,19 +171,37 @@ def connect(c, root, email, urls=None):
             client.call(version+'/config/host', resource, 'PUT')
             done(name+'-auth')
     configure_storage(root, urls)
-    for name, category in [('radarr', 'movies'), ('sonarr', 'tv')]:
+    qb = Client(urls['qbittorrent'])
+    qb.headers.update(Host='127.0.0.1:8081', Referer='http://127.0.0.1:8081/')
+    qb.call('/api/v2/auth/login', {'username':'admin', 'password':values['QBITTORRENT_PASSWORD']}, form=True)
+    categories = qb.call('/api/v2/torrents/categories')
+    # Creating a missing music category is safe; changing an existing path could
+    # relocate automatically managed torrents, so preserve operator settings.
+    if 'music' not in categories:
+        qb.call('/api/v2/torrents/createCategory', {'category':'music',
+                'savePath':'/data/downloads/complete/music'}, form=True)
+    for name, category in [('radarr', 'movies'), ('sonarr', 'tv'), ('lidarr', 'music')]:
         client = arr[name]
+        version = '/api/v1' if name == 'lidarr' else '/api/v3'
         path = '/data/library/'+category
-        if not any(folder['path'] == path for folder in client.call('/api/v3/rootfolder')):
-            client.call('/api/v3/rootfolder', {'path': path})
-        if not any(item['name'] == 'Ohara qBittorrent' for item in client.call('/api/v3/downloadclient')):
-            schema = next(item for item in client.call('/api/v3/downloadclient/schema') if item['implementation']=='QBittorrent')
+        if not any(folder['path'] == path for folder in client.call(version+'/rootfolder')):
+            resource = {'path': path}
+            if name == 'lidarr':
+                profiles = client.call(version+'/qualityprofile')
+                metadata = client.call(version+'/metadataprofile')
+                if not profiles or not metadata:
+                    raise ValueError('Lidarr requires quality and metadata profiles; configure them privately first')
+                resource.update(name='Music', defaultQualityProfileId=profiles[0]['id'], defaultMetadataProfileId=metadata[0]['id'],
+                                defaultMonitorOption='all', defaultNewItemMonitorOption='all', defaultTags=[])
+            client.call(version+'/rootfolder', resource)
+        if not any(item['name'] == 'Ohara qBittorrent' for item in client.call(version+'/downloadclient')):
+            schema = next(item for item in client.call(version+'/downloadclient/schema') if item['implementation']=='QBittorrent')
             schema.update(name='Ohara qBittorrent', enable=True, priority=1, removeCompletedDownloads=False)
             fields(schema, {'host':'qbittorrent', 'port':8081, 'useSsl':False, 'username':'admin',
                             'password':values['QBITTORRENT_PASSWORD'],
-                            'movieCategory':category, 'tvCategory':category})
-            client.call('/api/v3/downloadclient/test', schema)
-            client.call('/api/v3/downloadclient', schema)
+                            'movieCategory':category, 'tvCategory':category, 'musicCategory':category})
+            client.call(version+'/downloadclient/test', schema)
+            client.call(version+'/downloadclient', schema)
         prowlarr = arr['prowlarr']
         if not any(item['name'] == 'Ohara '+name for item in prowlarr.call('/api/v1/applications')):
             schema = next(item for item in prowlarr.call('/api/v1/applications/schema') if item['implementation']==name.capitalize())
@@ -189,6 +210,8 @@ def connect(c, root, email, urls=None):
                             'apiKey':values[name.upper()+'_API_KEY']})
             prowlarr.call('/api/v1/applications/test', schema)
             prowlarr.call('/api/v1/applications', schema)
+    import navidrome
+    navidrome.connect(urls['navidrome'], values['NAVIDROME_PASSWORD'])
     jf = Client(urls['jellyfin'])
     jf.headers['Authorization'] = 'MediaBrowser Client="Ohara", Device="Setup", DeviceId="ohara-setup", Version="1"'
     if not jf.call('/System/Info/Public')['StartupWizardCompleted']:

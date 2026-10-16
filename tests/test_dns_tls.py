@@ -197,3 +197,24 @@ class DNSTests(unittest.TestCase):
                 dns_tls.activate(c, ROOT, Path('ignored'), staging=True, agree=True)
             api.assert_not_called()
             install.assert_not_called()
+
+    def test_dns_migration_adds_music_without_replacing_existing_routes(self):
+        c = config.load(ROOT/'.env.example')
+        old = proxy.render(c, ROOT, https=True)
+        old = old.replace('\n'+proxy.navidrome_config(c, ROOT), '')
+        old = old.replace(c['NAVIDROME_HOST']+' ', '')
+        old += '\nserver {\n server_name private.xdadwal.in;\n ssl_certificate /old/cert;\n ssl_certificate_key /old/key;\n deny all;\n}\n'
+        result = dns_tls.nginx_config(old, c, ROOT)
+        self.assertIn('server_name music.xdadwal.in;', result)
+        self.assertIn('proxy_pass http://127.0.0.1:4533;', result)
+        self.assertIn('deny all;', result)
+        self.assertEqual(result.count('server_name music.xdadwal.in;'), 2)
+        self.assertIn('listen 80;\n    listen [::]:80;\n    server_name music.xdadwal.in;', result)
+        self.assertIn('/live/ohara-wildcard/', result)
+
+    def test_dns_migration_does_not_overwrite_existing_music_host(self):
+        c = config.load(ROOT/'.env.example')
+        old = proxy.render(c, ROOT, https=True)
+        old = old.replace('\n'+proxy.navidrome_config(c, ROOT), '')
+        with self.assertRaisesRegex(ValueError, 'inspect before DNS activation'):
+            dns_tls.nginx_config(old, c, ROOT)

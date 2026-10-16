@@ -15,6 +15,12 @@ class ProxyTests(unittest.TestCase):
         c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
         rendered = proxy.render(c, ROOT, https=True, acme_names={'files.xdadwal.in'})
         deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        # New music route/log protection intentionally extend the deployed baseline.
+        self.assertIn('listen [::]:443 ssl;', proxy.navidrome_config(c, ROOT))
+        self.assertIn('access_log off;\n    error_log /dev/null;', rendered)
+        rendered = rendered.replace('\n'+proxy.navidrome_config(c, ROOT), '')
+        rendered = rendered.replace(c['NAVIDROME_HOST']+' ', '')
+        rendered = rendered.replace('    access_log off;\n    error_log /dev/null;\n', '')
         def normalize(text):
             # Localhost uses certificates that fresh hosts do not yet have.
             # Ignore only these two explicit host-specific blocks and harmless

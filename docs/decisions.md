@@ -34,7 +34,7 @@
 The user explicitly approved the services needed to fulfill Seerr requests.
 Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are included locally; this
 supersedes the earlier decision to remove media/download services. Jellyfin
-uses jellyfin.xdadwal.in, while Seerr stays at seerr.xdadwal.in. Acquisition
+uses tv.xdadwal.in, while Seerr stays at seerr.xdadwal.in. Acquisition
 UIs remain loopback-only. No indexer accounts, VPN, GPU or inbound peer ports
 are assumed. Shared storage supports consistent paths and hardlinks.
 

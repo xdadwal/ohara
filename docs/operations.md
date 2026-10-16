@@ -71,14 +71,14 @@ install their local-certificate or static-IP assumptions. Reusable templates mat
 the shared IPv6 and Jellyfin settings. Compare both deployed files after a change
 and update the baseline deliberately; rerunning setup preserves existing HTTPS.
 
-1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin names to
+1. In GoDaddy, set A records for the apex and configured dashboard/seerr/speed/jellyfin/Navidrome names to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
    ports deliberately while preserving SSH access. Never forward backend ports
-   3000, 3002, 5055, 7878, 8081, 8096, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
+   3000, 3002, 4533, 5055, 6767, 7878, 8081, 8096, 8686, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
    paths can be fetched externally, including if the router lacks hairpin NAT.
@@ -87,9 +87,11 @@ and update the baseline deliberately; rerunning setup preserves existing HTTPS.
    directories and never enables public application routes.
 6. Activate: `sudo scripts/tls --activate --accounts-ready --agree-tos`.
    `--accounts-ready` is an explicit operator attestation, not an automatic test
-   of account configuration. This accepts Let's Encrypt's subscriber agreement.
-7. Verify trusted HTTPS and hostname matching on all four names externally,
-   login/logout, Jellyfin playback, and a complete speed test. The configured Homepage hostname should show its password login;
+   of account configuration. Verify Homepage, Jellyfin, Seerr and Navidrome
+   account readiness through private access first, including successful Navidrome login.
+   This accepts Let's Encrypt's subscriber agreement.
+7. Verify trusted HTTPS and hostname matching on all configured names externally,
+   login/logout, Jellyfin and Navidrome playback, and a complete speed test. The configured Homepage hostname should show its password login;
    confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
 
 ### GoDaddy DNS validation and wildcard renewal
@@ -219,7 +221,7 @@ A certificate issued before removal may still cover files.xdadwal.in. Activation
 preserves prior certificate names for rollback and keeps HTTP ACME challenge handling
 for those names, while removing their HTTPS application routes. Keep their DNS
 records resolving to the server until a deliberate certificate-name retirement is
-completed. Fresh deployments request only the four active names. Do not delete a
+completed. Fresh deployments request only the configured active names. Do not delete a
 working certificate or change renewal metadata casually.
 
 ## Migration from the previous repository
@@ -247,7 +249,7 @@ external credentials automatically.
 
 ## Backups, upgrades, and recovery
 
-Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
+Back up media libraries and Jellyfin/Navidrome/Radarr/Sonarr/Lidarr/Bazarr/Prowlarr/qBittorrent state,
 `.env` and `local/media-state.json` (see [media.md](media.md)).
 Back up `.env`, `local/`, Seerr config/
 SQLite database, Homepage configuration, managed Nginx config, and `/etc/letsencrypt` (including renewal
@@ -350,3 +352,57 @@ restart is needed. Preserve other dashboard customizations.
 
 See [Homepage widget configuration](homepage-widgets.md) and
 [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test).
+
+## Music and subtitles operations
+
+Lidarr (loopback 8686) and Bazarr (loopback 6767) use private SSH forwarding;
+no public admin subdomains are configured. Navidrome provides music playback on
+loopback 4533 and configurable NAVIDROME_HOST; music.xdadwal.in is the default; verify public DNS before HTTPS activation. Append missing Lidarr/Bazarr
+credential entries and NAVIDROME_PASSWORD to the private root `.env`, preserving
+every existing value; see [credentials.md](credentials.md).
+
+After setup, verify Prowlarr → Lidarr sync, the qBittorrent `music` category,
+Lidarr root `/data/library/music`, and Navidrome music scan/playback. Navidrome
+reads MEDIA_ROOT/library/music read-only at `/music` and keeps writable state in
+DATA_ROOT/navidrome at `/data`. Verify its admin login with the supplied password;
+media-setup uses supported first-run/login APIs and never resets an existing
+account. Fresh Jellyfin setup adds Movies/TV Shows only. Preserve existing Music
+libraries; manually hide/remove only the library definition if desired, keeping
+all music files. No additional Navidrome API key is required. Seerr
+continues to request movies and series only. Verify Bazarr Radarr/Sonarr
+connections and shared `/data/library` paths; it needs write access beside media
+for subtitle files. Existing Bazarr configuration is preserved and requires
+manual connection verification. The operator must select subtitle languages and
+providers and privately supply any required provider credentials.
+
+The discussed final NAS/multiple-node topology is not implemented. These services
+run in the current Compose stack; a future acquisition node is their intended
+home. This change does not provision multiple nodes, shared auth or local DNS.
+
+Navidrome HTTPS and its managed HTTP redirect suppress URL-bearing Nginx logs
+because Subsonic URLs can contain credentials. Diagnose music upstream problems
+with scripts/status, Navidrome service logs and connectivity checks rather than
+request-URL logging. The public music route uses a five-second connection timeout;
+streaming reads retain the longer playback timeout.
+
+## Jellyfin hostname cutover
+
+JELLYFIN_HOST defaults to tv.xdadwal.in. Existing private .env files are preserved,
+so update that value explicitly before redeploying. Add/update the GoDaddy record
+for tv.xdadwal.in to the intended public IP. Existing browser links derive from
+JELLYFIN_HOST; an edited Homepage file with a literal old URL needs a manual update.
+
+For an existing HTTPS deployment, back up Nginx configuration and change the
+Jellyfin HTTPS server_name and managed HTTP host list to the new hostname,
+preserving unrelated routes and ACLs. Test nginx -t before reloading. A wildcard
+certificate for *.xdadwal.in covers tv.xdadwal.in; an HTTP-01 certificate with
+explicit names needs deliberate expansion through scripts/tls before serving the
+new route. DNS-TLS migration deliberately rejects missing/unmatched service routes
+rather than silently replacing an existing custom site. Verify staging and the
+production certificate before cutover. Keep the old configuration for rollback.
+
+Recreate Jellyfin to update its published URL. Existing Seerr configuration is
+preserved on reruns: update its Jellyfin external URL to https://tv.xdadwal.in
+through Settings, while keeping the internal Docker URL unchanged. Update saved
+server URLs in Jellyfin clients. No private credential values or live DNS/Nginx
+settings are changed by this repository edit.

@@ -69,7 +69,13 @@ def nginx_config(old, c, root):
                            r'\1 ' + str(CERT_DIR / 'privkey.pem') + ';', block)
         return block
     result = re.sub(r'(?ms)^server \{\n.*?^\}', update, old)
-    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST')}
+    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST')}
+    if required - changed == {c['NAVIDROME_HOST']} and c['NAVIDROME_HOST'] not in proxy.configured_names(old):
+        result += '\n' + proxy.navidrome_config(c, root).replace('/live/ohara/', '/live/' + CERT_NAME + '/')
+        result += ('\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name ' + c['NAVIDROME_HOST'] + ';\n'
+                   '    access_log off;\n    error_log /dev/null;\n'
+                   '    location / { return 301 https://$host$request_uri; }\n}\n')
+        changed.add(c['NAVIDROME_HOST'])
     if not required <= changed:
         raise ValueError('Existing HTTPS routes are missing configured names; inspect before DNS activation')
     return result
@@ -84,7 +90,7 @@ def activate(c, root, credential_path, *, staging=False, renewal_only=False,
     data = dns_godaddy.credentials(credential_path)
     if data['domain'] != c['DOMAIN']:
         raise ValueError('DNS credential zone must match DOMAIN')
-    for key in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'):
+    for key in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST'):
         name = c[key]
         if key == 'HOMEPAGE_HOST' and name == c['DOMAIN']:
             continue

@@ -15,7 +15,8 @@ chmod 600 .env
 ```
 
 Edit `.env` privately. Fill deployment settings and uncomment/fill the required
-credential entries in `.env.example`; it contains no working credential defaults.
+credential entries copied from `.env.example` into `.env`; the example contains
+no working credential defaults.
 
 | Service | Required keys |
 |---|---|
@@ -25,11 +26,17 @@ credential entries in `.env.example`; it contains no working credential defaults
 | Radarr | `RADARR_PASSWORD`, `RADARR_API_KEY` |
 | Sonarr | `SONARR_PASSWORD`, `SONARR_API_KEY` |
 | Prowlarr | `PROWLARR_PASSWORD`, `PROWLARR_API_KEY` |
+| Lidarr | `LIDARR_PASSWORD`, `LIDARR_API_KEY` |
+| Bazarr | `BAZARR_PASSWORD`, `BAZARR_API_KEY` |
+| Navidrome | `NAVIDROME_PASSWORD` |
 
 Homepage passwords require at least 8 characters, media passwords 16, and the
 Homepage session secret 32. Acquisition API keys must be 32 hexadecimal characters.
 Use independent values. Existing installations must use their actual application
 values. Seerr initially authenticates through Jellyfin; OpenSpeedTest has no login.
+Navidrome uses its supplied password for supported first-run account creation and
+login verification; it needs no additional API key. Subtitle-provider credentials,
+when required, are entered privately in Bazarr after the operator chooses providers.
 Application databases retain their own account hashes/session tokens: this change
 consolidates operator inputs, not application-managed persistent state.
 
@@ -39,7 +46,11 @@ setup; omit/comment them until available. See [widget setup](homepage-widgets.md
 
 ## Migrate the old files
 
-With the updated checkout, before running setup/up:
+With the updated checkout, before running setup/up, privately add any missing
+`LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD`, `BAZARR_API_KEY` and
+`NAVIDROME_PASSWORD` entries to root `.env`, preserving existing values. Leave
+the legacy files intact for migration. The new passwords require at least 16
+characters and API keys exactly 32 hexadecimal characters. Then run:
 
 ```sh
 chmod 600 .env
@@ -57,6 +68,9 @@ private directory under `../ohara-backups/credentials-TIMESTAMP`; use
 API key, database or setup journal is reset. Rerunning migration on a unified
 installation is a no-op. Missing/invalid legacy files stop migration without
 changing the active input. Keep the backup encrypted with your other recovery data.
+
+Legacy split files are deprecated and remain ignored by Git; runtime commands
+consume only `.env`. Never put new entries in the legacy files. The entries in `.env.example` are commented and empty; setup never supplies them.
 
 ## Literal values and validation
 

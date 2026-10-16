@@ -13,8 +13,9 @@ port conflicts. Avoid exposing private configuration while inspecting it.
 
 Reuse settled choices: Asia/Kolkata timezone; HOMEPAGE_HOST for Homepage (default apex, or
 ohara.xdadwal.in with the separate apex portfolio profile);
-seerr.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
+seerr.xdadwal.in for Seerr, tv.xdadwal.in for playback, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
+Navidrome uses configurable NAVIDROME_HOST; music.xdadwal.in is the default; verify the hostname and public DNS before activation.
 Public DNS is managed at GoDaddy. Do not ask the user to choose these again
 unless the target's existing configuration conflicts with them.
 
@@ -87,17 +88,33 @@ scope. Distinguish local success from public DNS/HTTPS and access from other dev
 
 ## Media stack inputs and setup
 
-Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are now included. Follow
+Jellyfin, Navidrome, Radarr, Sonarr, Lidarr, Bazarr, Prowlarr and qBittorrent are included. Follow
 [media.md](media.md). Inspect media mounts/capacity, RUN_UID/RUN_GID and existing
 state first. Ask for the actual Seerr owner email if unknown, chosen indexers,
-and any required external account/API credentials. Read passwords/API keys from the user-created private input files. Never choose a source or create an external account by inference.
-Run scripts/media-setup after scripts/up; then verify private logins, both
-download-client tests, Prowlarr application sync, Seerr default profiles/root
+and any required external account/API credentials. Read passwords/API keys from the user-created private root `.env`. Never choose a source or create an external account by inference.
+Run scripts/media-setup after scripts/up; then verify private logins, the
+movie/TV/music download-client tests, Prowlarr application sync, Seerr default profiles/root
 folders, Jellyfin libraries and external URL. Keep admin UIs private. Before
 public activation, set Jellyfin Known Proxies to the actual host gateway and
 check permissions with an ordinary viewing account. A healthy empty stack does
 not prove request fulfillment: require a permitted movie/episode import and
-HTTPS playback plus Seerr availability sync.
+HTTPS playback plus Seerr availability sync. Verify music imports through
+Lidarr → shared music library → Navidrome scan/playback; Seerr does not request
+music. Verify Navidrome admin login using supplied NAVIDROME_PASSWORD. Its supported
+first-run API creates the account; existing accounts require successful login and
+are never reset. Fresh Jellyfin setup seeds only Movies and TV Shows. Preserve
+existing Jellyfin Music libraries; manually hide/remove only the library definition
+if desired, without deleting files. Ask the operator
+for subtitle languages, providers and any required provider credentials. Preserve
+existing Bazarr configuration and manually verify Radarr/Sonarr connections, path
+access, and subtitle writes. Keep Lidarr/Bazarr private on loopback 8686/6767; do
+not create public admin subdomains. On existing installations, have the operator
+append missing Lidarr/Bazarr credentials and NAVIDROME_PASSWORD to `.env` privately without
+replacing existing values. Navidrome needs no additional API key.
+
+The discussed NAS/multiple-node topology is future work. These services currently
+run in this Compose stack; their intended future home is the acquisition node.
+Do not add node orchestration, shared authentication or local DNS infrastructure.
 
 On existing installations, use `scripts/media-setup --storage-only` to apply the
 storage policy without logging into or initializing Jellyfin/Seerr owners. Run

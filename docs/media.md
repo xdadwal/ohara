@@ -4,15 +4,19 @@ Ohara includes the complete local stack:
 
 | Application | Internal connection | Private host port | Role |
 |---|---|---|---|
-| Jellyfin | `http://jellyfin:8096` | 8096 | Playback, libraries, media login |
+| Jellyfin | `http://jellyfin:8096` | 8096 | Movie/series playback, media login |
+| Navidrome | `http://navidrome:4533` | 4533 | Music playback and library |
 | Seerr | `http://seerr:5055` | 5055 | Discover and request movies/shows |
 | Radarr | `http://radarr:7878` | 7878 | Movie acquisition and import |
 | Sonarr | `http://sonarr:8989` | 8989 | Series acquisition and import |
+| Lidarr | `http://lidarr:8686` | 8686 | Music acquisition and import |
+| Bazarr | `http://bazarr:6767` | 6767 | Movie/series subtitles |
 | Prowlarr | `http://prowlarr:9696` | 9696 | Indexer management and sync |
 | qBittorrent | `http://qbittorrent:8081` | 8081 | Downloads |
 
-Only Jellyfin (`jellyfin.xdadwal.in`) and Seerr (`seerr.xdadwal.in`) have public
-Nginx routes. Every backend host port binds to loopback. No peer, discovery, UPnP,
+Jellyfin (`tv.xdadwal.in`), Seerr (`seerr.xdadwal.in`) and Navidrome
+(`NAVIDROME_HOST`) have public Nginx routes after explicit activation.
+`music.xdadwal.in` is the default Navidrome hostname; change NAVIDROME_HOST if needed. Every backend host port binds to loopback. No peer, discovery, UPnP,
 or DLNA ports are published. Normal outbound torrent connections work; inbound
 peer connectivity is not configured. No VPN service or routing policy is assumed.
 
@@ -20,11 +24,11 @@ peer connectivity is not configured. No VPN service or routing policy is assumed
 
 Confirm actual media disk capacity, mount, backup destination, and owner email.
 The optional `.env` keys `MEDIA_ROOT` and `JELLYFIN_HOST` default to
-`DATA_ROOT/media` and `jellyfin.DOMAIN` for older configurations. Use a separate
+`DATA_ROOT/media` and `tv.DOMAIN` for older configurations. Use a separate
 media mount by setting MEDIA_ROOT explicitly. Its parent must already exist;
 setup does not mount disks or recursively change existing ownership.
 
-Create and fill the private input files in [credentials.md](credentials.md),
+Create and fill the private root `.env` described in [credentials.md](credentials.md),
 then run host setup and `scripts/up`. Your supplied media passwords and API keys
 are read from `.env` (0600). The initial username is `admin`.
 Jellyfin's password is also used for its Seerr media-server login, as required by
@@ -37,14 +41,33 @@ After all local services are ready, run as the checkout owner:
 scripts/media-setup --owner-email your-real-email@example.com
 ```
 
-The command uses local HTTP APIs to set the Radarr/Sonarr/Prowlarr admin accounts,
-create qBittorrent movie/TV categories, configure download clients, root folders,
+The command uses local HTTP APIs to set the Radarr/Sonarr/Lidarr/Prowlarr admin accounts,
+create qBittorrent movie/TV/music categories, configure download clients, root folders,
 and Prowlarr application sync. It initializes Jellyfin with remote access enabled
 and automatic port mapping disabled, adds Movies and TV Shows libraries, then
 creates the Seerr owner using Jellyfin login and connects the default Radarr/Sonarr
 servers. The initial request profile is **HD-1080p**, minimum movie availability
 **released**, automatic searching enabled, and one copy of each title. Change
-profiles deliberately in Seerr after setup. No source/indexer is chosen for you.
+profiles deliberately in Seerr after setup. Seerr supports movie/series requests
+only; add music directly in Lidarr. Its initial music root uses the first existing
+quality and metadata profiles; review those profiles before adding artists.
+No source/indexer is chosen for you.
+
+It initializes Navidrome's `admin` account through the supported application API
+using supplied `NAVIDROME_PASSWORD` (at least 16 characters); no additional API key
+is needed. Existing accounts must pass login verification; setup does not reset
+them. An authentication mismatch stops setup for manual review. Music flows from
+Lidarr → `/data/library/music` → Navidrome scan/playback.
+
+Existing Jellyfin Music libraries are preserved. If the earlier setup already
+created one, manually hide it or remove only its library definition in Jellyfin
+if desired. Never select deletion of the underlying music files.
+
+Setup seeds Bazarr with its supplied API key/password and Radarr/Sonarr connections
+using their internal URLs and API keys. Existing Bazarr configuration is preserved;
+manually verify those connections after an upgrade. Select subtitle languages and
+providers yourself and supply any required provider credentials privately in Bazarr.
+No subtitle language, provider or provider account is assumed.
 
 A private journal (`local/media-state.json`) records completed account setup.
 Reruns preserve configured accounts, existing connections and library choices;
@@ -58,8 +81,10 @@ Use SSH forwarding for private administration:
 
 ```sh
 ssh -L 7878:127.0.0.1:7878 -L 8989:127.0.0.1:8989 \
+    -L 8686:127.0.0.1:8686 -L 6767:127.0.0.1:6767 \
     -L 9696:127.0.0.1:9696 -L 8081:127.0.0.1:8081 \
-    -L 8096:127.0.0.1:8096 -L 5055:127.0.0.1:5055 user@server
+    -L 4533:127.0.0.1:4533 -L 8096:127.0.0.1:8096 \
+    -L 5055:127.0.0.1:5055 user@server
 ```
 
 Add your chosen indexers and any required account/API credentials in Prowlarr.
@@ -68,14 +93,14 @@ renaming, run `scripts/media-setup --profile ohara --profile-only` after account
 setup. This preserves existing accounts and naming formats; it does not invoke
 the first-run Jellyfin/Seerr login flow. See [replication.md](replication.md) for
 the selected indexers, category limitations and migration procedure.
-Test each indexer and trigger application sync. Prowlarr sends indexers to both
-Radarr and Sonarr; it is not a search provider itself. Do not treat healthy
+Test each indexer and trigger application sync. Prowlarr sends compatible indexers to
+Radarr, Sonarr and Lidarr; it is not a search provider itself. Do not treat healthy
 containers or successful API connections as proof of working acquisition.
 Only fetch content you have permission to access.
 
 ## Storage and connections
 
-All three acquisition containers share **one `/data` bind mount**, preserving
+Radarr, Sonarr, Lidarr and qBittorrent share **one `/data` bind mount**, preserving
 consistent paths and allowing hardlinks/atomic moves when the filesystem supports
 them. Do not create separate library/download bind mounts inside these containers.
 
@@ -84,16 +109,20 @@ MEDIA_ROOT/
   downloads/incomplete/
   downloads/complete/movies/
   downloads/complete/tv/
+  downloads/complete/music/
   library/movies/
   library/tv/
+  library/music/
   recycle-bin/movies/
   recycle-bin/tv/
 ```
 
-Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`.
-Both use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied password,
-and category `movies` or `tv`. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
-uses `http://radarr:7878` and `http://sonarr:8989` with their user-supplied API keys.
+Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`;
+Lidarr root: `/data/library/music`.
+All three use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied password,
+and category `movies`, `tv` or `music` respectively. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
+uses `http://radarr:7878`, `http://sonarr:8989` and `http://lidarr:8686`
+with their user-supplied API keys.
 Seerr uses container names and ports from the table, with both defaults enabled.
 If updating an existing Homepage deployment, remove any retired Copyparty link
 and add the Jellyfin entry from
@@ -102,7 +131,14 @@ setup preserves that file and your customizations.
 
 Jellyfin reads the library **read-only** at `/media/movies` and `/media/tv`;
 its cache/transcodes use DATA_ROOT/jellyfin-cache, so reserve enough disk space
-for transcoding.
+for transcoding. Navidrome uses the official `deluan/navidrome` image with
+writable application state at `DATA_ROOT/navidrome` mounted as `/data`, and
+`MEDIA_ROOT/library/music` mounted read-only as `/music`. Its host port 4533
+binds only to loopback.
+Bazarr mounts only `/data/library` read-write, so its Radarr/Sonarr media paths
+match without remote path mappings. Verify it can write subtitle files beside
+movies and episodes. Lidarr and Bazarr have no public admin subdomains.
+
 Hardware transcoding needs a separate GPU/device permission configuration;
 software transcoding is the initial default.
 
@@ -193,19 +229,25 @@ and [Sonarr quality documentation](https://wiki.servarr.com/sonarr/settings#qual
 
 ## Public activation and acceptance
 
-Add a DNS A record for `jellyfin.xdadwal.in`, then rerun explicit TLS activation
+Add a DNS A record for `tv.xdadwal.in`, then rerun explicit TLS activation
 so its certificate includes the new name. Only forward TCP 80/443. Before enabling
-public routes, verify Jellyfin owner login and Seerr setup through the tunnel.
+public routes, verify Jellyfin owner login, Navidrome login and Seerr setup through
+the tunnel. Confirm NAVIDROME_HOST before adding its DNS record and activating TLS.
 In Jellyfin Dashboard → Networking, set Known Proxies to the actual Docker bridge
 gateway used by host Nginx (inspect the Ohara network locally). Trust that single
 proxy address, not arbitrary networks, so forwarded client IPs work correctly.
-Confirm external server URL in Seerr is `https://jellyfin.xdadwal.in`.
+Confirm external server URL in Seerr is `https://tv.xdadwal.in`.
 
 Verify a permitted test request travels Seerr → Radarr/Sonarr → qBittorrent,
 completes, imports to the matching library, appears after a Jellyfin scan, and plays
 through HTTPS. Check both a movie and a series episode. Check library availability
 sync in Seerr. Indexer credentials and real download/playback acceptance remain
 operator steps; no automatic external download is performed by repository tests.
+Also verify a permitted music import through Lidarr → qBittorrent →
+`/data/library/music` → Navidrome scan/playback, including HTTPS access at the
+confirmed NAVIDROME_HOST. After the operator configures
+subtitle languages/providers, verify Bazarr connections and a permitted subtitle
+write beside movie/episode media. Healthy containers do not establish these outcomes.
 
 Back up all application config directories, `.env`,
 `local/media-state.json`, and media you cannot replace. Stop database writers or
@@ -213,10 +255,17 @@ use supported exports for consistent backups. Media images run directly as RUN_U
 so their initialization does not recursively change existing ownership. Ohara's
 host setup also preserves existing directories. Review write access before startup.
 
+All services currently run in the same Compose stack. The discussed final
+NAS/multiple-node topology is not implemented; Lidarr and Bazarr are intended for
+a future acquisition node. Storage/node migration needs separate implementation.
+
 References: [Seerr services](https://docs.seerr.dev/using-seerr/settings/services/),
 [Jellyfin containers](https://jellyfin.org/docs/general/installation/container/),
+[Navidrome containers](https://www.navidrome.org/docs/installation/docker/),
 [Radarr](https://docs.linuxserver.io/images/docker-radarr/),
 [Sonarr](https://docs.linuxserver.io/images/docker-sonarr/),
+[Lidarr](https://docs.linuxserver.io/images/docker-lidarr/),
+[Bazarr](https://docs.linuxserver.io/images/docker-bazarr/),
 [Prowlarr](https://docs.linuxserver.io/images/docker-prowlarr/),
 [qBittorrent](https://docs.linuxserver.io/images/docker-qbittorrent/).
 

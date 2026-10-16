@@ -22,6 +22,9 @@ server {
     listen 80;
     listen [::]:80;
     server_name @HOSTS@;
+    # Music-client URLs can carry credentials even before the HTTPS redirect.
+    access_log off;
+    error_log /dev/null;
     location ^~ /.well-known/acme-challenge/ {
         root /var/lib/ohara/acme;
         default_type text/plain;

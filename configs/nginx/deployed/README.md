@@ -1,7 +1,9 @@
 # Stable xdadwal.in Nginx baseline
 
-These two non-secret files are exact copies of `/etc/nginx/conf.d/` on the
-xdadwal.in server, captured on 2026-10-16 at the owner's request. They contain
+These non-secret reference files originate from `/etc/nginx/conf.d/` on the
+xdadwal.in server, captured on 2026-10-16 at the owner's request. The tracked
+Jellyfin hostname has since been updated to `tv.xdadwal.in`; this does not
+mean the live server or public DNS has been changed. They contain
 public routes and certificate paths, never private keys or application credentials.
 
 - `ohara.conf`: wildcard HTTPS, portfolio apex, Homepage at ohara.xdadwal.in,
@@ -22,7 +24,7 @@ cmp configs/nginx/deployed/ohara.conf /etc/nginx/conf.d/ohara.conf
 cmp configs/nginx/deployed/ohara-public-ip-test.conf /etc/nginx/conf.d/ohara-public-ip-test.conf
 ```
 
-To reproduce this exact deployment, restore/issue the wildcard certificate at
+To apply this reference configuration, restore/issue the wildcard certificate at
 `/etc/letsencrypt/live/ohara-wildcard/{fullchain,privkey}.pem` and restore the local
 certificate/key at `/etc/ohara/tls/server.{crt,key}` privately first. Also prepare
 the documented loopback services and `/var/lib/ohara/acme`. Review these public

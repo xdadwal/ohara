@@ -4,10 +4,10 @@ from pathlib import Path
 import re
 
 KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
-        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT'}
+        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
+IMAGES = {'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE', 'LIDARR_IMAGE', 'BAZARR_IMAGE', 'NAVIDROME_IMAGE'}
 
 
 def parse(path, keys, optional=frozenset(), ignored=frozenset()):
@@ -32,29 +32,30 @@ def parse(path, keys, optional=frozenset(), ignored=frozenset()):
 
 def load(path):
     import credentials
-    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT'}, credentials.ALL_KEYS)
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
     values.pop('FILES_ROOT', None)
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.
     values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
-    values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
+    values.setdefault('JELLYFIN_HOST', 'tv.' + values['DOMAIN'])
+    values.setdefault('NAVIDROME_HOST', 'music.' + values['DOMAIN'])
     values.setdefault('HOMEPAGE_HOST', values['DOMAIN'])
     values.setdefault('PORTFOLIO_PORT', '0')
     if not values['PORTFOLIO_PORT'].isdigit() or not 0 <= int(values['PORTFOLIO_PORT']) <= 65535:
         raise ValueError('PORTFOLIO_PORT must be 0 (disabled) or a valid TCP port')
     if int(values['PORTFOLIO_PORT']) and (int(values['PORTFOLIO_PORT']) < 1024 or values['HOMEPAGE_HOST'] == values['DOMAIN']):
         raise ValueError('Portfolio requires a nonprivileged port and a separate HOMEPAGE_HOST')
-    if int(values['PORTFOLIO_PORT']) in {3000, 3002, 3923, 5055, 7878, 8081, 8096, 8888, 8989, 9696}:
+    if int(values['PORTFOLIO_PORT']) in {3000, 3002, 3923, 4533, 5055, 6767, 7878, 8081, 8096, 8686, 8888, 8989, 9696}:
         raise ValueError('PORTFOLIO_PORT must not expose an existing application or private admin port')
     if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (values['HOMEPAGE_HOST'] != values['DOMAIN'] and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])):
         raise ValueError('HOMEPAGE_HOST must be DOMAIN or a subdomain')
-    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST')]:
+    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')]:
         raise ValueError('HOMEPAGE_HOST must not overlap another service')
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
+    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']:
         if not HOST.fullmatch(values[key]):
             raise ValueError(f'{key}: invalid DNS hostname')
-    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']]
-    if len(set(names)) != 4 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
+    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']]
+    if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
     for key in ['DATA_ROOT', 'MEDIA_ROOT']:
         value = values[key]

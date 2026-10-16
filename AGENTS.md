@@ -5,7 +5,7 @@ before changing deployment behavior. The approved migration plan is under
 docs/superpowers/plans/.
 
 - Active applications: Seerr (Jellyseerr's successor),
-  OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
+  OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
   the separate portfolio service serves the apex; no Docker socket. Media widgets
   read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
@@ -37,6 +37,17 @@ docs/superpowers/plans/.
   external account/API credentials; never invent them. Credentials are in
   .env; preserve the setup journal. Verify permitted movie/TV
   acquisition, import, playback and availability sync before declaring it ready.
+  Lidarr handles music acquisition directly and Navidrome handles music playback;
+  Seerr has no music request flow. Fresh Jellyfin setup seeds only Movies/TV Shows.
+  Preserve any existing Jellyfin Music library; the operator may hide/remove its
+  library definition manually without deleting music files. Navidrome uses the
+  supplied NAVIDROME_PASSWORD and supported first-run/login APIs, never a reset.
+  NAVIDROME_HOST defaults to music.xdadwal.in; verify target DNS before activation. Ask for Bazarr
+  subtitle languages/providers and any provider credentials; never assume them.
+  Preserve existing Bazarr configuration and manually verify its connections.
+  Lidarr (8686) and Bazarr (6767) stay private, without public admin subdomains.
+  A future NAS/multiple-node topology is discussed, not implemented; these services
+  run in the current Compose stack, with a future acquisition node intended.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
   A completed command or cached Available label is not evidence of a present file:
