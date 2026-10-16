@@ -120,6 +120,8 @@ def prepare_storage(c, root):
         template = (root / 'configs/copyparty/config.example').read_text()
         create_owned(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), owner, gid, 0o640)
     create_owned(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n', owner, group)
+    from media import prepare
+    prepare(c, root, create_owned, ensure_directory, owner, group)
     print('Storage ready; credentials are in local/credentials and local/homepage.env (not printed).')
 
 

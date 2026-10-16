@@ -5,7 +5,7 @@ TASK_TMP="$(mktemp -d)"
 trap 'rm -rf "$TASK_TMP"' EXIT
 cp -R "$ROOT_DIR/scripts" "$TASK_TMP/scripts"
 cp "$ROOT_DIR/.env.example" "$TASK_TMP/.env.example"
-for command in setup check up status tls; do
+for command in setup check up status tls media-setup; do
   (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
 done
 if "$TASK_TMP/scripts/setup" --dry-run >"$TASK_TMP/out" 2>&1; then

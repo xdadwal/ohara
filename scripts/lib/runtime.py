@@ -49,6 +49,11 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
 
 def validate_model(model, c):
     expected = {
+        'jellyfin': {('127.0.0.1', 8096, 8096, 'tcp')},
+        'radarr': {('127.0.0.1', 7878, 7878, 'tcp')},
+        'sonarr': {('127.0.0.1', 8989, 8989, 'tcp')},
+        'prowlarr': {('127.0.0.1', 9696, 9696, 'tcp')},
+        'qbittorrent': {('127.0.0.1', 8081, 8081, 'tcp')},
         'homepage': {('127.0.0.1', 3002, 3000, 'tcp')},
         'seerr': {('127.0.0.1', 5055, 5055, 'tcp')},
         'copyparty': {('127.0.0.1', 3923, 3923, 'tcp')},
@@ -81,10 +86,10 @@ def check(c, root, *, static=False):
                                capture=True, docker=['docker']))
     validate_model(model, c)
     if not static:
-        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env']:
+        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env', root / 'local/media-credentials']:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
-        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty', 'homepage']] + [Path(c['FILES_ROOT'])]:
+        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty', 'homepage', 'jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']] + [Path(c['FILES_ROOT']), Path(c['MEDIA_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
         for path, uid, gid in [
@@ -95,6 +100,13 @@ def check(c, root, *, static=False):
         ]:
             if not config.directory_writable(path, uid, gid):
                 raise ValueError(f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually')
+        for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']:
+            if not config.directory_writable(Path(c['DATA_ROOT'])/name, int(c['RUN_UID']), int(c['RUN_GID'])):
+                raise ValueError(f'{name}: storage is not writable by RUN_UID/RUN_GID; review ownership manually')
+        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'library', 'library/movies', 'library/tv']:
+            path = Path(c['MEDIA_ROOT'])/name
+            if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
+                raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
         hp = config.parse(root / 'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'})
         if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or min(len(hp[k]) for k in ['HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD']) < 32:
             raise ValueError('Homepage authentication must be enabled with strong generated credentials')
@@ -116,7 +128,9 @@ def status(c, root):
     by_name = {r['Service']: r for r in rows}
     good = True
     for name, port, path in [('homepage', 3002, '/api/healthcheck'), ('seerr', 5055, '/api/v1/settings/public'), ('copyparty', 3923, '/'),
-                              ('speedtest', 3000, '/'), ('pihole', 8888, '/admin/')]:
+                              ('speedtest', 3000, '/'), ('pihole', 8888, '/admin/'),
+                              ('jellyfin', 8096, '/health'), ('radarr', 7878, '/'),
+                              ('sonarr', 8989, '/'), ('prowlarr', 9696, '/'), ('qbittorrent', 8081, '/')]:
         running = by_name.get(name, {}).get('State') == 'running'
         health = by_name.get(name, {}).get('Health', '')
         http = False
