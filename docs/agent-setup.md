@@ -13,7 +13,7 @@ port conflicts. Avoid exposing private configuration while inspecting it.
 
 Reuse settled choices: Asia/Kolkata timezone; HOMEPAGE_HOST for Homepage (default apex, or
 ohara.xdadwal.in with the separate apex portfolio profile);
-seerr.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
+seerr.xdadwal.in for Seerr, tv.xdadwal.in for playback, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
 Navidrome uses configurable NAVIDROME_HOST; music.xdadwal.in is the default; verify the hostname and public DNS before activation.
 Public DNS is managed at GoDaddy. Do not ask the user to choose these again

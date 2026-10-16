@@ -13,7 +13,7 @@ media settings on another machine, or to migrate private state safely.
 | Service | Purpose | Access |
 |---|---|---|
 | Homepage | Password-protected service dashboard | `HOMEPAGE_HOST` (`ohara.xdadwal.in` on this host) |
-| Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
+| Jellyfin | Movie and series playback | `tv.xdadwal.in` after activation |
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Lidarr | Music acquisition | Private administration (8686) |
 | Navidrome | Music playback | `NAVIDROME_HOST` (default `music.xdadwal.in`); loopback 4533 |

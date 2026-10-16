@@ -37,7 +37,7 @@ def load(path):
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.
     values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
-    values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
+    values.setdefault('JELLYFIN_HOST', 'tv.' + values['DOMAIN'])
     values.setdefault('NAVIDROME_HOST', 'music.' + values['DOMAIN'])
     values.setdefault('HOMEPAGE_HOST', values['DOMAIN'])
     values.setdefault('PORTFOLIO_PORT', '0')

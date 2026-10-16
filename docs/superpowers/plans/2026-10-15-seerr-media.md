@@ -10,7 +10,7 @@ acquisition, and playback on Ohara. This supersedes the earlier media removal.
    media storage, backward-compatible settings, credentials, and exposure checks.
 2. Add an agent command to connect Radarr/Sonarr to qBittorrent and Prowlarr;
    document Jellyfin/Seerr account setup and supported internal connection values.
-3. Add jellyfin.xdadwal.in to HTTPS/certificates/Homepage. Keep all acquisition
+3. Add tv.xdadwal.in to HTTPS/certificates/Homepage. Keep all acquisition
    administration private. Preserve existing files and credentials.
 4. Verify configuration, preservation, runtime services and API connections;
    obtain independent review, then commit, push, open a new PR and check CI.

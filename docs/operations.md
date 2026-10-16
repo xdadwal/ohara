@@ -384,3 +384,25 @@ because Subsonic URLs can contain credentials. Diagnose music upstream problems
 with scripts/status, Navidrome service logs and connectivity checks rather than
 request-URL logging. The public music route uses a five-second connection timeout;
 streaming reads retain the longer playback timeout.
+
+## Jellyfin hostname cutover
+
+JELLYFIN_HOST defaults to tv.xdadwal.in. Existing private .env files are preserved,
+so update that value explicitly before redeploying. Add/update the GoDaddy record
+for tv.xdadwal.in to the intended public IP. Existing browser links derive from
+JELLYFIN_HOST; an edited Homepage file with a literal old URL needs a manual update.
+
+For an existing HTTPS deployment, back up Nginx configuration and change the
+Jellyfin HTTPS server_name and managed HTTP host list to the new hostname,
+preserving unrelated routes and ACLs. Test nginx -t before reloading. A wildcard
+certificate for *.xdadwal.in covers tv.xdadwal.in; an HTTP-01 certificate with
+explicit names needs deliberate expansion through scripts/tls before serving the
+new route. DNS-TLS migration deliberately rejects missing/unmatched service routes
+rather than silently replacing an existing custom site. Verify staging and the
+production certificate before cutover. Keep the old configuration for rollback.
+
+Recreate Jellyfin to update its published URL. Existing Seerr configuration is
+preserved on reruns: update its Jellyfin external URL to https://tv.xdadwal.in
+through Settings, while keeping the internal Docker URL unchanged. Update saved
+server URLs in Jellyfin clients. No private credential values or live DNS/Nginx
+settings are changed by this repository edit.

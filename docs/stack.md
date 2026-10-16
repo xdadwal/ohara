@@ -8,7 +8,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 |---|---|---|
 | Homepage | Password-protected dashboard | HOMEPAGE_HOST (default xdadwal.in); loopback 3002 |
 | Seerr | Discover/request movies and series | https://seerr.xdadwal.in; loopback 5055 |
-| Jellyfin | Movie/series libraries and playback | https://jellyfin.xdadwal.in; loopback 8096 |
+| Jellyfin | Movie/series libraries and playback | https://tv.xdadwal.in; loopback 8096 |
 | OpenSpeedTest | On-demand browser speed test, linked from Homepage | https://speed.xdadwal.in; loopback 3000 |
 | Radarr | Movie acquisition/import | Private loopback 7878 |
 | Sonarr | Series acquisition/import | Private loopback 8989 |

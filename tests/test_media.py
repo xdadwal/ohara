@@ -77,7 +77,7 @@ class MediaTests(unittest.TestCase):
                                      if not line.startswith(('MEDIA_ROOT=', 'JELLYFIN_HOST='))))
             c = config.load(path)
             self.assertEqual(c['MEDIA_ROOT'], c['DATA_ROOT'] + '/media')
-            self.assertEqual(c['JELLYFIN_HOST'], 'jellyfin.xdadwal.in')
+            self.assertEqual(c['JELLYFIN_HOST'], 'tv.xdadwal.in')
 
     def test_media_credentials_and_existing_configuration_preserved(self):
         with tempfile.TemporaryDirectory() as directory:

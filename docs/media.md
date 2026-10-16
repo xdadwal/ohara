@@ -14,7 +14,7 @@ Ohara includes the complete local stack:
 | Prowlarr | `http://prowlarr:9696` | 9696 | Indexer management and sync |
 | qBittorrent | `http://qbittorrent:8081` | 8081 | Downloads |
 
-Jellyfin (`jellyfin.xdadwal.in`), Seerr (`seerr.xdadwal.in`) and Navidrome
+Jellyfin (`tv.xdadwal.in`), Seerr (`seerr.xdadwal.in`) and Navidrome
 (`NAVIDROME_HOST`) have public Nginx routes after explicit activation.
 `music.xdadwal.in` is the default Navidrome hostname; change NAVIDROME_HOST if needed. Every backend host port binds to loopback. No peer, discovery, UPnP,
 or DLNA ports are published. Normal outbound torrent connections work; inbound
@@ -24,7 +24,7 @@ peer connectivity is not configured. No VPN service or routing policy is assumed
 
 Confirm actual media disk capacity, mount, backup destination, and owner email.
 The optional `.env` keys `MEDIA_ROOT` and `JELLYFIN_HOST` default to
-`DATA_ROOT/media` and `jellyfin.DOMAIN` for older configurations. Use a separate
+`DATA_ROOT/media` and `tv.DOMAIN` for older configurations. Use a separate
 media mount by setting MEDIA_ROOT explicitly. Its parent must already exist;
 setup does not mount disks or recursively change existing ownership.
 
@@ -229,14 +229,14 @@ and [Sonarr quality documentation](https://wiki.servarr.com/sonarr/settings#qual
 
 ## Public activation and acceptance
 
-Add a DNS A record for `jellyfin.xdadwal.in`, then rerun explicit TLS activation
+Add a DNS A record for `tv.xdadwal.in`, then rerun explicit TLS activation
 so its certificate includes the new name. Only forward TCP 80/443. Before enabling
 public routes, verify Jellyfin owner login, Navidrome login and Seerr setup through
 the tunnel. Confirm NAVIDROME_HOST before adding its DNS record and activating TLS.
 In Jellyfin Dashboard → Networking, set Known Proxies to the actual Docker bridge
 gateway used by host Nginx (inspect the Ohara network locally). Trust that single
 proxy address, not arbitrary networks, so forwarded client IPs work correctly.
-Confirm external server URL in Seerr is `https://jellyfin.xdadwal.in`.
+Confirm external server URL in Seerr is `https://tv.xdadwal.in`.
 
 Verify a permitted test request travels Seerr → Radarr/Sonarr → qBittorrent,
 completes, imports to the matching library, appears after a Jellyfin scan, and plays
