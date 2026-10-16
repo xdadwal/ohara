@@ -67,3 +67,7 @@ for the current inventory and operations.md for deployed-host migration.
   Use application-issued keys supplied privately, Open-Meteo browser location,
   and built-in container/storage readings; do not add a monitoring service.
   Preserve existing dashboard edits; see homepage-widgets.md.
+
+- Resource widgets were simplified to CPU, RAM, uptime and one filesystem usage/total
+  entry. OpenSpeedTest is a link-only card; its iframe and extra media monitoring
+  mount were removed. Jellyfin, Seerr, clock and weather are retained.

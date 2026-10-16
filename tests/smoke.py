@@ -194,11 +194,8 @@ def main():
             assert not any(value.encode() in body for value in widget_keys.values()), 'Service list exposed widget credentials'
             speed_service = next(service for group in json.loads(body) for service in group['services']
                                  if service['name'] == 'OpenSpeedTest')
-            speed_widget = speed_service['widgets'][0]
-            assert speed_widget['type'] == 'iframe', 'Speed test iframe missing from authenticated dashboard'
-            assert speed_widget['src'] == 'https://'+c['SPEED_HOST']+'/', 'Speed test must use the browser-reachable HTTPS hostname'
-            assert speed_widget['loadingStrategy'] == 'lazy', 'Speed test iframe should load lazily'
-            assert not speed_widget.get('refreshInterval'), 'Do not reload or interrupt a running speed test'
+            assert not speed_service.get('widgets'), 'Speed test should be a link-only card'
+            assert speed_service['href'] == 'https://'+c['SPEED_HOST'], 'Speed test link must use its public HTTPS hostname'
             for service, endpoint, field in [('Jellyfin','CountV2','MovieCount'),
                                               ('Seerr','request/count','pending'),
                                               ('Seerr','issue/count','open')]:
@@ -206,11 +203,11 @@ def main():
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/services/proxy?'+query, hdr={'Cookie':session})
                 assert code == 200 and field in json.loads(result), f'{service}: native widget API failed'
                 assert not any(value.encode() in result for value in widget_keys.values()), 'Widget API exposed credentials'
-            for resource in ['cpu', 'memory', 'uptime', 'network', 'cputemp']:
+            for resource in ['cpu', 'memory', 'uptime']:
                 query = urllib.parse.urlencode({'type':resource})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
                 assert code == 200 and isinstance(json.loads(result), dict), f'{resource}: resource API failed'
-            for target in ['/app/config', '/monitor/media']:
+            for target in ['/app/config']:
                 query = urllib.parse.urlencode({'type':'disk', 'target':target})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
                 assert code == 200 and json.loads(result)['drive']['size'] > 0, 'Storage capacity unavailable'
@@ -230,7 +227,7 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session and OpenSpeedTest iframe configuration, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session, media/resource widgets and OpenSpeedTest link, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

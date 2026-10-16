@@ -331,22 +331,17 @@ apex maintenance route. The HTTP bootstrap remains maintenance-only until then.
 Upstream: https://gethomepage.dev/installation/ and
 https://gethomepage.dev/installation/docker/.
 
-## Homepage speed-test widget
+## Homepage speed-test link
 
-The OpenSpeedTest service card embeds the existing speed.xdadwal.in page using
-Homepage's iframe widget. Sign in to Homepage and press Start inside the card.
-It measures this browser's connection to Ohara, including the network path/proxy;
-it does not show scheduled server-to-internet speed history. Loading the dashboard
-does not automatically start a test. The frame loads lazily, has no refresh timer,
-and uses the configured SPEED_HOST over HTTPS. Its header link opens the full page.
-No extra container, API key or credential is required. The service count stays eight.
+The OpenSpeedTest service card links to the configured SPEED_HOST over HTTPS.
+Open it and press Start to measure this browser's connection to Ohara, including
+the network path and proxy. It does not display server-to-internet speed history.
+No extra container, API key or credential is required.
 
-Setup preserves existing Homepage configuration. For an existing installation,
-merge the widget block from configs/homepage/services.yaml into the OpenSpeedTest
-entry in DATA_ROOT/homepage/services.yaml, then refresh Homepage (restart it with
-scripts/up if necessary). Do not overwrite other dashboard customizations. Activate
-HTTPS for the configured speed hostname before using the iframe; internal Docker
-names and loopback addresses are not browser URLs for remote clients.
+Setup preserves existing Homepage configuration. On an existing installation,
+remove only the OpenSpeedTest widget block from DATA_ROOT/homepage/services.yaml,
+retaining its href, icon and description. Refresh Homepage; use scripts/up if a
+restart is needed. Preserve other dashboard customizations.
 
-References: [Homepage iframe widget](https://gethomepage.dev/widgets/services/iframe/)
-and [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test).
+See [Homepage widget configuration](homepage-widgets.md) and
+[OpenSpeedTest](https://github.com/openspeedtest/Speed-Test).

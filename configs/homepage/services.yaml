@@ -27,10 +27,3 @@
         icon: openspeedtest.png
         href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
         description: Test your connection to Ohara
-        widget:
-          type: iframe
-          name: Ohara speed test
-          src: "https://{{HOMEPAGE_VAR_SPEED_HOST}}/"
-          classes: h-96
-          loadingStrategy: lazy
-          referrerPolicy: no-referrer

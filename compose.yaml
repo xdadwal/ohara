@@ -31,12 +31,6 @@ services:
         target: /app/config
         bind:
           create_host_path: false
-      - type: bind
-        source: ${MEDIA_ROOT}/library
-        target: /monitor/media
-        read_only: true
-        bind:
-          create_host_path: false
     tmpfs:
       - /app/.next/cache:uid=${RUN_UID},gid=${RUN_GID}
     security_opt: ["no-new-privileges:true"]
