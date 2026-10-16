@@ -1,9 +1,6 @@
 """Conservative Debian/Ubuntu bootstrap. No network/SSH/resolver reconfiguration."""
-import base64
-import hashlib
 import os
 from pathlib import Path
-import secrets
 import socket
 
 import config
@@ -63,30 +60,16 @@ def ensure_directory(path, uid, gid, mode=0o750):
         os.chown(path, uid, gid)
 
 
-def password_hash(password, salt):
-    # Copyparty's documented scrypt format: two rounds, n=16384/r=8/p=4,
-    # 24-byte digest with '+' prefix. Verified against pinned upstream in smoke tests.
-    digest = password.encode()
-    for _ in range(2):
-        digest = hashlib.scrypt(digest, salt=salt.encode(), n=16384, r=8, p=4, dklen=24)
-    return '+' + base64.urlsafe_b64encode(digest).decode()
-
-
 def prepare_storage(c, root):
-    data, _, _ = credential_files.load(root)
+    credential_files.load(root)
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'
     ensure_directory(local, owner, group, 0o700)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     ensure_directory(c['DATA_ROOT'], owner, group)
-    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('homepage', uid, gid)]:
+    for name, user, grp in [('seerr', 1000, 1000), ('homepage', uid, gid)]:
         ensure_directory(Path(c['DATA_ROOT']) / name, user, grp)
-    ensure_directory(c['FILES_ROOT'], uid, gid)
-    credentials = local / 'credentials'
-    for path in [credentials, local / 'copyparty.conf']:
-        if path.is_symlink():
-            raise ValueError('Symlink private configuration is unsupported')
     def create_owned(path, content, user, grp, mode=0o600):
         if not config.create_file(path, content, mode):
             return
@@ -98,11 +81,6 @@ def prepare_storage(c, root):
         if destination.is_symlink():
             raise ValueError('Symlink Homepage configuration is unsupported')
         create_owned(destination, template.read_text(), uid, gid, 0o640)
-    cp = local / 'copyparty.conf'
-    if not cp.exists():
-        salt = secrets.token_hex(24)
-        template = (root / 'configs/copyparty/config.example').read_text()
-        create_owned(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), owner, gid, 0o640)
     from media import prepare
     prepare(c, root, create_owned, ensure_directory, owner, group)
     print('Storage ready; user-supplied credential files preserved (values not printed).')

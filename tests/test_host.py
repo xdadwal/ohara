@@ -21,20 +21,17 @@ class HostTests(unittest.TestCase):
     def test_prepare_preserves_config_and_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            (root / 'configs/copyparty').mkdir(parents=True)
-            (root / 'configs/copyparty/config.example').write_text((ROOT / 'configs/copyparty/config.example').read_text())
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
+            c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'),
                      RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            files = [root / 'local/copyparty.conf', root / 'local/credentials']
+            files = [root / 'local/homepage.env', root / 'local/media-credentials']
             before = [p.read_bytes() for p in files]
             mode = files[0].stat().st_mode
             host.prepare_storage(c, root)
             self.assertEqual(before, [p.read_bytes() for p in files])
             self.assertEqual(mode, files[0].stat().st_mode)
-            self.assertNotIn('r: *', files[0].read_text())
 
     def test_conflicting_docker_packages_are_not_removed(self):
         calls = []
@@ -82,9 +79,9 @@ class StorageSafetyTests(unittest.TestCase):
             (root / 'local').mkdir()
             target = root / 'target'
             target.write_text('private-value')
-            (root / 'local/credentials').symlink_to(target)
+            (root / 'local/homepage.env').symlink_to(target)
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'))
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
             with self.assertRaisesRegex(ValueError, 'Symlink private'):
                 host.prepare_storage(c, root)
             self.assertEqual(target.read_text(), 'private-value')

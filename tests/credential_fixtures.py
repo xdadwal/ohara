@@ -8,7 +8,7 @@ import credentials
 def write(root):
     local = root/'local'
     local.mkdir(mode=0o700, exist_ok=True)
-    files = [('credentials', credentials.BASE_KEYS), ('homepage.env', credentials.HOMEPAGE_KEYS),
+    files = [('homepage.env', credentials.HOMEPAGE_KEYS),
              ('media-credentials', credentials.MEDIA_KEYS)]
     for name, keys in files:
         text = ''

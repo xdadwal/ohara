@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Exercise pinned applications and rendered Nginx using only disposable data."""
-import base64
 import http.client
 import json
 import os
@@ -54,20 +53,20 @@ def main():
         shutil.copy(ROOT / 'versions.env', root / 'versions.env')
         c = config.load(ROOT / '.env.example')
         c['HOMEPAGE_HOST'] = 'ohara.' + c['DOMAIN']
-        c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
+        c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'),
                  RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
         credential_fixtures.write(root)
         host.prepare_storage(c, root)
         # Real container runs as 1000 in both production and disposable Linux CI.
         if os.geteuid() == 0:
             os.chown(root / 'data/seerr', 1000, 1000)
-        for path in [root / 'data', root / 'files', root / 'data/seerr', root / 'data/copyparty', root / 'data/homepage']:
+        for path in [root / 'data', root / 'data/seerr', root / 'data/homepage']:
             path.chmod(0o777)  # disposable fixture only, never a production setup behavior
-        (root / 'local/copyparty.conf').chmod(0o644)
+        runtime.check(c, root)
         override = root / 'smoke.yaml'
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
-            for name, port in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]
+            for name, port in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]
         ) + '\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
@@ -88,7 +87,7 @@ def main():
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
-            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
@@ -120,17 +119,6 @@ def main():
                 assert request(ports[name], 'localhost', '/api/v3/system/status')[0] in (401,403)
             prowlarr = media.Client(urls['prowlarr'], media_secrets['PROWLARR_API_KEY'])
             assert len(prowlarr.call('/api/v1/applications')) == 2, 'Prowlarr application sync duplicated'
-            credentials = credential_files.read(root / 'local/credentials', {'COPYPARTY_PASSWORD'})
-            auth = 'Basic ' + base64.b64encode(('admin:' + credentials['COPYPARTY_PASSWORD']).encode()).decode()
-            headers = {'Authorization': auth}
-            code, _ = request(ports['copyparty'], 'localhost', '/probe.txt', 'PUT', b'ohara probe', headers)
-            assert code in (200,201,204), f'authenticated upload returned {code}'
-            code, content = request(ports['copyparty'], 'localhost', '/probe.txt', headers=headers)
-            assert code == 200 and content == b'ohara probe', 'authenticated download failed'
-            code, content = request(ports['copyparty'], 'localhost', '/probe.txt')
-            assert code in (401,403,404), f'anonymous file read returned {code}'
-            code, _ = request(ports['copyparty'], 'localhost', '/anonymous.txt', 'PUT', b'blocked')
-            assert code in (401,403,404), f'anonymous write returned {code}'
             # Render real templates; only upstream addresses differ in this container fixture.
             certificates = root / 'certs'
             certificates.mkdir()
@@ -140,7 +128,7 @@ def main():
             nginx_config = root / 'nginx.conf'
             text = proxy.render(c, ROOT, https=True)
             text = text.replace('127.0.0.1:3002', 'homepage:3000')
-            for name, number in [('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]:
+            for name, number in [('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]:
                 text = text.replace(f'127.0.0.1:{number}', f'{name}:{number}')
             nginx_config.write_text('events {}\nhttp {\n' + text + '\n}\n')
             runtime.run(docker + ['run', '-d', '--name', nginx_name, '--network', identifier + '_default',
@@ -189,31 +177,39 @@ def main():
             session = '; '.join(value.split(';', 1)[0] for key,value in login_headers if key.lower() == 'set-cookie')
             assert session, 'Homepage session cookie missing'
             code, body = tls_request(c['HOMEPAGE_HOST'], '/api/services', hdr={'Cookie':session})
-            assert code == 200 and b'Seerr' in body and b'Copyparty' in body, 'Homepage authenticated service list failed'
+            assert code == 200 and b'Seerr' in body and b'Jellyfin' in body, 'Homepage authenticated service list failed'
+            speed_service = next(service for group in json.loads(body) for service in group['services']
+                                 if service['name'] == 'OpenSpeedTest')
+            speed_widget = speed_service['widgets'][0]
+            assert speed_widget['type'] == 'iframe', 'Speed test iframe missing from authenticated dashboard'
+            assert speed_widget['src'] == 'https://'+c['SPEED_HOST']+'/', 'Speed test must use the browser-reachable HTTPS hostname'
+            assert speed_widget['loadingStrategy'] == 'lazy', 'Speed test iframe should load lazily'
+            assert not speed_widget.get('refreshInterval'), 'Do not reload or interrupt a running speed test'
             rejected = urllib.parse.urlencode({'csrfToken':csrf, 'password':'not-the-password',
                                                 'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
             attempts = [tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', rejected,
                                     {'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie})[0]
                         for _ in range(8)]
             assert 429 in attempts, 'Homepage proxy login rate limit was not enforced'
-            assert request(http_port, c['FILES_HOST'])[0] == 301
+            assert request(http_port, c['REQUESTS_HOST'])[0] == 301
             assert tls_request(c['JELLYFIN_HOST'], '/System/Info/Public')[0] == 200
             assert tls_request(c['REQUESTS_HOST'], '/api/v1/settings/public')[0] == 200
-            assert tls_request(c['FILES_HOST'], '/probe.txt', hdr=headers) == (200, b'ohara probe')
-            assert tls_request(c['FILES_HOST'], '/probe.txt')[0] in (401,403,404)
-            assert tls_request(c['SPEED_HOST'])[0] == 200
+            speed_code, speed_body, speed_headers = tls_request(c['SPEED_HOST'], full=True)
+            assert speed_code == 200 and b'OpenSpeedTest' in speed_body
+            frame_options = dict((k.lower(),v) for k,v in speed_headers).get('x-frame-options','').upper()
+            assert frame_options not in ('DENY','SAMEORIGIN'), 'Speed test response blocks dashboard embedding'
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: nine apps, media API connections and rerun preservation, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session and OpenSpeedTest iframe configuration, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)
             # Linux preserves container UIDs on bind-mounted dummy files. Restore
             # only this generated fixture's data ownership before tempfile cleanup.
-            cp_image = config.images(root / 'versions.env')['COPYPARTY_IMAGE']
-            runtime.run(docker + ['run', '--rm', '--user', '0:0', '--entrypoint', '/bin/ash',
-                                 '-v', f'{root / "data"}:/fixture', cp_image,
+            cleanup_image = config.images(root / 'versions.env')['QBITTORRENT_IMAGE']
+            runtime.run(docker + ['run', '--rm', '--user', '0:0', '--entrypoint', '/bin/sh',
+                                 '-v', f'{root / "data"}:/fixture', cleanup_image,
                                  '-c', 'chown -R "$1:$2" /fixture', 'fixture-cleanup',
                                  str(os.getuid()), str(os.getgid())], timeout=60)
 

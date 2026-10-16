@@ -53,3 +53,11 @@ Remove Pi-hole, its image, storage preparation, DNS-port checks, admin binding a
 credential requirement. Retired LAN_IP and PIHOLE_PASSWORD input fields are ignored
 for upgrades; existing containers/files and router/client resolver settings are
 not changed by a repository update. See operations.md for deployed-host cutover.
+
+## Copyparty removed (2026-10-16)
+
+The user no longer needs file sharing. Remove Copyparty, its files hostname route,
+image, mounts, credential requirement and setup artifacts. Keep eight application
+containers and two user-created credential input files. Retired FILES_ROOT and
+FILES_HOST inputs are ignored; existing data/config is preserved. See stack.md
+for the current inventory and operations.md for deployed-host migration.

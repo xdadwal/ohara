@@ -62,24 +62,6 @@ server {
 }
 server {
     listen 443 ssl;
-    server_name @FILES_HOST@;
-    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    # Explicit 50 GiB upload limit, not an unlimited request body.
-    client_max_body_size 50g;
-    location / {
-        proxy_pass http://127.0.0.1:3923;
-        include /etc/nginx/ohara-proxy-headers.conf;
-        proxy_set_header Connection "";
-        proxy_request_buffering off;
-        proxy_buffering off;
-        proxy_read_timeout 600s;
-        proxy_send_timeout 600s;
-    }
-}
-server {
-    listen 443 ssl;
     server_name @SPEED_HOST@;
     ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;

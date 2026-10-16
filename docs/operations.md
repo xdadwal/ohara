@@ -18,19 +18,18 @@ Values are literal and unquoted; shell substitution is rejected. Rerun with
 Dry run does not install packages or create directories. Python itself is installed
 if missing during a real bootstrap. No unattended operation waits for a prompt.
 
-Mount disks before setup. Default `/ohara/files` is a dedicated Copyparty share,
-not an invitation to expose `/home` or personal photo storage. Setup creates new
-application directories but never recursively changes existing ownership. Seerr
-needs UID 1000 write access; Copyparty needs RUN_UID/RUN_GID write access. Review permissions on existing directories
-manually before startup. Configuration and user-supplied credentials live in `local/`.
-Do not commit that directory, `.env`, backups, certificate keys, or diagnostics
-containing credentials.
+Mount disks before setup. DATA_ROOT holds application state; MEDIA_ROOT holds
+media downloads and libraries. Setup creates new application directories but
+never recursively changes existing ownership. Seerr needs UID 1000 write access;
+other media services and Homepage need RUN_UID/RUN_GID access. Review existing
+permissions manually. User credential inputs live in local/homepage.env and
+local/media-credentials. Keep secrets, .env, backups and private diagnostics out of Git.
 
 Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation it
 disables only the package default site just installed by that invocation. If an
 existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
-loopback 3000/3002/3923/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
+loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 
 ## Checks and local startup
 
@@ -49,9 +48,8 @@ operation run `sudo nginx -t`; for applications inspect logs locally, redact the
 before sharing. Do not publish resolved Compose configuration or `docker inspect`.
 
 Use the README's SSH tunnel and open localhost ports. Follow [media setup](media.md) to initialize the Jellyfin/Seerr owner and
-connect the acquisition services. Use `admin` plus the user-supplied Copyparty
-password; test authenticated upload, download, move, and delete using a disposable
-file. Confirm an anonymous client cannot list/download/write the file. OpenSpeedTest is at localhost:3000 through the tunnel.
+connect the acquisition services. OpenSpeedTest is at localhost:3000 through the
+tunnel. Verify Homepage password login at its HTTPS hostname before invitations.
 
 ## Public DNS and HTTPS
 
@@ -68,14 +66,14 @@ checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.con
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
 
-1. Set A records for the apex and configured watch/files/speed/jellyfin subdomains to
+1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin names to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
    ports deliberately while preserving SSH access. Never forward backend ports
-   3000, 3002, 3923, 5055, 7878, 8081, 8096, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
+   3000, 3002, 5055, 7878, 8081, 8096, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
    paths can be fetched externally, including if the router lacks hairpin NAT.
@@ -85,9 +83,8 @@ same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md)
 6. Activate: `sudo scripts/tls --activate --accounts-ready --agree-tos`.
    `--accounts-ready` is an explicit operator attestation, not an automatic test
    of account configuration. This accepts Let's Encrypt's subscriber agreement.
-7. Verify trusted HTTPS and hostname matching on all five names externally,
-   login/logout, denied anonymous file access, a large upload/download, and a
-   complete speed test. The HTTPS apex should show Homepage password login;
+7. Verify trusted HTTPS and hostname matching on all four names externally,
+   login/logout, Jellyfin playback, and a complete speed test. The configured Homepage hostname should show its password login;
    confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
 
 ### GoDaddy DNS validation and wildcard renewal
@@ -200,6 +197,26 @@ Keep DATA_ROOT/pihole and local/pihole.env as recoverable retired state unless t
 user requests deletion. Do not use blanket pruning or stop unrelated containers.
 Setup/up do not rewrite router DNS, delete old files, or remove orphan containers.
 
+## Retired Copyparty and files hostname
+
+Copyparty, port 3923 and files.xdadwal.in application routing are removed. FILES_ROOT
+and FILES_HOST in older .env files are accepted and ignored. local/credentials is
+no longer required or read. Existing shares, DATA_ROOT/copyparty, local/copyparty.conf
+and old credential files are preserved; no automatic data cleanup occurs.
+
+During authorized deployment, identify any old Copyparty container using the Ohara
+project/service labels and stop only that container. Rerun explicit TLS activation
+to replace an older managed files route; setup preserves working HTTPS configs.
+Homepage's existing services.yaml is also preserved: remove the retired link there
+manually so customizations are not overwritten.
+
+A certificate issued before removal may still cover files.xdadwal.in. Activation
+preserves prior certificate names for rollback and keeps HTTP ACME challenge handling
+for those names, while removing their HTTPS application routes. Keep their DNS
+records resolving to the server until a deliberate certificate-name retirement is
+completed. Fresh deployments request only the four active names. Do not delete a
+working certificate or change renewal metadata casually.
+
 ## Migration from the previous repository
 
 Before shutdown, inventory old containers, mounts, named volumes, paths, and image
@@ -227,7 +244,7 @@ external credentials automatically.
 
 Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
 `local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
-Back up `.env`, `local/`, Copyparty files and state, Seerr config/
+Back up `.env`, `local/`, Seerr config/
 SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
 config and deploy hook). Encrypt backups and keep an off-host copy; credentials
 and certificate private keys are sensitive. Stop database writers for consistent
@@ -262,8 +279,7 @@ architecture availability is not the same as tested performance on your hardware
 See [immich-next.md](immich-next.md) for the scope and pending choices. Confirm host placement, hardware, storage capacity, backup location and photo
 hostname first. Use the official release-matched Compose deployment, including
 its required database/cache services; keep PostgreSQL on suitable local storage.
-Do not share its database or expose its photo directory through Copyparty by
-inference. Use a dedicated subdomain with the documented large-upload/WebSocket
+Keep its database and personal photo storage isolated from other services. Use a dedicated subdomain with the documented large-upload/WebSocket
 proxy configuration. Back up media plus database and prove restoration before
 relying on it for your personal archive.
 
@@ -273,7 +289,6 @@ relying on it for your personal archive.
 - https://docs.docker.com/engine/install/debian/
 - https://docs.docker.com/engine/network/packet-filtering-firewalls/
 - https://docs.seerr.dev/getting-started/docker/
-- https://github.com/9001/copyparty#reverse-proxy
 - https://github.com/openspeedtest/Docker-Image
 - https://letsencrypt.org/docs/challenge-types/
 - https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates
@@ -291,7 +306,7 @@ entirely requires a separately planned cutover rather than automatic removal.
 Homepage serves the HTTPS apex. Supply its password and cookie-signing secret
 in user-created `local/homepage.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
 See [credentials.md](credentials.md) for empty templates and validation.
-After activation, sign in at `https://xdadwal.in` with that password. Authentication
+After activation, sign in at `https://<HOMEPAGE_HOST>` with that password. Authentication
 cookies are secure; use the configured HTTPS hostname for login, not a raw IP or
 an HTTP tunnel. Local health is `http://127.0.0.1:3002/api/healthcheck`.
 
@@ -314,3 +329,23 @@ apex maintenance route. The HTTP bootstrap remains maintenance-only until then.
 
 Upstream: https://gethomepage.dev/installation/ and
 https://gethomepage.dev/installation/docker/.
+
+## Homepage speed-test widget
+
+The OpenSpeedTest service card embeds the existing speed.xdadwal.in page using
+Homepage's iframe widget. Sign in to Homepage and press Start inside the card.
+It measures this browser's connection to Ohara, including the network path/proxy;
+it does not show scheduled server-to-internet speed history. Loading the dashboard
+does not automatically start a test. The frame loads lazily, has no refresh timer,
+and uses the configured SPEED_HOST over HTTPS. Its header link opens the full page.
+No extra container, API key or credential is required. The service count stays eight.
+
+Setup preserves existing Homepage configuration. For an existing installation,
+merge the widget block from configs/homepage/services.yaml into the OpenSpeedTest
+entry in DATA_ROOT/homepage/services.yaml, then refresh Homepage (restart it with
+scripts/up if necessary). Do not overwrite other dashboard customizations. Activate
+HTTPS for the configured speed hostname before using the iframe; internal Docker
+names and loopback addresses are not browser URLs for remote clients.
+
+References: [Homepage iframe widget](https://gethomepage.dev/widgets/services/iframe/)
+and [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test).

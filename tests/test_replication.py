@@ -37,7 +37,7 @@ class ReplicationTests(unittest.TestCase):
 
     def test_media_profile_reruns_preserve_indexers_and_formats(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             credential_fixtures.write(root)
             (root / 'configs/media').mkdir(parents=True)
             (root / 'configs/media/ohara.json').write_text((ROOT / 'configs/media/ohara.json').read_text())
@@ -76,7 +76,7 @@ class ReplicationTests(unittest.TestCase):
 
     def test_missing_indexer_definitions_fail_before_writes(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             credential_fixtures.write(root)
             (root / 'configs/media').mkdir(parents=True)
             (root / 'configs/media/ohara.json').write_text(json.dumps({'rename': True, 'indexers': ['missing']}))

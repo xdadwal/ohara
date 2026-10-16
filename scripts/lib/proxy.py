@@ -11,13 +11,16 @@ TARGET = Path('/etc/nginx/conf.d/ohara.conf')
 RENEW_HOOK = '#!/bin/sh\n/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx\n'
 
 
-def render(c, root, https=False):
+def render(c, root, https=False, acme_names=()):
     text = (root / 'configs/nginx' / ('https.template' if https else 'http.template')).read_text()
     if https and int(c.get('PORTFOLIO_PORT', '0')):
         text += '\n' + (root / 'configs/nginx/portfolio.template').read_text()
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']:
+    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']:
         text = text.replace('@' + key + '@', c[key])
-    text = text.replace('@HOSTS@', ' '.join(dict.fromkeys(c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'])))
+    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']}
+    # Keep renewal challenges for certificate names retained for rollback, while
+    # never restoring their retired HTTPS application routes.
+    text = text.replace('@HOSTS@', ' '.join(sorted(names | set(acme_names))))
     text = text.replace('@PORTFOLIO_PORT@', c.get('PORTFOLIO_PORT', '0'))
     # Keep header rules visible in rendered output for audits/tests.
     headers = (root / 'configs/nginx/proxy-headers.conf').read_text()
@@ -81,7 +84,7 @@ def configured_names(text):
 
 
 def challenge_config(old, c):
-    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']}
+    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']}
     missing = sorted(names - configured_names(old))
     if not missing:
         return old
@@ -106,7 +109,7 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     challenge = challenge_config(previous, c)
     # Retain old names in the certificate during cutover so restoring the previous
     # HTTPS config still serves a certificate covering its original names.
-    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']})
+    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']})
     args = ['certbot', 'certonly', '--webroot', '-w', '/var/lib/ohara/acme',
             '--non-interactive', '--agree-tos', '--email', c['ACME_EMAIL'],
             '--cert-name', 'ohara', '--keep-until-expiring', '--expand']
@@ -143,7 +146,7 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     if hook.exists() and hook.read_text() != RENEW_HOOK:
         raise ValueError('Existing renewal hook differs; inspect manually')
     atomic_write(hook, RENEW_HOOK, 0o755)
-    apply_config(render(c, root, https=True))
+    apply_config(render(c, root, https=True, acme_names=names))
     run(['systemctl', 'enable', '--now', 'certbot.timer'])
     run(['certbot', 'renew', '--cert-name', 'ohara', '--dry-run', '--run-deploy-hooks'], timeout=300)
     print('HTTPS routes activated; renewal dry run passed. Verify from an external network.')

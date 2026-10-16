@@ -93,7 +93,8 @@ Both use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied passwo
 and category `movies` or `tv`. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
 uses `http://radarr:7878` and `http://sonarr:8989` with their user-supplied API keys.
 Seerr uses container names and ports from the table, with both defaults enabled.
-If updating an existing Homepage deployment, add the Jellyfin entry from
+If updating an existing Homepage deployment, remove any retired Copyparty link
+and add the Jellyfin entry from
 `configs/homepage/services.yaml` to your existing `${DATA_ROOT}/homepage/services.yaml`;
 setup preserves that file and your customizations.
 

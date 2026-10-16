@@ -18,15 +18,16 @@ media settings on another machine, or to migrate private state safely.
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
 | Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
-| Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
-Jellyfin, Seerr, Copyparty, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
+Jellyfin, Seerr, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
 initialize accounts/connections and add your chosen indexers.
+
+See [the current stack overview](docs/stack.md) for access, storage and pending work.
 
 ## Fresh-host quick start
 
@@ -39,7 +40,7 @@ cd ohara
 sudo ./scripts/setup
 # First run creates .env and stops. Edit paths, IDs, domain/email.
 # Use an editor; .env is literal KEY=value, not a shell script.
-# Create/fill the three private files described in docs/credentials.md first.
+# Create/fill the two private files described in docs/credentials.md first.
 sudo ./scripts/setup --dry-run
 sudo ./scripts/setup --non-interactive
 ./scripts/check
@@ -49,8 +50,8 @@ sudo ./scripts/setup --non-interactive
 
 If Docker requires elevated access, the commands try `sudo -n docker`; refresh
 sudo authentication with `sudo -v` first. Users are not added to the Docker group.
-Credentials must be supplied in user-created `local/credentials`,
-`local/homepage.env`, and `local/media-credentials`. Setup never generates or
+Credentials must be supplied in user-created `local/homepage.env` and
+`local/media-credentials`. Setup never generates or
 replaces these values. Follow [credential setup](docs/credentials.md) to copy
 empty templates, fill them privately, and set permissions before rerunning setup.
 
@@ -59,7 +60,7 @@ and connections, then add indexers through private administration ([instructions
 Complete service accounts using SSH forwarding before exposing applications:
 
 ```sh
-ssh -L 5055:127.0.0.1:5055 -L 3923:127.0.0.1:3923 \
+ssh -L 5055:127.0.0.1:5055 \
     -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 user@server
 ```
 

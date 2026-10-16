@@ -74,7 +74,7 @@ class AcmeMigrationTests(unittest.TestCase):
     def test_new_names_get_challenge_handler_without_removing_https(self):
         c = config.load(ROOT / '.env.example')
         old = proxy.render(c, ROOT, https=True)
-        c['FILES_HOST'] = 'share.xdadwal.in'
+        c['SPEED_HOST'] = 'share.xdadwal.in'
         candidate = proxy.challenge_config(old, c)
         self.assertTrue(candidate.startswith(old))
         addition = candidate[len(old):]
@@ -90,7 +90,7 @@ class AcmeMigrationTests(unittest.TestCase):
             c = config.load(ROOT / '.env.example')
             old = proxy.render(c, ROOT, https=True)
             target.write_text(old)
-            c['FILES_HOST'] = 'share.xdadwal.in'
+            c['SPEED_HOST'] = 'share.xdadwal.in'
             def apply(text):
                 target.write_text(text)
             def failed_issuance(args, **kwargs):

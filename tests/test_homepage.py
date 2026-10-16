@@ -18,7 +18,7 @@ class HomepageTests(unittest.TestCase):
             import shutil
             shutil.copytree(ROOT / 'configs', root / 'configs')
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'),
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'),
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
@@ -52,9 +52,9 @@ class HomepageRecoveryTests(unittest.TestCase):
             root = Path(directory).resolve()
             shutil.copytree(ROOT/'configs', root/'configs')
             credential_fixtures.write(root)
-            (root/'local/credentials').write_text('malformed\n')
+            (root/'local/media-credentials').write_text('malformed\n')
             c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'))
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
             before = (root/'local/homepage.env').read_bytes()
             with self.assertRaises(ValueError):
                 host.prepare_storage(c, root)
@@ -83,8 +83,7 @@ class ConfiguredPasswordTests(unittest.TestCase):
             for name in ['compose.yaml', 'versions.env']:
                 shutil.copy(ROOT/name, root/name)
             c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'),
-                     MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
             p = root/'local/homepage.env'

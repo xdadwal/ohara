@@ -53,6 +53,9 @@ def nginx_config(old, c, root):
     changed = set()
     def update(match):
         block = match.group(0)
+        # Retire the removed file service without disturbing unrelated routes.
+        if re.search(r'\bproxy_pass\s+http://127\.0\.0\.1:3923\s*;', block):
+            return ''
         names = re.search(r'^\s*server_name\s+([^;]+);', block, re.M)
         if not names or 'ssl_certificate ' not in block:
             return block
@@ -66,7 +69,7 @@ def nginx_config(old, c, root):
                            r'\1 ' + str(CERT_DIR / 'privkey.pem') + ';', block)
         return block
     result = re.sub(r'(?ms)^server \{\n.*?^\}', update, old)
-    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST')}
+    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST')}
     if not required <= changed:
         raise ValueError('Existing HTTPS routes are missing configured names; inspect before DNS activation')
     return result
@@ -81,8 +84,10 @@ def activate(c, root, credential_path, *, staging=False, renewal_only=False,
     data = dns_godaddy.credentials(credential_path)
     if data['domain'] != c['DOMAIN']:
         raise ValueError('DNS credential zone must match DOMAIN')
-    for key in ('REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST'):
+    for key in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'):
         name = c[key]
+        if key == 'HOMEPAGE_HOST' and name == c['DOMAIN']:
+            continue
         if not name.endswith('.' + c['DOMAIN']) or name.count('.') != c['DOMAIN'].count('.') + 1:
             raise ValueError('Wildcard DNS mode requires direct subdomains of DOMAIN')
     # Read-only API preflight before installing credentials or touching Certbot.

@@ -26,7 +26,7 @@ class MediaTests(unittest.TestCase):
             import shutil
             shutil.copytree(ROOT/'configs', root/'configs')
             c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'),
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'),
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)

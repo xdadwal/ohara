@@ -26,7 +26,7 @@ if [[ ! -e "$ROOT_DIR/.env" ]]; then
   exit 1
 fi
 # Require user-created input files before installing even the Python dependency.
-for name in credentials homepage.env media-credentials; do
+for name in homepage.env media-credentials; do
   if [[ ! -f "$ROOT_DIR/local/$name" || -L "$ROOT_DIR/local/$name" || -L "$ROOT_DIR/local" ]]; then
     echo "Missing/invalid user-created local/$name; follow docs/credentials.md." >&2
     exit 1

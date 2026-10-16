@@ -1,10 +1,10 @@
 # Working on Ohara
 
-Ohara provisions a small Linux homeserver. Read README.md and docs/operations.md
+Ohara provisions a small Linux homeserver. Read README.md, docs/stack.md and docs/operations.md
 before changing deployment behavior. The approved migration plan is under
 docs/superpowers/plans/.
 
-- Active applications: Seerr (Jellyseerr's successor), Copyparty,
+- Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
   the separate portfolio service serves the apex; no Docker socket or API keys.

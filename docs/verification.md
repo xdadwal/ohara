@@ -122,3 +122,41 @@ image pin, storage preparation, credentials, environment file and DNS probes are
 removed from active deployment code. Historical verification entries describe
 older snapshots. Independent review reports no remaining blocking findings.
 No live resolver/router changes, container stops or retired-data deletion occurred.
+
+## Copyparty removal and current stack (2026-10-16)
+
+48 unit tests pass. New checks cover the eight-service inventory, four fresh public
+hostnames, removed 3923/files routes, ignored retired FILES_ROOT/FILES_HOST inputs,
+no file-share storage/config creation, unconsumed legacy credentials, and ACME-only
+handling for old certificate names without retired HTTPS application routes.
+Setup/CLI, syntax, ShellCheck, compilation and whitespace checks pass. Independent
+whole-diff review reports no blocking findings and independently confirms 48 tests.
+
+The real eight-service disposable arm64 smoke passes with user-supplied test inputs.
+It now includes normal runtime.check before startup, media accounts/connections,
+rerun preservation, Homepage authentication/rate limiting, Nginx HTTPS routes and
+a 35 MiB speed upload. Fixture cleanup uses the retained qBittorrent image; no
+Copyparty image or config is needed. Historical entries describe older snapshots.
+
+Current credentials are only local/homepage.env and local/media-credentials.
+GoDaddy public DNS, deployed container shutdown, old certificate retirement/renewal,
+operator-edited Homepage config and production access remain deployment checks.
+No live share data, credentials, containers or public DNS records were changed.
+See stack.md for current applications and the pending Immich follow-up.
+
+## Homepage OpenSpeedTest widget (2026-10-16)
+
+The existing OpenSpeedTest card now embeds its configured HTTPS hostname using
+Homepage v2.5.0's supported iframe widget. It loads lazily with no autostart query
+or refresh timer and keeps the full-page header link. No new service or credentials.
+The pinned Homepage image includes the configured h-96 height utility; the pinned
+OpenSpeedTest response does not deny cross-origin framing.
+
+48 unit tests and static checks pass. The expanded eight-service arm64 smoke
+passes, including authenticated Homepage API delivery of the iframe type, resolved
+HTTPS source, lazy loading and no refresh interval, plus speed endpoint frame-header
+checks and an actual 35 MiB proxy upload. Independent review found no blocking issues.
+No browser session was available: rendered layout at desktop/mobile widths, clicking
+Start and completing an in-frame measurement remain manual browser acceptance.
+Existing edited dashboards require merging the documented widget block; setup
+preserves those operator edits. No live deployment was changed.

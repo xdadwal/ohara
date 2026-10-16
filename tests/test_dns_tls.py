@@ -168,3 +168,32 @@ class DNSTests(unittest.TestCase):
                 self.assertNotIn(DATA['token'], ' '.join(args))
                 apply.assert_not_called()
                 self.assertEqual(target.read_text(), old)
+
+    def test_dns_activation_retires_only_known_copyparty_upstream(self):
+        c = config.load(ROOT / '.env.example')
+        c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
+        old = proxy.render(c, ROOT, https=True)
+        retired = ('\nserver {\n    listen 443 ssl;\n    server_name files.xdadwal.in;\n'
+                   '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
+                   '    location / {\n        proxy_pass http://127.0.0.1:3923;\n    }\n}\n')
+        private = ('\nserver {\n    listen 443 ssl;\n    server_name admin.xdadwal.in;\n'
+                   '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
+                   '    allow 192.168.1.0/24;\n    deny all;\n'
+                   '    location / { proxy_pass http://127.0.0.1:7878; }\n}\n')
+        result = dns_tls.nginx_config(old + retired + private, c, ROOT)
+        self.assertNotIn('server_name files.xdadwal.in;', result)
+        self.assertNotIn('127.0.0.1:3923', result)
+        self.assertIn('127.0.0.1:8010', result)
+        self.assertIn('server_name ohara.xdadwal.in;', result)
+        self.assertIn('server_name admin.xdadwal.in;', result)
+        self.assertIn('deny all;', result)
+
+    def test_dns_rejects_nested_dashboard_before_api_or_host_changes(self):
+        c = config.load(ROOT / '.env.example')
+        c['HOMEPAGE_HOST'] = 'nested.ohara.xdadwal.in'
+        with patch.object(dns, 'credentials', return_value=DATA), \
+                patch.object(dns, 'GoDaddy') as api, patch.object(dns_tls, 'install') as install:
+            with self.assertRaisesRegex(ValueError, 'direct subdomains'):
+                dns_tls.activate(c, ROOT, Path('ignored'), staging=True, agree=True)
+            api.assert_not_called()
+            install.assert_not_called()

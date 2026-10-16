@@ -19,7 +19,7 @@ def main():
     mode.add_argument('--configure-renewal', action='store_true', help='test and save DNS renewal for existing ohara-wildcard; preserve routes')
     parser.add_argument('--dns-provider', choices=['godaddy'], help='use DNS-01 for DOMAIN and *.DOMAIN; no public port 80 required')
     parser.add_argument('--dns-credentials', type=Path, help='private JSON file containing domain and token')
-    parser.add_argument('--accounts-ready', action='store_true', help='attest local owner setup and file authentication were verified')
+    parser.add_argument('--accounts-ready', action='store_true', help='attest local owner setup and application authentication were verified')
     parser.add_argument('--agree-tos', action='store_true', help='accept the ACME subscriber agreement')
     args = parser.parse_args()
     if bool(args.dns_provider) != bool(args.dns_credentials):

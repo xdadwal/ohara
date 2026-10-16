@@ -7,7 +7,7 @@ KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
         'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
+IMAGES = {'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
 
 
 def parse(path, keys, optional=frozenset()):
@@ -27,7 +27,9 @@ def parse(path, keys, optional=frozenset()):
 
 
 def load(path):
-    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT'})
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT'})
+    values.pop('FILES_ROOT', None)
+    values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.
     values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
     values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
@@ -41,15 +43,15 @@ def load(path):
         raise ValueError('PORTFOLIO_PORT must not expose an existing application or private admin port')
     if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (values['HOMEPAGE_HOST'] != values['DOMAIN'] and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])):
         raise ValueError('HOMEPAGE_HOST must be DOMAIN or a subdomain')
-    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST')]:
+    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST')]:
         raise ValueError('HOMEPAGE_HOST must not overlap another service')
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
+    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']:
         if not HOST.fullmatch(values[key]):
             raise ValueError(f'{key}: invalid DNS hostname')
-    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']]
-    if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
+    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']]
+    if len(set(names)) != 4 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
-    for key in ['DATA_ROOT', 'FILES_ROOT', 'MEDIA_ROOT']:
+    for key in ['DATA_ROOT', 'MEDIA_ROOT']:
         value = values[key]
         if not PATH.fullmatch(value) or value == '/' or '..' in value.split('/') or '//' in value:
             raise ValueError(f'{key}: require a safe absolute path without spaces or traversal')
