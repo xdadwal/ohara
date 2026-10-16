@@ -85,6 +85,10 @@ Jellyfin/Seerr owners.
 
 Recreate the portfolio service separately. Preserve or deliberately migrate
 existing Nginx routes; DNS renewal configuration does not install new routes.
+For an exact copy of this server's stable routes, including localhost and the
+public-IP test, follow [the tracked Nginx baseline](../configs/nginx/deployed/README.md).
+It requires the existing wildcard and local TLS materials at their documented
+paths; the generic fresh-host templates intentionally do not assume those files.
 Configure and test renewal on the target host. The currently deployed certificate
 was issued with manual TXT validation; GoDaddy API renewal has not been activated
 on this server and still requires a PAT and a successful live dry run.

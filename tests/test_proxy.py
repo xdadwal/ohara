@@ -7,8 +7,30 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import proxy
+import re
 
 class ProxyTests(unittest.TestCase):
+    def test_reusable_routes_match_stable_host_policy(self):
+        c = config.load(ROOT/'.env.example')
+        c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
+        rendered = proxy.render(c, ROOT, https=True, acme_names={'files.xdadwal.in'})
+        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        def normalize(text):
+            # Localhost uses certificates that fresh hosts do not yet have.
+            # Ignore only these two explicit host-specific blocks and harmless
+            # whitespace/comments/certificate-lineage/host-order differences.
+            text = re.sub(r'(?ms)^server \{\n(?:(?!^\}).)*server_name localhost 127\.0\.0\.1;(?:(?!^\}).)*^\}\n?', '', text)
+            text = text.replace('/live/ohara-wildcard/', '/live/ohara/')
+            text = re.sub(r'server_name ([^;]+);', lambda m:'server_name '+' '.join(sorted(m[1].split()))+';',text)
+            text = re.sub(r'(?m)^\s*#.*$', '', text)
+            return re.sub(r'\s+', ' ', text).strip()
+        self.assertEqual(normalize(rendered), normalize(deployed))
+        self.assertEqual(deployed.count('server_name localhost 127.0.0.1;'), 2)
+        self.assertIn('return 302 https://xdadwal.in$request_uri;', deployed)
+        probe = (ROOT/'configs/nginx/deployed/ohara-public-ip-test.conf').read_text()
+        self.assertIn('server_name 45.120.160.21;', probe)
+        self.assertNotIn('proxy_pass', probe)
+
     def test_bootstrap_never_references_missing_certificates(self):
         text = proxy.render(config.load(ROOT / '.env.example'), ROOT, https=False)
         self.assertNotIn('ssl_certificate', text)

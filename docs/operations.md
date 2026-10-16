@@ -64,6 +64,12 @@ Portfolio code/CSS updates and service restart instructions are in the portfolio
 checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
+The exact stable host configuration, including localhost redirects and the
+public-IP probe, is tracked under [configs/nginx/deployed](../configs/nginx/deployed/README.md).
+These are reviewed host-specific baselines; generic setup does not automatically
+install their local-certificate or static-IP assumptions. Reusable templates match
+the shared IPv6 and Jellyfin settings. Compare both deployed files after a change
+and update the baseline deliberately; rerunning setup preserves existing HTTPS.
 
 1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin names to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
