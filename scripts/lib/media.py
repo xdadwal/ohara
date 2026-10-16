@@ -101,8 +101,10 @@ def configure_storage(root, urls=None):
         if category in categories and categories[category].get('savePath') != path:
             # Editing a category can relocate existing automatically managed torrents.
             raise ValueError(f'qBittorrent {category} category has a custom path; review relocation before changing it')
-    if not preferences.get('auto_tmm_enabled'):
-        qb.call('/api/v2/app/setPreferences', {'json':json.dumps({'auto_tmm_enabled':True})}, form=True)
+    policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':True, 'max_ratio':0,
+              'max_ratio_act':0, 'max_seeding_time_enabled':True, 'max_seeding_time':0}
+    if any(preferences.get(key) != value for key, value in policy.items()):
+        qb.call('/api/v2/app/setPreferences', {'json':json.dumps(policy)}, form=True)
     for category in ('movies', 'tv'):
         path = '/data/downloads/complete/'+category
         if category not in categories:
@@ -116,6 +118,10 @@ def configure_storage(root, urls=None):
             settings.update(recycleBin='/data/recycle-bin/'+category, recycleBinCleanupDays=7)
         if settings != before:
             client.call('/api/v3/config/mediamanagement', settings, 'PUT')
+        for download in client.call('/api/v3/downloadclient'):
+            if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
+                download['removeCompletedDownloads'] = False
+                client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
     print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
           'and recycle bins. Existing torrents and custom recycle settings preserved.')
 
@@ -168,7 +174,7 @@ def connect(c, root, email, urls=None):
             client.call('/api/v3/rootfolder', {'path': path})
         if not any(item['name'] == 'Ohara qBittorrent' for item in client.call('/api/v3/downloadclient')):
             schema = next(item for item in client.call('/api/v3/downloadclient/schema') if item['implementation']=='QBittorrent')
-            schema.update(name='Ohara qBittorrent', enable=True, priority=1)
+            schema.update(name='Ohara qBittorrent', enable=True, priority=1, removeCompletedDownloads=False)
             fields(schema, {'host':'qbittorrent', 'port':8081, 'useSsl':False, 'username':'admin',
                             'password':values['QBITTORRENT_PASSWORD'],
                             'movieCategory':category, 'tvCategory':category})

@@ -115,6 +115,14 @@ Custom recycle paths/retention are preserved. Recycle bins are outside Jellyfin'
 library and are a recovery window, not a backup; explicit permanent deletion and
 files removed outside Radarr/Sonarr can bypass them.
 
+The selected qBittorrent policy stops seeding after completion (ratio and seeding
+time limits zero, action Stop). It retains the torrent and downloaded files for
+import/recovery. Storage setup applies the global default; existing per-torrent
+share-limit overrides require separate review. This does not prevent uploading
+pieces while a torrent is downloading.
+The managed Radarr/Sonarr download clients disable completed-download removal so
+reaching the seeding limit does not automatically delete the stopped torrent/source.
+
 After updating an existing installation, run host setup to prepare the new
 directories, then `scripts/media-setup --storage-only`. This skips owner/account
 initialization and preserves credentials, torrents, naming formats and other

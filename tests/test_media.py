@@ -34,6 +34,7 @@ class MediaTests(unittest.TestCase):
                     if path.endswith('/preferences'): return copy.deepcopy(preferences)
                     if path.endswith('/setPreferences'): preferences.update(json.loads(body['json']))
                     if path.endswith('/categories'): return copy.deepcopy(categories)
+                    if path == '/api/v3/downloadclient': return []
                     if path.endswith('/createCategory'): categories[body['category']] = {'savePath': body['savePath']}
                     if path.endswith('/mediamanagement'):
                         if body is not None: settings[self.name] = copy.deepcopy(body)
@@ -42,6 +43,11 @@ class MediaTests(unittest.TestCase):
                 media.configure_storage(root)
                 media.configure_storage(root)
             self.assertTrue(preferences['auto_tmm_enabled'])
+            self.assertTrue(preferences['max_ratio_enabled'])
+            self.assertEqual(preferences['max_ratio'], 0)
+            self.assertEqual(preferences['max_ratio_act'], 0)
+            self.assertTrue(preferences['max_seeding_time_enabled'])
+            self.assertEqual(preferences['max_seeding_time'], 0)
             self.assertEqual(preferences['unrelated'], 'preserved')
             self.assertEqual(settings['radarr']['recycleBin'], '/data/recycle-bin/movies')
             self.assertEqual(settings['radarr']['recycleBinCleanupDays'], 7)
