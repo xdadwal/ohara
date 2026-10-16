@@ -248,4 +248,6 @@ def connect(c, root, email, urls=None):
         seerr.call('/api/v1/settings/'+name, resource)
     if not public.get('initialized'):
         seerr.call('/api/v1/settings/initialize', {})
+    import media_quality
+    media_quality.apply(root, urls)
     print('Media accounts and connections configured. Add indexers in Prowlarr and verify a permitted request end to end.')

@@ -39,6 +39,9 @@ docs/superpowers/plans/.
   A completed command or cached Available label is not evidence of a present file:
   verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
   Preserve source torrents; never redownload or delete library files to fix metadata.
+- Use `scripts/media-setup --quality-only` for the bounded HD-1080p policy on
+  existing accounts. Size definitions affect all profiles; preserve existing
+  files and do not search/redownload to enforce future acquisition preferences.
 - Public DNS records are managed at GoDaddy. No local DNS/filtering service is
   included. Backend web ports bind to loopback; only host Nginx uses public 80/443.
   Do not modify router/client DNS or delete retired DNS data during repo changes.

@@ -162,6 +162,35 @@ so a separate shared login service is not needed. Review Seerr user permissions
 and approval requirements before inviting anyone. Movie/show metadata needs
 working internet access to upstream metadata services.
 
+## Bounded 1080p downloads
+
+Initial setup configures the HD-1080p profile used by Seerr in Radarr and Sonarr.
+Existing installations can apply it with `scripts/media-setup --quality-only`.
+It allows HDTV-1080p, WEB-DL, WEBRip and encoded Blu-ray 1080p, preserving the
+existing source ordering and custom-format scores. Remux, raw/disc, 4K, 720p and
+lower resolutions are disabled in this profile. Automatic upgrades are disabled
+to avoid repeated downloads. No search, title reassignment, or file replacement
+is triggered; existing large files are retained.
+
+| Service | Minimum | Preferred | Maximum | Example maximum |
+|---|---:|---:|---:|---|
+| Radarr movies | 8 MB/min | 30 MB/min | 60 MB/min | ~7 GiB for 120 minutes |
+| Sonarr episodes | 5 MB/min | 20 MB/min | 40 MB/min | ~1.8 GiB for 45 minutes |
+
+These are Ohara's storage-conscious defaults, not a guarantee of visual quality.
+Size definitions apply globally to these four qualities, including titles using
+other profiles. Quality exclusions apply only to HD-1080p. Seerr's configured
+default must continue selecting that profile; users choosing another profile can
+change the exclusions. Limits scale with runtime; season packs and runtime
+estimation can affect episode size calculations. Preferred size is a selection
+hint, not a fixed download size or a guarantee of the smallest release.
+
+Filtering happens in Radarr/Sonarr after indexer results arrive, so Prowlarr sync
+cannot overwrite it. Both H.264 and HEVC remain eligible to preserve availability;
+this policy does not guarantee direct play on every Jellyfin client. See the
+[Radarr quality documentation](https://wiki.servarr.com/radarr/settings#quality)
+and [Sonarr quality documentation](https://wiki.servarr.com/sonarr/settings#quality).
+
 ## Public activation and acceptance
 
 Add a DNS A record for `jellyfin.xdadwal.in`, then rerun explicit TLS activation

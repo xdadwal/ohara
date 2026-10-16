@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent/'lib'))
 import config
 import media
 import media_profile
+import media_quality
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -17,13 +18,16 @@ def main():
     parser.add_argument('--profile', choices=['ohara'], help='explicitly enable the selected public indexers and automatic renaming')
     parser.add_argument('--profile-only', action='store_true', help='apply a profile to existing accounts; skip owner/login initialization')
     parser.add_argument('--storage-only', action='store_true', help='apply download paths, hardlinks and recycle policy to existing accounts without owner initialization')
+    parser.add_argument('--quality-only', action='store_true', help='apply the bounded HD-1080p policy without owner initialization or searching')
     args = parser.parse_args()
+    if args.quality_only and (args.storage_only or args.profile or args.profile_only or args.owner_email):
+        parser.error('--quality-only cannot be combined with other setup options')
     if args.profile_only and not args.profile:
         parser.error('--profile-only requires --profile')
     if args.storage_only and (args.profile or args.profile_only or args.owner_email):
         parser.error('--storage-only cannot be combined with owner/profile options')
-    if not args.profile_only and not args.storage_only and not args.owner_email:
-        parser.error('--owner-email is required unless --profile-only or --storage-only is used')
+    if not args.profile_only and not args.storage_only and not args.quality_only and not args.owner_email:
+        parser.error('--owner-email is required unless --profile-only, --storage-only or --quality-only is used')
     c = config.load(ROOT/'.env')
     if (ROOT/'local').is_symlink() or not (ROOT/'local').is_dir():
         raise ValueError('Run scripts/setup first; local must be a private directory')
@@ -35,7 +39,9 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise RuntimeError('Another media setup is running') from None
-        if args.storage_only:
+        if args.quality_only:
+            media_quality.apply(ROOT)
+        elif args.storage_only:
             media.configure_storage(ROOT)
         elif not args.profile_only:
             media.connect(c, ROOT, args.owner_email)
