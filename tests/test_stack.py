@@ -49,7 +49,8 @@ class StackTests(unittest.TestCase):
             self.assertEqual(mounts[target]['source'], c['MEDIA_ROOT'] + ('' if name == 'lidarr' else '/library'))
             self.assertFalse(mounts[target].get('read_only', False))
             for mount in mounts.values():
-                self.assertFalse(mount['bind']['create_host_path'])
+            # Compose versions can omit false/default fields in normalized JSON.
+            self.assertFalse(mount.get('bind', {}).get('create_host_path', False))
             service['ports'][0]['host_ip'] = '0.0.0.0'
             with self.assertRaisesRegex(ValueError, 'unexpected port exposure'):
                 runtime.validate_model(model, c)
