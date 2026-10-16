@@ -108,8 +108,8 @@ def check(c, root, *, static=False):
             if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
         hp = config.parse(root / 'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'})
-        if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or min(len(hp[k]) for k in ['HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD']) < 32:
-            raise ValueError('Homepage authentication must be enabled with strong generated credentials')
+        if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or len(hp['HOMEPAGE_AUTH_SECRET']) < 32:
+            raise ValueError('Homepage authentication must be enabled with a strong session secret')
         import re
         text = (root / 'local/copyparty.conf').read_text()
         if re.search(r'^\s*[rwmdagAG.]+\s*:\s*[^#\n]*\*', text, re.MULTILINE):

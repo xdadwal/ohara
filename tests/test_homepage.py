@@ -70,3 +70,24 @@ class HomepageExposureTests(unittest.TestCase):
             model['services']['homepage']['environment'][key] = value
             with self.assertRaisesRegex(ValueError,'Homepage'):
                 runtime.validate_model(model,c)
+
+class ConfiguredPasswordTests(unittest.TestCase):
+    def test_operator_password_is_preserved_and_accepted(self):
+        import shutil
+        import runtime
+        import re
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            shutil.copytree(ROOT/'configs', root/'configs')
+            for name in ['compose.yaml', 'versions.env']:
+                shutil.copy(ROOT/name, root/name)
+            c = config.load(ROOT/'.env.example')
+            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'),
+                     MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            host.prepare_storage(c, root)
+            p = root/'local/homepage.env'
+            p.write_text(re.sub(r'^HOMEPAGE_AUTH_PASSWORD=.*$',
+                                'HOMEPAGE_AUTH_PASSWORD=chosen-password', p.read_text(), flags=re.M))
+            before = p.read_bytes()
+            runtime.check(c, root)
+            self.assertEqual(p.read_bytes(), before)

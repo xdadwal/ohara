@@ -11,7 +11,8 @@ import runtime
 
 class StatusTests(unittest.TestCase):
     def test_homepage_check_respects_configured_host_validation(self):
-        services = ['homepage', 'seerr', 'copyparty', 'speedtest', 'pihole']
+        services = ['homepage', 'seerr', 'copyparty', 'speedtest', 'pihole',
+                    'jellyfin', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']
         rows = [{'Service': s, 'State': 'running', 'Health': 'healthy'} for s in services]
         def endpoint(request, timeout):
             if ':3002/' in request.full_url and request.get_header('Host') != 'example.test':
