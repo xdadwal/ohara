@@ -8,7 +8,6 @@ from pathlib import Path
 import shutil
 import socket
 import ssl
-import struct
 import subprocess
 import sys
 import tempfile
@@ -20,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import credential_fixtures
+import credentials as credential_files
 import media
 import proxy
 import runtime
@@ -55,6 +56,7 @@ def main():
         c['HOMEPAGE_HOST'] = 'ohara.' + c['DOMAIN']
         c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                  RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
+        credential_fixtures.write(root)
         host.prepare_storage(c, root)
         # Real container runs as 1000 in both production and disposable Linux CI.
         if os.geteuid() == 0:
@@ -66,12 +68,12 @@ def main():
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
             for name, port in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]
-        ) + '\n  pihole:\n    ports: !override\n      - "127.0.0.1::80"\n      - "127.0.0.1::53/udp"\n      - "127.0.0.1::53/tcp"\n')
+        ) + '\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
                                    capture=capture, timeout=timeout, docker=docker)
-        def port(service, internal, udp=False):
-            args = ['port'] + (['--protocol', 'udp'] if udp else []) + [service, str(internal)]
+        def port(service, internal):
+            args = ['port', service, str(internal)]
             return int(compose(args, True).strip().rsplit(':', 1)[1])
         nginx_name = identifier + '-proxy'
         try:
@@ -81,12 +83,12 @@ def main():
             except RuntimeError:
                 diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
                 for path, keys in [(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
-                    for value in config.parse(path, keys).values():
+                    for value in credential_files.read(path, keys).values():
                         if len(value) > 10:
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
-            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('pihole',80),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('copyparty',3923),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
@@ -103,7 +105,7 @@ def main():
             urls = {name: f'http://127.0.0.1:{value}' for name, value in ports.items()}
             media.connect(c, root, 'smoke@example.com', urls)
             media.connect(c, root, 'smoke@example.com', urls)
-            media_secrets = config.parse(root/'local/media-credentials', media.SECRET_KEYS)
+            media_secrets = credential_files.read(root/'local/media-credentials', media.SECRET_KEYS)
             seerr_api = media.Client(urls['seerr'])
             seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
             assert seerr_api.call('/api/v1/settings/public')['initialized'], 'Seerr wizard was not completed'
@@ -118,7 +120,7 @@ def main():
                 assert request(ports[name], 'localhost', '/api/v3/system/status')[0] in (401,403)
             prowlarr = media.Client(urls['prowlarr'], media_secrets['PROWLARR_API_KEY'])
             assert len(prowlarr.call('/api/v1/applications')) == 2, 'Prowlarr application sync duplicated'
-            credentials = config.parse(root / 'local/credentials', {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
+            credentials = credential_files.read(root / 'local/credentials', {'COPYPARTY_PASSWORD'})
             auth = 'Basic ' + base64.b64encode(('admin:' + credentials['COPYPARTY_PASSWORD']).encode()).decode()
             headers = {'Authorization': auth}
             code, _ = request(ports['copyparty'], 'localhost', '/probe.txt', 'PUT', b'ohara probe', headers)
@@ -129,16 +131,6 @@ def main():
             assert code in (401,403,404), f'anonymous file read returned {code}'
             code, _ = request(ports['copyparty'], 'localhost', '/anonymous.txt', 'PUT', b'blocked')
             assert code in (401,403,404), f'anonymous write returned {code}'
-            # UDP DNS to a deterministic local record avoids dependence on upstream internet DNS.
-            compose(['exec', '-T', 'pihole', 'pihole-FTL', '--config', 'dns.hosts', '["192.168.1.123 smoke.test"]'])
-            compose(['exec', '-T', 'pihole', 'pihole', 'reloaddns'])
-            time.sleep(2)
-            query = struct.pack('!HHHHHH', 1234, 0x100, 1, 0, 0, 0) + b'\x05smoke\x04test\0\0\x01\0\x01'
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                sock.settimeout(10)
-                sock.sendto(query, ('127.0.0.1', port('pihole', 53, True)))
-                answer = sock.recv(4096)
-                assert b'\xc0\xa8\x01\x7b' in answer, 'DNS did not return local fixture address'
             # Render real templates; only upstream addresses differ in this container fixture.
             certificates = root / 'certs'
             certificates.mkdir()
@@ -188,7 +180,7 @@ def main():
             assert code == 200, 'Homepage CSRF endpoint failed'
             csrf = json.loads(body)['csrfToken']
             cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
-            hp = config.parse(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
+            hp = credential_files.read(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
             payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
                                                'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
             code, body, login_headers = tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', payload,
@@ -213,7 +205,7 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: ten apps, media API connections and rerun preservation, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, LAN DNS fixture, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: nine apps, media API connections and rerun preservation, Homepage password login/session, private services and login rate limit, authenticated file upload/download, anonymous denial, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

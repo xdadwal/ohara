@@ -1,5 +1,11 @@
 # Ohara Agent-Friendly Setup Implementation Plan
 
+Pi-hole/LAN DNS provisions in this historical plan were removed on 2026-10-16.
+Use current compose.yaml, AGENTS.md and operations.md for deployment.
+
+Credential generation in this historical plan is superseded by the user-managed
+input workflow in [credentials.md](../../credentials.md) (2026-10-16).
+
 > **For agentic workers:** Use `superpowers:executing-plans` to implement this plan task by task. Delegation is unnecessary for this small, closely related infrastructure change. This document authorizes no live deployment.
 
 **Goal:** Make Ohara understandable to a new agent and repeatably installable on a fresh Linux machine, with explicit configuration, local validation, and controlled public HTTPS access.

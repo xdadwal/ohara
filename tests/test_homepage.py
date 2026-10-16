@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import credential_fixtures
 import proxy
 
 class HomepageTests(unittest.TestCase):
@@ -19,6 +20,7 @@ class HomepageTests(unittest.TestCase):
             c = config.load(ROOT / '.env.example')
             c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'),
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            credential_fixtures.write(root)
             host.prepare_storage(c, root)
             settings = root/'data/homepage/settings.yaml'
             secrets = root/'local/homepage.env'
@@ -44,21 +46,20 @@ if __name__ == '__main__':
     unittest.main()
 
 class HomepageRecoveryTests(unittest.TestCase):
-    def test_new_files_get_ownership_even_when_later_validation_fails(self):
-        from unittest.mock import patch, call
+    def test_invalid_inputs_do_not_create_or_change_storage(self):
         import shutil
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             shutil.copytree(ROOT/'configs', root/'configs')
-            (root/'local').mkdir()
+            credential_fixtures.write(root)
             (root/'local/credentials').write_text('malformed\n')
             c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'),FILES_ROOT=str(root/'files'))
-            with patch.object(host.os,'geteuid',return_value=0), patch.object(host.os,'chown') as chown:
-                with self.assertRaises(ValueError):
-                    host.prepare_storage(c,root)
-                self.assertIn(call(root/'local/homepage.env',os.getuid(),os.getgid()), chown.call_args_list)
-                self.assertIn(call(root/'data/homepage/settings.yaml',1000,1000), chown.call_args_list)
+            c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'))
+            before = (root/'local/homepage.env').read_bytes()
+            with self.assertRaises(ValueError):
+                host.prepare_storage(c, root)
+            self.assertFalse((root/'data').exists())
+            self.assertEqual((root/'local/homepage.env').read_bytes(), before)
 
 class HomepageExposureTests(unittest.TestCase):
     def test_model_rejects_disabled_login_or_wildcard_host(self):
@@ -84,10 +85,11 @@ class ConfiguredPasswordTests(unittest.TestCase):
             c = config.load(ROOT/'.env.example')
             c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'),
                      MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            credential_fixtures.write(root)
             host.prepare_storage(c, root)
             p = root/'local/homepage.env'
             p.write_text(re.sub(r'^HOMEPAGE_AUTH_PASSWORD=.*$',
-                                'HOMEPAGE_AUTH_PASSWORD=chosen-password', p.read_text(), flags=re.M))
+                                'HOMEPAGE_AUTH_PASSWORD=chosen-password-123', p.read_text(), flags=re.M))
             before = p.read_bytes()
             runtime.check(c, root)
             self.assertEqual(p.read_bytes(), before)

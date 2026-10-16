@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 import config
+import credentials as credential_files
 
 
 def run(args, *, capture=False, timeout=60, env=None, input=None):
@@ -58,8 +59,6 @@ def validate_model(model, c):
         'seerr': {('127.0.0.1', 5055, 5055, 'tcp')},
         'copyparty': {('127.0.0.1', 3923, 3923, 'tcp')},
         'speedtest': {('127.0.0.1', 3000, 3000, 'tcp')},
-        'pihole': {(c['LAN_IP'], 53, 53, 'tcp'), (c['LAN_IP'], 53, 53, 'udp'),
-                   ('127.0.0.1', 8888, 80, 'tcp')},
     }
     services = model['services']
     if set(services) != set(expected):
@@ -86,10 +85,13 @@ def check(c, root, *, static=False):
                                capture=True, docker=['docker']))
     validate_model(model, c)
     if not static:
-        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env', root / 'local/media-credentials']:
+        credential_files.load(root)
+        for path in [root / 'local/copyparty.conf', root / 'local/homepage.env', root / 'local/media-credentials'] + [
+                Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','prowlarr')
+                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf']:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
-        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty', 'homepage', 'jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']] + [Path(c['FILES_ROOT']), Path(c['MEDIA_ROOT'])]:
+        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'copyparty', 'homepage', 'jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']] + [Path(c['FILES_ROOT']), Path(c['MEDIA_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
         for path, uid, gid in [
@@ -107,9 +109,6 @@ def check(c, root, *, static=False):
             path = Path(c['MEDIA_ROOT'])/name
             if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
-        hp = config.parse(root / 'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'})
-        if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or len(hp['HOMEPAGE_AUTH_SECRET']) < 32:
-            raise ValueError('Homepage authentication must be enabled with a strong session secret')
         import re
         text = (root / 'local/copyparty.conf').read_text()
         if re.search(r'^\s*[rwmdagAG.]+\s*:\s*[^#\n]*\*', text, re.MULTILINE):
@@ -128,7 +127,7 @@ def status(c, root):
     by_name = {r['Service']: r for r in rows}
     good = True
     for name, port, path in [('homepage', 3002, '/api/healthcheck'), ('seerr', 5055, '/api/v1/settings/public'), ('copyparty', 3923, '/'),
-                              ('speedtest', 3000, '/'), ('pihole', 8888, '/admin/'),
+                              ('speedtest', 3000, '/'),
                               ('jellyfin', 8096, '/health'), ('radarr', 7878, '/'),
                               ('sonarr', 8989, '/'), ('prowlarr', 9696, '/'), ('qbittorrent', 8081, '/')]:
         running = by_name.get(name, {}).get('State') == 'running'
@@ -148,5 +147,5 @@ def status(c, root):
         print(f'{name}: container={"running" if running else "stopped/missing"}, '
               f'HTTP={"reachable" if http else "unreachable"}, health={health or "not configured"}')
     print('Seerr owner/media-server configuration and request fulfillment require application verification.')
-    print('Public DNS, HTTPS, uploads, and LAN DNS are not established by this check.')
+    print('Public DNS, HTTPS, and uploads are not established by this check.')
     return 0 if good else 1

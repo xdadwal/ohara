@@ -1,5 +1,4 @@
 """Strict, non-executable configuration shared by Ohara's commands."""
-import ipaddress
 import os
 from pathlib import Path
 import re
@@ -8,7 +7,7 @@ KEYS = {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
         'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'PIHOLE_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
+IMAGES = {'SEERR_IMAGE', 'COPYPARTY_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE'}
 
 
 def parse(path, keys, optional=frozenset()):
@@ -28,7 +27,8 @@ def parse(path, keys, optional=frozenset()):
 
 
 def load(path):
-    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'})
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'HOMEPAGE_HOST'})
+    values.pop('LAN_IP', None)  # Retired DNS-only input; never used.
     values.setdefault('MEDIA_ROOT', values['DATA_ROOT'] + '/media')
     values.setdefault('JELLYFIN_HOST', 'jellyfin.' + values['DOMAIN'])
     values.setdefault('HOMEPAGE_HOST', values['DOMAIN'])
@@ -42,13 +42,6 @@ def load(path):
     names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST']]
     if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
-    try:
-        address = ipaddress.IPv4Address(values['LAN_IP'])
-        networks = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
-        if not any(address in ipaddress.ip_network(n) for n in networks):
-            raise ValueError()
-    except ValueError:
-        raise ValueError('LAN_IP: require an RFC1918 LAN IPv4 address') from None
     for key in ['DATA_ROOT', 'FILES_ROOT', 'MEDIA_ROOT']:
         value = values[key]
         if not PATH.fullmatch(value) or value == '/' or '..' in value.split('/') or '//' in value:

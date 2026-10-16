@@ -5,9 +5,9 @@ import os
 from pathlib import Path
 import secrets
 import socket
-import subprocess
 
 import config
+import credentials as credential_files
 from runtime import run
 
 
@@ -73,17 +73,18 @@ def password_hash(password, salt):
 
 
 def prepare_storage(c, root):
+    data, _, _ = credential_files.load(root)
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'
     ensure_directory(local, owner, group, 0o700)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     ensure_directory(c['DATA_ROOT'], owner, group)
-    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('pihole', 0, 0), ('homepage', uid, gid)]:
+    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('homepage', uid, gid)]:
         ensure_directory(Path(c['DATA_ROOT']) / name, user, grp)
     ensure_directory(c['FILES_ROOT'], uid, gid)
     credentials = local / 'credentials'
-    for path in [credentials, local / 'copyparty.conf', local / 'pihole.env']:
+    for path in [credentials, local / 'copyparty.conf']:
         if path.is_symlink():
             raise ValueError('Symlink private configuration is unsupported')
     def create_owned(path, content, user, grp, mode=0o600):
@@ -92,37 +93,19 @@ def prepare_storage(c, root):
         if os.geteuid() == 0:
             os.chown(path, user, grp)
 
-    hp = local / 'homepage.env'
-    if hp.is_symlink():
-        raise ValueError('Symlink private configuration is unsupported')
-    create_owned(hp, 'HOMEPAGE_AUTH_ENABLED=true\n'
-                 + 'HOMEPAGE_AUTH_SECRET=' + secrets.token_urlsafe(48) + '\n'
-                 + 'HOMEPAGE_AUTH_PASSWORD=' + secrets.token_urlsafe(32) + '\n', owner, group)
     for template in (root / 'configs/homepage').glob('*.yaml'):
         destination = Path(c['DATA_ROOT']) / 'homepage' / template.name
         if destination.is_symlink():
             raise ValueError('Symlink Homepage configuration is unsupported')
         create_owned(destination, template.read_text(), uid, gid, 0o640)
-    if not credentials.exists():
-        # Do not silently rotate one credential when the recovery file was removed.
-        if (local / 'copyparty.conf').exists() or (local / 'pihole.env').exists():
-            raise ValueError('Private configuration exists without local/credentials; restore it before setup')
-        create_owned(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
-                     + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n', owner, group)
-    data = config.parse(credentials, {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
-    # Restrict generated credentials so no control characters/config syntax is possible.
-    import re
-    if any(not re.fullmatch(r'[A-Za-z0-9_-]{24,}', v) for v in data.values()):
-        raise ValueError('local/credentials: invalid generated credential format')
     cp = local / 'copyparty.conf'
     if not cp.exists():
         salt = secrets.token_hex(24)
         template = (root / 'configs/copyparty/config.example').read_text()
         create_owned(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), owner, gid, 0o640)
-    create_owned(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n', owner, group)
     from media import prepare
     prepare(c, root, create_owned, ensure_directory, owner, group)
-    print('Storage ready; credentials are in local/credentials and local/homepage.env (not printed).')
+    print('Storage ready; user-supplied credential files preserved (values not printed).')
 
 
 def preflight(c):
@@ -132,15 +115,6 @@ def preflight(c):
         raise ValueError('Bootstrap supports amd64 and arm64 only')
     if not Path('/run/systemd/system').is_dir():
         raise ValueError('Bootstrap requires a running systemd host; use a VM, not a plain container')
-    # Binding probes are read-only with respect to configuration and release immediately.
-    for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        try:
-            with socket.socket(socket.AF_INET, kind) as probe:
-                probe.bind((c['LAN_IP'], 53))
-        except OSError as error:
-            # Existing Ohara DNS is fine on a repeat run; only a running matching project qualifies.
-            if not pihole_running(c):
-                raise ValueError('LAN_IP:53 unavailable or IP not assigned; inspect ss -lntup and resolver settings') from error
     check_web_ports()
     for name in ['download.docker.com', 'registry-1.docker.io']:
         run(['getent', 'ahosts', name], capture=True, timeout=15)
@@ -166,17 +140,9 @@ def check_web_ports():
             raise ValueError('Host port 80/443 is occupied; install iproute2 to inspect listeners before retrying') from None
 
 
-def pihole_running(c):
-    try:
-        text = run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=ohara',
-                    '--filter', 'label=com.docker.compose.service=pihole', '--format', '{{json .Ports}}'], capture=True, timeout=15)
-        return c['LAN_IP'] + ':53->53/tcp' in text
-    except (OSError, RuntimeError, subprocess.TimeoutExpired):
-        return False
-
-
 def prepare(c, root, dry_run=False):
     require_root()
+    credential_files.load(root)
     architecture = preflight(c)
     identity, codename = os_info(Path('/etc/os-release').read_text())
     reject_conflicts()

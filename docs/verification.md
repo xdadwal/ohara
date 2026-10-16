@@ -85,3 +85,40 @@ Indexer selection/accounts and real movie/episode search, transfer, import,
 availability refresh and HTTPS playback remain real-host acceptance steps.
 Fresh Linux provisioning, real ACME/public reachability and GPU transcoding remain
 outside this disposable test's evidence.
+
+## User-managed credential inputs (2026-10-16)
+
+43 unit tests pass. New cases cover missing user inputs before storage creation,
+invalid inputs before provisioning/package changes, literal punctuation/spaces,
+private file permissions, blank template rejection, symlink rejection, errors that
+do not echo secret values, and missing qBittorrent config preventing startup with
+an upstream temporary password. Existing preservation and configuration checks pass.
+Setup/CLI checks, Bash syntax, ShellCheck, compilation and whitespace checks pass.
+
+The ten-service disposable smoke test passes on local arm64 using explicitly
+supplied test input files with spaces, dollar signs, hash characters and equals
+signs in passwords/session secret. It covers Homepage login, authenticated file
+access, media API connections and reruns, Pi-hole DNS and Nginx HTTPS routes.
+No deployment command generates passwords, acquisition API keys or Homepage secrets;
+only password-hash salts and native application-issued tokens remain automatic.
+Tracked templates contain empty fields. Test dummy inputs are isolated under tests/.
+Independent review found no blocking issues; its literal-space test suggestion was
+included in the expanded smoke run. Existing-account rotation and actual production
+ownership/public deployment remain operator verification steps.
+
+## Pi-hole removal (2026-10-16)
+
+45 unit tests pass, including new assertions that only nine services remain,
+DNS/admin ports are absent, retired LAN_IP/PIHOLE_PASSWORD inputs are ignored
+without rewriting user files, and status iterates exactly the remaining services.
+The stale DNS status tuple found during implementation/review was reproduced by
+that status regression test, fixed, and the full suite passed afterward.
+Setup/CLI, syntax, ShellCheck, compilation and whitespace checks pass.
+
+The real nine-service disposable arm64 smoke passed: supplied-credential logins,
+media API connections and rerun preservation, Homepage sessions/login rate limiting,
+file authorization, Nginx TLS routing and a 35 MiB speed upload. Pi-hole's container,
+image pin, storage preparation, credentials, environment file and DNS probes are
+removed from active deployment code. Historical verification entries describe
+older snapshots. Independent review reports no remaining blocking findings.
+No live resolver/router changes, container stops or retired-data deletion occurred.

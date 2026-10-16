@@ -1,16 +1,16 @@
-"""Initial media storage and unique credentials; existing state is never replaced."""
+"""Initial media storage using user-supplied credentials; existing state is never replaced."""
 import base64
 import hashlib
 from pathlib import Path
 import secrets
-import config
+import credentials as credential_files
 
 PORTS = {'radarr': 7878, 'sonarr': 8989, 'prowlarr': 9696}
-SECRET_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD'} | {
-    name.upper() + suffix for name in PORTS for suffix in ('_API_KEY', '_PASSWORD')}
+SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
 def prepare(c, root, create, directory, owner, group):
+    values = credential_files.read(root/'local/media-credentials', SECRET_KEYS)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])
     media = Path(c.get('MEDIA_ROOT', str(data / 'media')))
@@ -20,19 +20,6 @@ def prepare(c, root, create, directory, owner, group):
     for name in ['downloads', 'library', 'downloads/incomplete', 'downloads/complete',
                  'downloads/complete/movies', 'downloads/complete/tv', 'library/movies', 'library/tv']:
         directory(media / name, uid, gid)
-    credentials = root / 'local/media-credentials'
-    if credentials.is_symlink():
-        raise ValueError('Symlink private configuration is unsupported')
-    if not credentials.exists():
-        if any((data / name / 'config.xml').exists() for name in PORTS) or (data/'qbittorrent/qBittorrent/qBittorrent.conf').exists():
-            raise ValueError('Existing media config without local/media-credentials; recover credentials before setup')
-        create(credentials, ''.join(k + '=' + (secrets.token_hex(16) if k.endswith('_API_KEY')
-                                             else secrets.token_urlsafe(32)) + '\n'
-                                    for k in sorted(SECRET_KEYS)), owner, group)
-    values = config.parse(credentials, SECRET_KEYS)
-    import re
-    if any(not re.fullmatch(r'[A-Za-z0-9_-]{32,}', value) for value in values.values()):
-        raise ValueError('Invalid generated media credential format')
     for name, port in PORTS.items():
         # API keys permit the connector to set forms authentication through the API.
         # Do not expose these loopback-only services through Nginx.
@@ -104,7 +91,7 @@ def connect(c, root, email, urls=None):
     credentials = root/'local/media-credentials'
     if credentials.is_symlink():
         raise ValueError('Symlink private configuration is unsupported')
-    values = config.parse(credentials, SECRET_KEYS)
+    values = credential_files.read(credentials, SECRET_KEYS)
     urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
                     'qbittorrent': 'http://127.0.0.1:8081', 'jellyfin': 'http://127.0.0.1:8096',
                     'seerr': 'http://127.0.0.1:5055'}

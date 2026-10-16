@@ -1,5 +1,8 @@
 # Seerr media stack
 
+Credential generation in this historical plan is superseded by the user-managed
+input workflow in [credentials.md](../../credentials.md) (2026-10-16).
+
 User-approved scope: add the services and connections needed for Seerr requests,
 acquisition, and playback on Ohara. This supersedes the earlier media removal.
 

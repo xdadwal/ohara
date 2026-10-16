@@ -6,7 +6,7 @@
   socket exposure. UFW alone does not isolate published Docker ports.
 - Adopt Seerr, the maintained successor to Jellyseerr and Overseerr, for a fresh
   installation. Upstream release announcement: https://docs.seerr.dev/blog/seerr-release/.
-- Keep Pi-hole, Copyparty, and OpenSpeedTest. Remove the previous media download
+- Keep Copyparty and OpenSpeedTest; Pi-hole was subsequently removed. Remove the previous media download
   stack, monitoring, Tailscale, Chesskit, Homer, and standalone Redis definitions.
 - Proposed names: watch.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
   Configure in .env before issuance. The HTTPS apex runs Homepage with password
@@ -25,9 +25,9 @@
   current verification and remaining deployment checks are in operations.md.
 
 - Shared authentication (Authelia/Authentik) is deferred by user choice. Use
-  agent-generated unique per-service credentials. Initial setup agents collect
-  only missing machine/account inputs using docs/agent-setup.md; generated
-  credentials and application account provisioning are distinct steps.
+  user-managed per-service credentials from private input files. Initial setup
+  agents collect only missing machine/account inputs using docs/agent-setup.md;
+  reading credentials and provisioning application accounts are distinct steps.
 
 ## Media stack restored (2026-10-15)
 
@@ -37,3 +37,19 @@ supersedes the earlier decision to remove media/download services. Jellyfin
 uses jellyfin.xdadwal.in, while Seerr stays at watch.xdadwal.in. Acquisition
 UIs remain loopback-only. No indexer accounts, VPN, GPU or inbound peer ports
 are assumed. Shared storage supports consistent paths and hardlinks.
+
+## User-managed credentials (2026-10-16)
+
+The user superseded automatic credential generation. All login passwords, the
+three acquisition API keys, and Homepage's signing secret must come from
+user-created private files. Setup validates and reads them; it never substitutes
+generated defaults or recreates a missing file. See credentials.md. Normal
+password-hash salts and application-issued tokens remain application internals.
+
+## Pi-hole removed (2026-10-16)
+
+The user does not need LAN DNS/filtering. Public domain records remain at GoDaddy.
+Remove Pi-hole, its image, storage preparation, DNS-port checks, admin binding and
+credential requirement. Retired LAN_IP and PIHOLE_PASSWORD input fields are ignored
+for upgrades; existing containers/files and router/client resolver settings are
+not changed by a repository update. See operations.md for deployed-host cutover.
