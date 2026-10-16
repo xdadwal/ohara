@@ -19,6 +19,7 @@ services:
       HOMEPAGE_VAR_REQUESTS_HOST: ${REQUESTS_HOST}
       HOMEPAGE_VAR_JELLYFIN_HOST: ${JELLYFIN_HOST}
       HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
+      HOMEPAGE_VAR_NAVIDROME_HOST: ${NAVIDROME_HOST}
     env_file:
       - path: ./local/homepage.env
         format: raw
@@ -85,6 +86,27 @@ services:
       - type: bind
         source: ${DATA_ROOT}/jellyfin-cache
         target: /cache
+        bind: {create_host_path: false}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  navidrome:
+    <<: *defaults
+    image: ${NAVIDROME_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    environment:
+      TZ: ${TZ}
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+    ports: ["127.0.0.1:4533:4533"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/navidrome
+        target: /data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}/library/music
+        target: /music
+        read_only: true
         bind: {create_host_path: false}
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]

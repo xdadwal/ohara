@@ -66,14 +66,14 @@ checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.con
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
 
-1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin names to
+1. In GoDaddy, set A records for the apex and configured dashboard/watch/speed/jellyfin/Navidrome names to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
    ports deliberately while preserving SSH access. Never forward backend ports
-   3000, 3002, 5055, 7878, 8081, 8096, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
+   3000, 3002, 4533, 5055, 6767, 7878, 8081, 8096, 8686, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
    paths can be fetched externally, including if the router lacks hairpin NAT.
@@ -83,7 +83,7 @@ same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md)
 6. Activate: `sudo scripts/tls --activate --accounts-ready --agree-tos`.
    `--accounts-ready` is an explicit operator attestation, not an automatic test
    of account configuration. This accepts Let's Encrypt's subscriber agreement.
-7. Verify trusted HTTPS and hostname matching on all four names externally,
+7. Verify trusted HTTPS and hostname matching on all configured names externally,
    login/logout, Jellyfin playback, and a complete speed test. The configured Homepage hostname should show its password login;
    confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
 
@@ -214,7 +214,7 @@ A certificate issued before removal may still cover files.xdadwal.in. Activation
 preserves prior certificate names for rollback and keeps HTTP ACME challenge handling
 for those names, while removing their HTTPS application routes. Keep their DNS
 records resolving to the server until a deliberate certificate-name retirement is
-completed. Fresh deployments request only the four active names. Do not delete a
+completed. Fresh deployments request only the configured active names. Do not delete a
 working certificate or change renewal metadata casually.
 
 ## Migration from the previous repository
@@ -242,7 +242,7 @@ external credentials automatically.
 
 ## Backups, upgrades, and recovery
 
-Back up media libraries and Jellyfin/Radarr/Sonarr/Lidarr/Bazarr/Prowlarr/qBittorrent state,
+Back up media libraries and Jellyfin/Navidrome/Radarr/Sonarr/Lidarr/Bazarr/Prowlarr/qBittorrent state,
 `local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
 Back up `.env`, `local/`, Seerr config/
 SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
@@ -349,12 +349,19 @@ See [Homepage widget configuration](homepage-widgets.md) and
 ## Music and subtitles operations
 
 Lidarr (loopback 8686) and Bazarr (loopback 6767) use private SSH forwarding;
-no public admin subdomains are configured. Append the four new user-managed
-credential entries to existing `local/media-credentials` privately, preserving
+no public admin subdomains are configured. Navidrome provides music playback on
+loopback 4533 and configurable NAVIDROME_HOST; music.xdadwal.in is the default; verify public DNS before HTTPS activation. Append missing Lidarr/Bazarr
+credential entries and NAVIDROME_PASSWORD to existing `local/media-credentials` privately, preserving
 every existing value; see [credentials.md](credentials.md).
 
 After setup, verify Prowlarr → Lidarr sync, the qBittorrent `music` category,
-Lidarr root `/data/library/music`, and Jellyfin Music library playback. Seerr
+Lidarr root `/data/library/music`, and Navidrome music scan/playback. Navidrome
+reads MEDIA_ROOT/library/music read-only at `/music` and keeps writable state in
+DATA_ROOT/navidrome at `/data`. Verify its admin login with the supplied password;
+media-setup uses supported first-run/login APIs and never resets an existing
+account. Fresh Jellyfin setup adds Movies/TV Shows only. Preserve existing Music
+libraries; manually hide/remove only the library definition if desired, keeping
+all music files. No additional Navidrome API key is required. Seerr
 continues to request movies and series only. Verify Bazarr Radarr/Sonarr
 connections and shared `/data/library` paths; it needs write access beside media
 for subtitle files. Existing Bazarr configuration is preserved and requires
@@ -364,3 +371,9 @@ providers and privately supply any required provider credentials.
 The discussed final NAS/multiple-node topology is not implemented. These services
 run in the current Compose stack; a future acquisition node is their intended
 home. This change does not provision multiple nodes, shared auth or local DNS.
+
+Navidrome HTTPS and its managed HTTP redirect suppress URL-bearing Nginx logs
+because Subsonic URLs can contain credentials. Diagnose music upstream problems
+with scripts/status, Navidrome service logs and connectivity checks rather than
+request-URL logging. The public music route uses a five-second connection timeout;
+streaming reads retain the longer playback timeout.

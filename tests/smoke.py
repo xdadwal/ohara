@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise pinned applications and rendered Nginx using only disposable data."""
 import http.client
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -66,7 +67,7 @@ def main():
         override = root / 'smoke.yaml'
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
-            for name, port in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]
+            for name, port in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767),('navidrome',4533)]
         ) + '\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
@@ -87,7 +88,7 @@ def main():
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
-            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]}
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767),('navidrome',4533)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
@@ -153,7 +154,7 @@ def main():
             nginx_config = root / 'nginx.conf'
             text = proxy.render(c, ROOT, https=True)
             text = text.replace('127.0.0.1:3002', 'homepage:3000')
-            for name, number in [('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]:
+            for name, number in [('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767),('navidrome',4533)]:
                 text = text.replace(f'127.0.0.1:{number}', f'{name}:{number}')
             nginx_config.write_text('events {}\nhttp {\n' + text + '\n}\n')
             runtime.run(docker + ['run', '-d', '--name', nginx_name, '--network', identifier + '_default',
@@ -231,6 +232,16 @@ def main():
             assert 429 in attempts, 'Homepage proxy login rate limit was not enforced'
             assert request(http_port, c['REQUESTS_HOST'])[0] == 301
             assert tls_request(c['JELLYFIN_HOST'], '/System/Info/Public')[0] == 200
+            assert tls_request(c['NAVIDROME_HOST'], '/ping')[0] == 200, 'Navidrome HTTPS route failed'
+            assert tls_request(c['NAVIDROME_HOST'], '/api/user')[0] == 401, 'Navidrome API must require login'
+            salt = 'disposable-smoke'
+            query = urllib.parse.urlencode({
+                'u':'admin', 't':hashlib.md5((media_secrets['NAVIDROME_PASSWORD']+salt).encode()).hexdigest(),
+                's':salt, 'v':'1.16.1', 'c':'OharaSmoke', 'f':'json'})
+            code, response = tls_request(c['NAVIDROME_HOST'], '/rest/getMusicFolders.view?'+query)
+            subsonic = json.loads(response)['subsonic-response']
+            assert code == 200 and subsonic['status'] == 'ok', 'Navidrome music-client authentication failed'
+            assert subsonic['musicFolders']['musicFolder'], 'Navidrome music folder missing'
             assert tls_request(c['REQUESTS_HOST'], '/api/v1/settings/public')[0] == 200
             speed_code, speed_body, speed_headers = tls_request(c['SPEED_HOST'], full=True)
             assert speed_code == 200 and b'OpenSpeedTest' in speed_body
@@ -239,7 +250,15 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: ten apps, media API connections and rerun preservation, Homepage password login/session, media/resource widgets and OpenSpeedTest link, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            # A failed music upstream must not leak replayable Subsonic URL tokens.
+            compose(['stop', 'navidrome'])
+            failed_path = '/rest/getMusicFolders.view?'+query
+            assert tls_request(c['NAVIDROME_HOST'], failed_path)[0] in (502, 504)
+            assert request(http_port, c['NAVIDROME_HOST'], failed_path)[0] == 301
+            diagnostic = subprocess.run(docker+['logs', nginx_name], stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, text=True, timeout=30, check=True).stdout
+            assert failed_path not in diagnostic, 'Nginx logged music-client URL credentials'
+            print('PASS: eleven apps, media API connections and rerun preservation, Homepage password login/session, media/resource widgets and OpenSpeedTest link, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

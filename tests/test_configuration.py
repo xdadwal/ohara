@@ -47,13 +47,13 @@ class ConfigurationTests(unittest.TestCase):
     def test_private_media_ports_cannot_back_public_portfolio(self):
         base = (ROOT / '.env.example').read_text()
         base = base.replace('HOMEPAGE_HOST=xdadwal.in', 'HOMEPAGE_HOST=ohara.xdadwal.in')
-        for port in [6767, 8686]:
+        for port in [4533, 6767, 8686]:
             with self.subTest(port=port), self.assertRaisesRegex(ValueError, 'private admin port'):
                 self.load(base.replace('PORTFOLIO_PORT=0', f'PORTFOLIO_PORT={port}'))
 
     def test_all_images_include_immutable_lidarr_and_bazarr_pins(self):
         images = config.images(ROOT / 'versions.env')
-        self.assertEqual(len(images), 10)
+        self.assertEqual(len(images), 11)
         self.assertIn('LIDARR_IMAGE', images)
         self.assertIn('BAZARR_IMAGE', images)
 

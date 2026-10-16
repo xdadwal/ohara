@@ -22,6 +22,10 @@
           url: http://seerr:5055
           key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
           fields: [pending, processing, issues]
+    - Navidrome:
+        icon: navidrome.png
+        href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
+        description: Listen to your music library
 - Tools:
     - OpenSpeedTest:
         icon: openspeedtest.png

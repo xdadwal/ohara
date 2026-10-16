@@ -14,7 +14,7 @@ def prepare(c, root, create, directory, owner, group):
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])
     media = Path(c.get('MEDIA_ROOT', str(data / 'media')))
-    for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr']:
+    for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'navidrome']:
         directory(data / name, uid, gid)
     directory(media, uid, gid)
     for name in ['downloads', 'library', 'downloads/incomplete', 'downloads/complete',
@@ -98,7 +98,7 @@ def connect(c, root, email, urls=None):
     values = credential_files.read(credentials, SECRET_KEYS)
     urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
                     'qbittorrent': 'http://127.0.0.1:8081', 'jellyfin': 'http://127.0.0.1:8096',
-                    'seerr': 'http://127.0.0.1:5055'}
+                    'seerr': 'http://127.0.0.1:5055', 'navidrome': 'http://127.0.0.1:4533'}
     statefile = root/'local/media-state.json'
     if statefile.is_symlink():
         raise ValueError('Symlink private configuration is unsupported')
@@ -169,6 +169,8 @@ def connect(c, root, email, urls=None):
                             'apiKey':values[name.upper()+'_API_KEY']})
             prowlarr.call('/api/v1/applications/test', schema)
             prowlarr.call('/api/v1/applications', schema)
+    import navidrome
+    navidrome.connect(urls['navidrome'], values['NAVIDROME_PASSWORD'])
     jf = Client(urls['jellyfin'])
     jf.headers['Authorization'] = 'MediaBrowser Client="Ohara", Device="Setup", DeviceId="ohara-setup", Version="1"'
     if not jf.call('/System/Info/Public')['StartupWizardCompleted']:
@@ -187,7 +189,7 @@ def connect(c, root, email, urls=None):
     jf.headers['Authorization'] += ', Token="'+account['AccessToken']+'"'
     libraries = jf.call('/Library/VirtualFolders')
     import urllib.parse
-    for title, category, kind in [('Movies','movies','movies'), ('TV Shows','tv','tvshows'), ('Music','music','music')]:
+    for title, category, kind in [('Movies','movies','movies'), ('TV Shows','tv','tvshows')]:
         path = '/media/'+category
         if not any(path in item.get('Locations', []) for item in libraries):
             query = urllib.parse.urlencode({'name':title, 'collectionType':kind, 'refreshLibrary':'true'})

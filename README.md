@@ -13,9 +13,10 @@ media settings on another machine, or to migrate private state safely.
 | Service | Purpose | Access |
 |---|---|---|
 | Homepage | Password-protected service dashboard | `HOMEPAGE_HOST` (`ohara.xdadwal.in` on this host) |
-| Jellyfin | Movie, series and music playback | `jellyfin.xdadwal.in` after activation |
+| Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
 | Lidarr | Music acquisition | Private administration (8686) |
+| Navidrome | Music playback | `NAVIDROME_HOST` (default `music.xdadwal.in`); loopback 4533 |
 | Bazarr | Movie and series subtitles | Private administration (6767) |
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
@@ -24,11 +25,11 @@ media settings on another machine, or to migrate private state safely.
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
-Jellyfin, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
+Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
 widgets ([configuration](docs/homepage-widgets.md)). Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
-initialize accounts/connections and add your chosen indexers. Select subtitle languages
+initialize accounts/connections and add your chosen indexers. Music flows from Lidarr into the shared music library and Navidrome. Select subtitle languages
 and providers explicitly in Bazarr; Seerr requests remain movies and series only.
 
 See [the current stack overview](docs/stack.md) for access, storage and pending work.

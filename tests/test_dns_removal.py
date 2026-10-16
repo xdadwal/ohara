@@ -15,7 +15,7 @@ class DnsRemovalTests(unittest.TestCase):
         c = config.load(ROOT/'.env.example')
         model = json.loads(runtime.compose(c, ROOT, ['config','--no-env-resolution','--format','json'], capture=True))
         self.assertTrue('pihole' not in model['services'], 'Removed DNS service is still configured')
-        self.assertEqual(len(model['services']), 10)
+        self.assertEqual(len(model['services']), 11)
         for service in model['services'].values():
             for port in service.get('ports', []):
                 self.assertNotIn(int(port['published']), (53,8888))
@@ -44,5 +44,5 @@ class DnsRemovalTests(unittest.TestCase):
         output = io.StringIO()
         with patch.object(runtime, 'compose', return_value='[]'), contextlib.redirect_stdout(output):
             self.assertEqual(runtime.status(config.load(ROOT/'.env.example'), ROOT), 1)
-        self.assertEqual(output.getvalue().count('container=stopped/missing'), 10)
+        self.assertEqual(output.getvalue().count('container=stopped/missing'), 11)
         self.assertNotIn('pihole', output.getvalue())
