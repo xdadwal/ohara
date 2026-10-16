@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import credential_fixtures
 
 class MediaTests(unittest.TestCase):
     def test_old_configuration_has_media_defaults(self):
@@ -27,6 +28,7 @@ class MediaTests(unittest.TestCase):
             c = config.load(ROOT/'.env.example')
             c.update(DATA_ROOT=str(root/'data'), FILES_ROOT=str(root/'files'), MEDIA_ROOT=str(root/'media'),
                      RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            credential_fixtures.write(root)
             host.prepare_storage(c, root)
             credentials = root/'local/media-credentials'
             before = credentials.read_bytes()

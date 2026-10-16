@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import credential_fixtures
 
 class HostTests(unittest.TestCase):
     def test_supported_and_unsupported_hosts(self):
@@ -25,8 +26,9 @@ class HostTests(unittest.TestCase):
             c = config.load(ROOT / '.env.example')
             c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                      RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
+            credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            files = [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/credentials']
+            files = [root / 'local/copyparty.conf', root / 'local/credentials']
             before = [p.read_bytes() for p in files]
             mode = files[0].stat().st_mode
             host.prepare_storage(c, root)

@@ -27,7 +27,7 @@ class StackTests(unittest.TestCase):
         c = config.load(ROOT / '.env.example')
         model = json.loads(runtime.compose(c, ROOT, ['config', '--no-env-resolution', '--format', 'json'], capture=True))
         runtime.validate_model(model, c)
-        self.assertEqual(set(model['services']), {'homepage', 'seerr', 'copyparty', 'pihole', 'speedtest', 'jellyfin', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent'})
+        self.assertEqual(set(model['services']), {'homepage', 'seerr', 'copyparty', 'speedtest', 'jellyfin', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent'})
         model['services']['seerr']['ports'][0]['host_ip'] = '0.0.0.0'
         with self.assertRaises(ValueError):
             runtime.validate_model(model, c)

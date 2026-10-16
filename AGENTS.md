@@ -4,7 +4,7 @@ Ohara provisions a small Linux homeserver. Read README.md and docs/operations.md
 before changing deployment behavior. The approved migration plan is under
 docs/superpowers/plans/.
 
-- Active applications: Seerr (Jellyseerr's successor), Pi-hole, Copyparty,
+- Active applications: Seerr (Jellyseerr's successor), Copyparty,
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, and qBittorrent. Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves the apex with password login; no Docker socket or API keys.
   Immich will share this machine in its own Compose project; deployment is pending
@@ -12,8 +12,10 @@ docs/superpowers/plans/.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials; a shared authentication service is
-  explicitly deferred. Generate strong unique passwords/secrets automatically,
-  preserve existing credentials, and keep values out of chat, logs, and Git.
+  explicitly deferred. Read user-created credential files as documented in
+  docs/credentials.md. Never invent or generate passwords, API keys or session
+  secrets. If files/values are missing, ask the user to fill the private files;
+  never request values in chat. Preserve inputs and keep values out of logs/Git.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.
@@ -30,10 +32,9 @@ docs/superpowers/plans/.
   external account/API credentials; never invent them. Credentials are in
   local/media-credentials; preserve the setup journal. Verify permitted movie/TV
   acquisition, import, playback and availability sync before declaring it ready.
-- For Pi-hole setup, follow the DNS workflow in docs/agent-setup.md: distinguish
-  container deployment from resolver/filter configuration and router/client cutover.
-- Backend web ports bind to loopback. Pi-hole DNS binds only to the LAN IP;
-  its administration interface must never get a public Nginx route.
+- Public DNS records are managed at GoDaddy. No local DNS/filtering service is
+  included. Backend web ports bind to loopback; only host Nginx uses public 80/443.
+  Do not modify router/client DNS or delete retired DNS data during repo changes.
 - Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,
   SSH access, networking, and host DNS. No recursive chown or destructive cleanup.
 - Never execute dotenv contents. Add configuration validation before consumption.

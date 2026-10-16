@@ -13,7 +13,6 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
 | Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
-| Pi-hole | LAN DNS and ad blocking | LAN DNS; private administration |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
@@ -31,8 +30,9 @@ a stable LAN IP and prepare your storage mounts first. Ansible is not required.
 git clone https://github.com/xdadwal/ohara.git
 cd ohara
 sudo ./scripts/setup
-# First run creates .env and stops. Edit LAN_IP, paths, IDs, domain/email.
+# First run creates .env and stops. Edit paths, IDs, domain/email.
 # Use an editor; .env is literal KEY=value, not a shell script.
+# Create/fill the three private files described in docs/credentials.md first.
 sudo ./scripts/setup --dry-run
 sudo ./scripts/setup --non-interactive
 ./scripts/check
@@ -42,10 +42,10 @@ sudo ./scripts/setup --non-interactive
 
 If Docker requires elevated access, the commands try `sudo -n docker`; refresh
 sudo authentication with `sudo -v` first. Users are not added to the Docker group.
-Service credentials are written to `local/credentials`; Homepage credentials are
-in `local/homepage.env`. Media passwords and API keys are in
-`local/media-credentials`. Both files have restrictive permissions and are never
-printed by setup. Use `sudo` to read the file if you ran setup as root.
+Credentials must be supplied in user-created `local/credentials`,
+`local/homepage.env`, and `local/media-credentials`. Setup never generates or
+replaces these values. Follow [credential setup](docs/credentials.md) to copy
+empty templates, fill them privately, and set permissions before rerunning setup.
 
 Run `scripts/media-setup --owner-email YOUR_REAL_EMAIL` to initialize media accounts
 and connections, then add indexers through private administration ([instructions](docs/media.md)).
@@ -53,14 +53,14 @@ Complete service accounts using SSH forwarding before exposing applications:
 
 ```sh
 ssh -L 5055:127.0.0.1:5055 -L 3923:127.0.0.1:3923 \
-    -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 -L 8888:127.0.0.1:8888 user@server
+    -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 user@server
 ```
 
 Homepage uses its own password login at the HTTPS apex; it has no Docker socket
 access or private service widgets. See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
-router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.
+router TCP ports **80 and 443**. Keep backend/admin ports private.
 
 ## For agents and contributors
 
