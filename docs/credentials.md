@@ -30,7 +30,9 @@ configuration; credentials belong in the ignored `local/` directory.
 | `local/homepage.env` | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
 | `local/media-credentials` | `JELLYFIN_PASSWORD`, `QBITTORRENT_PASSWORD`, `RADARR_PASSWORD`, `SONARR_PASSWORD`, `PROWLARR_PASSWORD`, `RADARR_API_KEY`, `SONARR_API_KEY`, `PROWLARR_API_KEY` |
 
-Passwords need at least 16 characters; use independent strong values per service.
+Copyparty and Homepage passwords need at least 8 characters, preserving the
+operator's existing shorter passwords. Media-service passwords need at least
+16 characters. Use independent values per service.
 Homepage's session secret needs at least 32 characters. The three acquisition API
 keys must each be exactly 32 hexadecimal characters, matching those applications'
 format. Supply them yourself for a fresh installation; for an existing server,

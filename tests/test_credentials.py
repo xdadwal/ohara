@@ -9,6 +9,23 @@ import config
 import host
 
 class UserCredentialTests(unittest.TestCase):
+    def test_shorter_web_passwords_are_accepted_without_weakening_media_or_secrets(self):
+        import credentials
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'credentials'
+            for key, value, accepted in [('COPYPARTY_PASSWORD', 'chosen08', True),
+                                         ('HOMEPAGE_AUTH_PASSWORD', 'chosen08', True),
+                                         ('COPYPARTY_PASSWORD', 'short07', False),
+                                         ('JELLYFIN_PASSWORD', 'chosen08', False),
+                                         ('HOMEPAGE_AUTH_SECRET', 'chosen08', False)]:
+                path.write_text(key+'='+value+'\n')
+                path.chmod(0o600)
+                if accepted:
+                    self.assertEqual(credentials.read(path, {key})[key], value)
+                else:
+                    with self.assertRaises(ValueError):
+                        credentials.read(path, {key})
+
     def test_missing_user_files_fail_before_storage_creation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
