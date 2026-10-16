@@ -66,7 +66,7 @@ def main():
         override = root / 'smoke.yaml'
         override.write_text('services:\n' + '\n'.join(
             f'  {name}:\n    ports: !override\n      - "127.0.0.1::{port}"'
-            for name, port in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]
+            for name, port in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]
         ) + '\n')
         def compose(args, capture=False, timeout=120):
             return runtime.compose(c, root, ['-p', identifier, '-f', str(override)] + args,
@@ -87,7 +87,7 @@ def main():
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
-            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]}
+            ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]}
             for name, value in ports.items():
                 deadline = time.monotonic() + 90
                 while True:
@@ -122,16 +122,28 @@ def main():
                     stream.write(key+'='+value+'\n')
             credential_files.load(root)
             compose(['up', '-d', '--force-recreate', 'homepage'])
-            for name, category in [('radarr','movies'), ('sonarr','tv')]:
-                settings = seerr_api.call('/api/v1/settings/'+name)
-                assert len(settings) == 1 and settings[0]['isDefault'], 'Seerr duplicate/missing default server'
-                assert settings[0]['activeDirectory'] == '/data/library/'+category
+            for name, category in [('radarr','movies'), ('sonarr','tv'), ('lidarr','music')]:
+                if name != 'lidarr':
+                    settings = seerr_api.call('/api/v1/settings/'+name)
+                    assert len(settings) == 1 and settings[0]['isDefault'], 'Seerr duplicate/missing default server'
+                    assert settings[0]['activeDirectory'] == '/data/library/'+category
                 client = media.Client(urls[name], media_secrets[name.upper()+'_API_KEY'])
-                clients = client.call('/api/v3/downloadclient')
+                version = '/api/v1' if name == 'lidarr' else '/api/v3'
+                clients = client.call(version+'/downloadclient')
                 assert len(clients) == 1 and clients[0]['enable'], 'Download client was duplicated or disabled'
-                assert request(ports[name], 'localhost', '/api/v3/system/status')[0] in (401,403)
+                assert request(ports[name], 'localhost', version+'/system/status')[0] in (401,403)
             prowlarr = media.Client(urls['prowlarr'], media_secrets['PROWLARR_API_KEY'])
-            assert len(prowlarr.call('/api/v1/applications')) == 2, 'Prowlarr application sync duplicated'
+            assert len(prowlarr.call('/api/v1/applications')) == 3, 'Prowlarr application sync duplicated'
+            bazarr_api = media.Client(urls['bazarr'], media_secrets['BAZARR_API_KEY'])
+            deadline = time.monotonic() + 120
+            while True:
+                status = bazarr_api.call('/api/system/status')['data']
+                if all(any(ch.isdigit() for ch in str(status.get(name+'_version', '')))
+                       for name in ('sonarr', 'radarr')):
+                    break
+                assert time.monotonic() < deadline, 'Bazarr cannot reach Sonarr/Radarr with supplied keys'
+                time.sleep(2)
+            assert request(ports['bazarr'], 'localhost', '/api/system/status')[0] in (401,403), 'Bazarr API must require a key'
             # Render real templates; only upstream addresses differ in this container fixture.
             certificates = root / 'certs'
             certificates.mkdir()
@@ -141,7 +153,7 @@ def main():
             nginx_config = root / 'nginx.conf'
             text = proxy.render(c, ROOT, https=True)
             text = text.replace('127.0.0.1:3002', 'homepage:3000')
-            for name, number in [('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081)]:
+            for name, number in [('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767)]:
                 text = text.replace(f'127.0.0.1:{number}', f'{name}:{number}')
             nginx_config.write_text('events {}\nhttp {\n' + text + '\n}\n')
             runtime.run(docker + ['run', '-d', '--name', nginx_name, '--network', identifier + '_default',
@@ -227,7 +239,7 @@ def main():
             # Actual 35 MiB upload through proxy verifies the documented body-size requirement.
             result = tls_request(c['SPEED_HOST'], '/upload', 'POST', b'x' * (35*1024*1024))
             assert result[0] == 200, f'speed upload returned {result[0]}'
-            print('PASS: eight apps, media API connections and rerun preservation, Homepage password login/session, media/resource widgets and OpenSpeedTest link, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
+            print('PASS: ten apps, media API connections and rerun preservation, Homepage password login/session, media/resource widgets and OpenSpeedTest link, private services and login rate limit, Nginx TLS/routes, and 35 MiB speed upload.', flush=True)
         finally:
             runtime.run(docker + ['rm', '-f', nginx_name], timeout=30) if subprocess.run(docker + ['inspect', nginx_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else None
             compose(['down', '--remove-orphans'], timeout=90)

@@ -128,6 +128,46 @@ services:
         source: ${MEDIA_ROOT}
         target: /data
         bind: {create_host_path: false}
+  lidarr:
+    <<: *defaults
+    image: ${LIDARR_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+    ports: ["127.0.0.1:8686:8686"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/lidarr
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}
+        target: /data
+        bind: {create_host_path: false}
+  bazarr:
+    <<: *defaults
+    image: ${BAZARR_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      TZ: ${TZ}
+      UMASK: "002"
+    ports: ["127.0.0.1:6767:6767"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/bazarr
+        target: /config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}/library
+        target: /data/library
+        bind: {create_host_path: false}
   prowlarr:
     <<: *defaults
     image: ${PROWLARR_IMAGE:?Run scripts/check}

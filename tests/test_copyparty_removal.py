@@ -14,11 +14,11 @@ import proxy
 import runtime
 
 class CopypartyRemovalTests(unittest.TestCase):
-    def test_only_eight_apps_and_four_public_hostnames(self):
+    def test_only_ten_apps_and_four_public_hostnames(self):
         c = config.load(ROOT/'.env.example')
         model = json.loads(runtime.compose(c, ROOT, ['config','--no-env-resolution','--format','json'], capture=True))
         self.assertTrue('copyparty' not in model['services'], 'Removed file-sharing service is still configured')
-        self.assertEqual(len(model['services']), 8)
+        self.assertEqual(len(model['services']), 10)
         text = proxy.render(c, ROOT, https=True)
         self.assertNotIn('3923', text)
         self.assertNotIn('files.xdadwal.in', text)

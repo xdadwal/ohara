@@ -26,12 +26,12 @@ credentials belong in the ignored `local/` directory.
 | File | Required inputs |
 |---|---|
 | `local/homepage.env` | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
-| `local/media-credentials` | `JELLYFIN_PASSWORD`, `QBITTORRENT_PASSWORD`, `RADARR_PASSWORD`, `SONARR_PASSWORD`, `PROWLARR_PASSWORD`, `RADARR_API_KEY`, `SONARR_API_KEY`, `PROWLARR_API_KEY` |
+| `local/media-credentials` | `JELLYFIN_PASSWORD`, `QBITTORRENT_PASSWORD`, `RADARR_PASSWORD`, `SONARR_PASSWORD`, `PROWLARR_PASSWORD`, `RADARR_API_KEY`, `SONARR_API_KEY`, `PROWLARR_API_KEY`, `LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD`, `BAZARR_API_KEY` |
 
 Homepage passwords need at least 8 characters, preserving the
 operator's existing shorter passwords. Media-service passwords need at least
 16 characters. Use independent values per service.
-Homepage's session secret needs at least 32 characters. The three acquisition API
+Homepage's session secret needs at least 32 characters. The five supplied service API
 keys must each be exactly 32 hexadecimal characters, matching those applications'
 format. Supply them yourself for a fresh installation; for an existing server,
 retrieve the actual keys through its private settings rather than choosing new ones.
@@ -51,6 +51,14 @@ Optional Homepage widget inputs are `HOMEPAGE_VAR_JELLYFIN_API_KEY` and
 `local/homepage.env` after media setup. Omit them until available; do not leave
 uncommented empty values. Existing login-only files remain valid. See
 [widget setup](homepage-widgets.md).
+
+For an existing `local/media-credentials`, append only the missing
+`LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD` and `BAZARR_API_KEY` entries
+privately using your editor or password manager. Keep every existing value; do not
+overwrite the file from the template. The new passwords require at least 16
+characters and the new API keys exactly 32 hexadecimal characters. Setup does not
+generate these values. Subtitle-provider credentials, if required, are supplied
+by the operator in Bazarr after choosing providers; do not infer them.
 
 ## Setup and preservation
 

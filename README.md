@@ -13,8 +13,10 @@ media settings on another machine, or to migrate private state safely.
 | Service | Purpose | Access |
 |---|---|---|
 | Homepage | Password-protected service dashboard | `HOMEPAGE_HOST` (`ohara.xdadwal.in` on this host) |
-| Jellyfin | Movie and series playback | `jellyfin.xdadwal.in` after activation |
+| Jellyfin | Movie, series and music playback | `jellyfin.xdadwal.in` after activation |
 | Radarr + Sonarr | Movie and series acquisition | Private administration |
+| Lidarr | Music acquisition | Private administration (8686) |
+| Bazarr | Movie and series subtitles | Private administration (6767) |
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
 | Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
@@ -26,7 +28,8 @@ Jellyfin, Seerr, and OpenSpeedTest, plus native media, resource, clock and weath
 widgets ([configuration](docs/homepage-widgets.md)). Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
-initialize accounts/connections and add your chosen indexers.
+initialize accounts/connections and add your chosen indexers. Select subtitle languages
+and providers explicitly in Bazarr; Seerr requests remain movies and series only.
 
 See [the current stack overview](docs/stack.md) for access, storage and pending work.
 

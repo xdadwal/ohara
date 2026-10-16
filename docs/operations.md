@@ -242,7 +242,7 @@ external credentials automatically.
 
 ## Backups, upgrades, and recovery
 
-Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
+Back up media libraries and Jellyfin/Radarr/Sonarr/Lidarr/Bazarr/Prowlarr/qBittorrent state,
 `local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
 Back up `.env`, `local/`, Seerr config/
 SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
@@ -345,3 +345,22 @@ restart is needed. Preserve other dashboard customizations.
 
 See [Homepage widget configuration](homepage-widgets.md) and
 [OpenSpeedTest](https://github.com/openspeedtest/Speed-Test).
+
+## Music and subtitles operations
+
+Lidarr (loopback 8686) and Bazarr (loopback 6767) use private SSH forwarding;
+no public admin subdomains are configured. Append the four new user-managed
+credential entries to existing `local/media-credentials` privately, preserving
+every existing value; see [credentials.md](credentials.md).
+
+After setup, verify Prowlarr → Lidarr sync, the qBittorrent `music` category,
+Lidarr root `/data/library/music`, and Jellyfin Music library playback. Seerr
+continues to request movies and series only. Verify Bazarr Radarr/Sonarr
+connections and shared `/data/library` paths; it needs write access beside media
+for subtitle files. Existing Bazarr configuration is preserved and requires
+manual connection verification. The operator must select subtitle languages and
+providers and privately supply any required provider credentials.
+
+The discussed final NAS/multiple-node topology is not implemented. These services
+run in the current Compose stack; a future acquisition node is their intended
+home. This change does not provision multiple nodes, shared auth or local DNS.

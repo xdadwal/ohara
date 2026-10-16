@@ -68,3 +68,37 @@ class MediaTests(unittest.TestCase):
         self.assertIn('proxy_pass http://127.0.0.1:8096;', rendered)
         for port in [7878,8989,9696,8081]:
             self.assertNotIn('proxy_pass http://127.0.0.1:'+str(port), rendered)
+
+    def test_music_storage_and_private_lidarr_config_are_preserved(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            shutil.copytree(ROOT/'configs', root/'configs')
+            c = config.load(ROOT/'.env.example')
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'),
+                     RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            credential_fixtures.write(root)
+            host.prepare_storage(c, root)
+            self.assertTrue((root/'media/library/music').is_dir())
+            self.assertTrue((root/'media/downloads/complete/music').is_dir())
+            path = root/'data/lidarr/config.xml'
+            self.assertIn('<AuthenticationMethod>Forms</AuthenticationMethod>', path.read_text())
+            path.write_text(path.read_text()+'\n<!-- keep operator edits -->\n')
+            before = path.read_bytes()
+            host.prepare_storage(c, root)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_missing_added_service_credentials_fail_before_storage_changes(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            shutil.copytree(ROOT/'configs', root/'configs')
+            c = config.load(ROOT/'.env.example')
+            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
+            credential_fixtures.write(root)
+            path = root/'local/media-credentials'
+            path.write_text('\n'.join(line for line in path.read_text().splitlines()
+                                      if not line.startswith('LIDARR_API_KEY='))+'\n')
+            with self.assertRaisesRegex(ValueError, 'LIDARR_API_KEY'):
+                host.prepare_storage(c, root)
+            self.assertFalse((root/'data').exists())

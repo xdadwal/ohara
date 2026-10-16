@@ -8,6 +8,8 @@ Ohara includes the complete local stack:
 | Seerr | `http://seerr:5055` | 5055 | Discover and request movies/shows |
 | Radarr | `http://radarr:7878` | 7878 | Movie acquisition and import |
 | Sonarr | `http://sonarr:8989` | 8989 | Series acquisition and import |
+| Lidarr | `http://lidarr:8686` | 8686 | Music acquisition and import |
+| Bazarr | `http://bazarr:6767` | 6767 | Movie/series subtitles |
 | Prowlarr | `http://prowlarr:9696` | 9696 | Indexer management and sync |
 | qBittorrent | `http://qbittorrent:8081` | 8081 | Downloads |
 
@@ -37,14 +39,23 @@ After all local services are ready, run as the checkout owner:
 scripts/media-setup --owner-email your-real-email@example.com
 ```
 
-The command uses local HTTP APIs to set the Radarr/Sonarr/Prowlarr admin accounts,
-create qBittorrent movie/TV categories, configure download clients, root folders,
+The command uses local HTTP APIs to set the Radarr/Sonarr/Lidarr/Prowlarr admin accounts,
+create qBittorrent movie/TV/music categories, configure download clients, root folders,
 and Prowlarr application sync. It initializes Jellyfin with remote access enabled
-and automatic port mapping disabled, adds Movies and TV Shows libraries, then
+and automatic port mapping disabled, adds Movies, TV Shows and Music libraries, then
 creates the Seerr owner using Jellyfin login and connects the default Radarr/Sonarr
 servers. The initial request profile is **HD-1080p**, minimum movie availability
 **released**, automatic searching enabled, and one copy of each title. Change
-profiles deliberately in Seerr after setup. No source/indexer is chosen for you.
+profiles deliberately in Seerr after setup. Seerr supports movie/series requests
+only; add music directly in Lidarr. Its initial music root uses the first existing
+quality and metadata profiles; review those profiles before adding artists.
+No source/indexer is chosen for you.
+
+Setup seeds Bazarr with its supplied API key/password and Radarr/Sonarr connections
+using their internal URLs and API keys. Existing Bazarr configuration is preserved;
+manually verify those connections after an upgrade. Select subtitle languages and
+providers yourself and supply any required provider credentials privately in Bazarr.
+No subtitle language, provider or provider account is assumed.
 
 A private journal (`local/media-state.json`) records completed account setup.
 Reruns preserve configured accounts, existing connections and library choices;
@@ -58,6 +69,7 @@ Use SSH forwarding for private administration:
 
 ```sh
 ssh -L 7878:127.0.0.1:7878 -L 8989:127.0.0.1:8989 \
+    -L 8686:127.0.0.1:8686 -L 6767:127.0.0.1:6767 \
     -L 9696:127.0.0.1:9696 -L 8081:127.0.0.1:8081 \
     -L 8096:127.0.0.1:8096 -L 5055:127.0.0.1:5055 user@server
 ```
@@ -68,14 +80,14 @@ renaming, run `scripts/media-setup --profile ohara --profile-only` after account
 setup. This preserves existing accounts and naming formats; it does not invoke
 the first-run Jellyfin/Seerr login flow. See [replication.md](replication.md) for
 the selected indexers, category limitations and migration procedure.
-Test each indexer and trigger application sync. Prowlarr sends indexers to both
-Radarr and Sonarr; it is not a search provider itself. Do not treat healthy
+Test each indexer and trigger application sync. Prowlarr sends compatible indexers to
+Radarr, Sonarr and Lidarr; it is not a search provider itself. Do not treat healthy
 containers or successful API connections as proof of working acquisition.
 Only fetch content you have permission to access.
 
 ## Storage and connections
 
-All three acquisition containers share **one `/data` bind mount**, preserving
+Radarr, Sonarr, Lidarr and qBittorrent share **one `/data` bind mount**, preserving
 consistent paths and allowing hardlinks/atomic moves when the filesystem supports
 them. Do not create separate library/download bind mounts inside these containers.
 
@@ -84,23 +96,31 @@ MEDIA_ROOT/
   downloads/incomplete/
   downloads/complete/movies/
   downloads/complete/tv/
+  downloads/complete/music/
   library/movies/
   library/tv/
+  library/music/
 ```
 
-Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`.
-Both use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied password,
-and category `movies` or `tv`. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
-uses `http://radarr:7878` and `http://sonarr:8989` with their user-supplied API keys.
+Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`;
+Lidarr root: `/data/library/music`.
+All three use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied password,
+and category `movies`, `tv` or `music` respectively. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
+uses `http://radarr:7878`, `http://sonarr:8989` and `http://lidarr:8686`
+with their user-supplied API keys.
 Seerr uses container names and ports from the table, with both defaults enabled.
 If updating an existing Homepage deployment, remove any retired Copyparty link
 and add the Jellyfin entry from
 `configs/homepage/services.yaml` to your existing `${DATA_ROOT}/homepage/services.yaml`;
 setup preserves that file and your customizations.
 
-Jellyfin reads the library **read-only** at `/media/movies` and `/media/tv`;
+Jellyfin reads the library **read-only** at `/media/movies`, `/media/tv` and `/media/music`;
 its cache/transcodes use DATA_ROOT/jellyfin-cache, so reserve enough disk space
 for transcoding.
+Bazarr mounts only `/data/library` read-write, so its Radarr/Sonarr media paths
+match without remote path mappings. Verify it can write subtitle files beside
+movies and episodes. Lidarr and Bazarr have no public admin subdomains.
+
 Hardware transcoding needs a separate GPU/device permission configuration;
 software transcoding is the initial default.
 
@@ -125,6 +145,10 @@ completes, imports to the matching library, appears after a Jellyfin scan, and p
 through HTTPS. Check both a movie and a series episode. Check library availability
 sync in Seerr. Indexer credentials and real download/playback acceptance remain
 operator steps; no automatic external download is performed by repository tests.
+Also verify a permitted music import through Lidarr → qBittorrent →
+`/data/library/music` → Jellyfin Music scan/playback. After the operator configures
+subtitle languages/providers, verify Bazarr connections and a permitted subtitle
+write beside movie/episode media. Healthy containers do not establish these outcomes.
 
 Back up all application config directories, `local/media-credentials`,
 `local/media-state.json`, and media you cannot replace. Stop database writers or
@@ -132,9 +156,15 @@ use supported exports for consistent backups. Media images run directly as RUN_U
 so their initialization does not recursively change existing ownership. Ohara's
 host setup also preserves existing directories. Review write access before startup.
 
+All services currently run in the same Compose stack. The discussed final
+NAS/multiple-node topology is not implemented; Lidarr and Bazarr are intended for
+a future acquisition node. Storage/node migration needs separate implementation.
+
 References: [Seerr services](https://docs.seerr.dev/using-seerr/settings/services/),
 [Jellyfin containers](https://jellyfin.org/docs/general/installation/container/),
 [Radarr](https://docs.linuxserver.io/images/docker-radarr/),
 [Sonarr](https://docs.linuxserver.io/images/docker-sonarr/),
+[Lidarr](https://docs.linuxserver.io/images/docker-lidarr/),
+[Bazarr](https://docs.linuxserver.io/images/docker-bazarr/),
 [Prowlarr](https://docs.linuxserver.io/images/docker-prowlarr/),
 [qBittorrent](https://docs.linuxserver.io/images/docker-qbittorrent/).
