@@ -15,14 +15,14 @@ for arg in "$@"; do
 done
 if [[ ! -e "$ROOT_DIR/.env" ]]; then
   if [[ " $* " == *' --dry-run '* ]]; then
-    echo 'Missing .env: copy .env.example and edit LAN_IP/storage first.' >&2
+    echo 'Missing .env: copy .env.example and edit storage/domain settings first.' >&2
     exit 1
   fi
   (umask 077; set -C; cat "$ROOT_DIR/.env.example" > "$ROOT_DIR/.env")
   if [[ -n "${SUDO_UID:-}" && -n "${SUDO_GID:-}" ]]; then
     chown "$SUDO_UID:$SUDO_GID" "$ROOT_DIR/.env"
   fi
-  echo 'Created .env. Edit LAN_IP, storage paths and email, then rerun setup.'
+  echo 'Created .env. Edit storage paths, IDs, domain and email, then rerun setup.'
   exit 1
 fi
 # Require user-created input files before installing even the Python dependency.

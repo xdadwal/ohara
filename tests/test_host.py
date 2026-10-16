@@ -28,7 +28,7 @@ class HostTests(unittest.TestCase):
                      RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
-            files = [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/credentials']
+            files = [root / 'local/copyparty.conf', root / 'local/credentials']
             before = [p.read_bytes() for p in files]
             mode = files[0].stat().st_mode
             host.prepare_storage(c, root)

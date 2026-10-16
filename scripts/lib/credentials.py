@@ -4,13 +4,13 @@ from pathlib import Path
 import re
 import stat
 
-BASE_KEYS = {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'}
+BASE_KEYS = {'COPYPARTY_PASSWORD'}
 HOMEPAGE_KEYS = {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR') for suffix in ('_API_KEY', '_PASSWORD')}
 
 
-def read(path, keys):
+def read(path, keys, ignored=frozenset()):
     path = Path(path)
     if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
         raise ValueError(f'{path.name}: Symlink private configuration is unsupported')
@@ -23,12 +23,16 @@ def read(path, keys):
         if not stat.S_ISREG(state.st_mode) or state.st_mode & 0o077:
             raise ValueError(f'local/{path.name}: require a regular private file (chmod 0600)')
         values = {}
+        seen = set()
         for number, line in enumerate(stream.read().splitlines(), 1):
             if not line.strip() or line.lstrip().startswith('#'):
                 continue
             key, separator, value = line.partition('=')
-            if not separator or key not in keys or key in values:
+            if not separator or key not in keys | ignored or key in seen:
                 raise ValueError(f'local/{path.name}:{number}: unknown, duplicate or malformed key')
+            seen.add(key)
+            if key in ignored:
+                continue  # Removed service input; preserve source without consuming it.
             if any(ord(character) < 32 or ord(character) == 127 for character in value):
                 raise ValueError(f'{key}: control characters are unsupported')
             if key == 'HOMEPAGE_AUTH_ENABLED':
@@ -47,6 +51,6 @@ def read(path, keys):
 
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
-    return (read(root/'local/credentials', BASE_KEYS),
+    return (read(root/'local/credentials', BASE_KEYS, ignored={'PIHOLE_PASSWORD'}),
             read(root/'local/homepage.env', HOMEPAGE_KEYS),
             read(root/'local/media-credentials', MEDIA_KEYS))

@@ -105,3 +105,20 @@ Tracked templates contain empty fields. Test dummy inputs are isolated under tes
 Independent review found no blocking issues; its literal-space test suggestion was
 included in the expanded smoke run. Existing-account rotation and actual production
 ownership/public deployment remain operator verification steps.
+
+## Pi-hole removal (2026-10-16)
+
+45 unit tests pass, including new assertions that only nine services remain,
+DNS/admin ports are absent, retired LAN_IP/PIHOLE_PASSWORD inputs are ignored
+without rewriting user files, and status iterates exactly the remaining services.
+The stale DNS status tuple found during implementation/review was reproduced by
+that status regression test, fixed, and the full suite passed afterward.
+Setup/CLI, syntax, ShellCheck, compilation and whitespace checks pass.
+
+The real nine-service disposable arm64 smoke passed: supplied-credential logins,
+media API connections and rerun preservation, Homepage sessions/login rate limiting,
+file authorization, Nginx TLS routing and a 35 MiB speed upload. Pi-hole's container,
+image pin, storage preparation, credentials, environment file and DNS probes are
+removed from active deployment code. Historical verification entries describe
+older snapshots. Independent review reports no remaining blocking findings.
+No live resolver/router changes, container stops or retired-data deletion occurred.

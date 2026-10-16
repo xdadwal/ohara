@@ -1,5 +1,8 @@
 # Ohara Agent-Friendly Setup Implementation Plan
 
+Pi-hole/LAN DNS provisions in this historical plan were removed on 2026-10-16.
+Use current compose.yaml, AGENTS.md and operations.md for deployment.
+
 Credential generation in this historical plan is superseded by the user-managed
 input workflow in [credentials.md](../../credentials.md) (2026-10-16).
 

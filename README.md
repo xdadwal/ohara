@@ -13,7 +13,6 @@ applications; Nginx and Certbot on the Linux host provide public HTTPS.
 | Seerr | Media discovery and requests; successor to Jellyseerr | `watch.xdadwal.in` after activation |
 | Copyparty | Authenticated file browsing, uploads, and downloads | `files.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
-| Pi-hole | LAN DNS and ad blocking | LAN DNS; private administration |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The apex runs [Homepage](https://github.com/gethomepage/homepage), with links to
@@ -31,7 +30,7 @@ a stable LAN IP and prepare your storage mounts first. Ansible is not required.
 git clone https://github.com/xdadwal/ohara.git
 cd ohara
 sudo ./scripts/setup
-# First run creates .env and stops. Edit LAN_IP, paths, IDs, domain/email.
+# First run creates .env and stops. Edit paths, IDs, domain/email.
 # Use an editor; .env is literal KEY=value, not a shell script.
 # Create/fill the three private files described in docs/credentials.md first.
 sudo ./scripts/setup --dry-run
@@ -54,14 +53,14 @@ Complete service accounts using SSH forwarding before exposing applications:
 
 ```sh
 ssh -L 5055:127.0.0.1:5055 -L 3923:127.0.0.1:3923 \
-    -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 -L 8888:127.0.0.1:8888 user@server
+    -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 user@server
 ```
 
 Homepage uses its own password login at the HTTPS apex; it has no Docker socket
 access or private service widgets. See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
-router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.
+router TCP ports **80 and 443**. Keep backend/admin ports private.
 
 ## For agents and contributors
 

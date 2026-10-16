@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 import secrets
 import socket
-import subprocess
 
 import config
 import credentials as credential_files
@@ -81,11 +80,11 @@ def prepare_storage(c, root):
     ensure_directory(local, owner, group, 0o700)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     ensure_directory(c['DATA_ROOT'], owner, group)
-    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('pihole', 0, 0), ('homepage', uid, gid)]:
+    for name, user, grp in [('seerr', 1000, 1000), ('copyparty', uid, gid), ('homepage', uid, gid)]:
         ensure_directory(Path(c['DATA_ROOT']) / name, user, grp)
     ensure_directory(c['FILES_ROOT'], uid, gid)
     credentials = local / 'credentials'
-    for path in [credentials, local / 'copyparty.conf', local / 'pihole.env']:
+    for path in [credentials, local / 'copyparty.conf']:
         if path.is_symlink():
             raise ValueError('Symlink private configuration is unsupported')
     def create_owned(path, content, user, grp, mode=0o600):
@@ -104,7 +103,6 @@ def prepare_storage(c, root):
         salt = secrets.token_hex(24)
         template = (root / 'configs/copyparty/config.example').read_text()
         create_owned(cp, template.replace('@SALT@', salt).replace('@HASH@', password_hash(data['COPYPARTY_PASSWORD'], salt)), owner, gid, 0o640)
-    create_owned(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n', owner, group)
     from media import prepare
     prepare(c, root, create_owned, ensure_directory, owner, group)
     print('Storage ready; user-supplied credential files preserved (values not printed).')
@@ -117,15 +115,6 @@ def preflight(c):
         raise ValueError('Bootstrap supports amd64 and arm64 only')
     if not Path('/run/systemd/system').is_dir():
         raise ValueError('Bootstrap requires a running systemd host; use a VM, not a plain container')
-    # Binding probes are read-only with respect to configuration and release immediately.
-    for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        try:
-            with socket.socket(socket.AF_INET, kind) as probe:
-                probe.bind((c['LAN_IP'], 53))
-        except OSError as error:
-            # Existing Ohara DNS is fine on a repeat run; only a running matching project qualifies.
-            if not pihole_running(c):
-                raise ValueError('LAN_IP:53 unavailable or IP not assigned; inspect ss -lntup and resolver settings') from error
     check_web_ports()
     for name in ['download.docker.com', 'registry-1.docker.io']:
         run(['getent', 'ahosts', name], capture=True, timeout=15)
@@ -149,15 +138,6 @@ def check_web_ports():
                 probe.bind(('0.0.0.0', port))
         except OSError:
             raise ValueError('Host port 80/443 is occupied; install iproute2 to inspect listeners before retrying') from None
-
-
-def pihole_running(c):
-    try:
-        text = run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=ohara',
-                    '--filter', 'label=com.docker.compose.service=pihole', '--format', '{{json .Ports}}'], capture=True, timeout=15)
-        return c['LAN_IP'] + ':53->53/tcp' in text
-    except (OSError, RuntimeError, subprocess.TimeoutExpired):
-        return False
 
 
 def prepare(c, root, dry_run=False):

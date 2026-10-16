@@ -14,7 +14,7 @@ port conflicts. Avoid exposing private configuration while inspecting it.
 Reuse settled choices: Asia/Kolkata timezone, xdadwal.in for Homepage,
 watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, files.xdadwal.in for Copyparty, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
-Pi-hole administration remains private. Do not ask the user to choose these again
+Public DNS is managed at GoDaddy. Do not ask the user to choose these again
 unless the target's existing configuration conflicts with them.
 
 Detect facts that the machine can establish. Do not ask the user to manually
@@ -58,28 +58,14 @@ Verify login, ownership and expected permissions; reading a file is not proof an
 account exists. Password hashing salts and application-issued session/integration
 tokens remain normal application internals, not agent-chosen credentials.
 
-## Pi-hole configuration and LAN cutover
+## Public DNS and retired local DNS
 
-When tasked with initial Pi-hole setup, the agent can configure the service;
-container startup and credential loading are only the first steps. Inspect
-existing settings and preserve custom records, lists, and allow/block rules.
-Use the installed version's supported UI/API/CLI and keep configuration consistent
-with the Compose environment. The current upstream defaults are 1.1.1.1/1.0.0.1;
-ask about alternate resolvers or custom filtering only when those choices matter.
-Do not silently add aggressive third-party blocklists or replace existing lists.
-
-If local resolution is needed, map the deployed Ohara hostnames to the confirmed
-LAN IP and verify each record. Do not advertise Immich as available before its
-separate project is deployed. Local records do not replace public provider DNS.
-Test ordinary lookups over UDP and TCP and verify an expected blocked-domain
-case against the configured lists before changing client DNS.
-
-If router access is authorized and available, configure its DHCP DNS setting for
-the reserved Pi-hole LAN address within the deployment task. Otherwise provide
-the exact address/setting and identify this as a user step. Preserve a working
-host resolver and fallback recovery path. Verify resolution from a second LAN
-client after the change; a DNS query inside the container alone does not establish
-that clients are using Pi-hole. Keep DNS and administration off public forwarding.
+GoDaddy manages public domain records. Verify the apex and service A records
+resolve to the actual public IPv4 address before TLS activation. Router forwarding
+still requires TCP 80/443 to Ohara. No local DNS server or DHCP change is needed
+for this project. Do not change the host resolver or router/client DNS by inference.
+If removing a previously deployed Pi-hole, follow the migration note in operations.md
+and verify clients have a working replacement resolver before stopping it.
 
 ## Finish with verified outcomes
 
@@ -90,7 +76,7 @@ set it solely because containers are running.
 
 Report which accounts were created versus reused, private credential retrieval
 paths, reachable URLs, pending integrations/user steps, and the exact verification
-scope. Distinguish local success from public DNS/HTTPS and LAN-client verification.
+scope. Distinguish local success from public DNS/HTTPS and access from other devices.
 
 ## Media stack inputs and setup
 

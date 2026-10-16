@@ -44,12 +44,6 @@ class ConfigurationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.load(base.replace('watch.xdadwal.in', replacement))
 
-    def test_dns_address_must_be_private_ipv4(self):
-        base = (ROOT / '.env.example').read_text()
-        for address in ['0.0.0.0', '127.0.0.1', '8.8.8.8', '::1']:
-            with self.assertRaises(ValueError):
-                self.load(base.replace('192.168.1.111', address))
-
     def test_exclusive_write_preserves_existing_file(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'config'

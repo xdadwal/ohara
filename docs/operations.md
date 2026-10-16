@@ -12,8 +12,7 @@ on conflicting Docker packages. No curl-to-shell installer, Samba, shell-profile
 replacement, Wi-Fi configuration, resolver disabling, or bot cron installation.
 
 Install Git and clone this repository first. `sudo scripts/setup` initially copies
-`.env.example` to `.env` and exits nonzero so you can edit it. Set the actual LAN
-IP, timezone, domain/subdomains, ACME email, storage paths, and file-service UID/GID.
+`.env.example` to `.env` and exits nonzero so you can edit it. Set the timezone, domain/subdomains, ACME email, storage paths, and file-service UID/GID.
 Values are literal and unquoted; shell substitution is rejected. Rerun with
 `--dry-run` to inspect preflight and `--non-interactive` to prepare the host.
 Dry run does not install packages or create directories. Python itself is installed
@@ -22,8 +21,7 @@ if missing during a real bootstrap. No unattended operation waits for a prompt.
 Mount disks before setup. Default `/ohara/files` is a dedicated Copyparty share,
 not an invitation to expose `/home` or personal photo storage. Setup creates new
 application directories but never recursively changes existing ownership. Seerr
-needs UID 1000 write access; Copyparty needs RUN_UID/RUN_GID write access; Pi-hole
-manages its own `/etc/pihole` contents. Review permissions on existing directories
+needs UID 1000 write access; Copyparty needs RUN_UID/RUN_GID write access. Review permissions on existing directories
 manually before startup. Configuration and user-supplied credentials live in `local/`.
 Do not commit that directory, `.env`, backups, certificate keys, or diagnostics
 containing credentials.
@@ -32,7 +30,7 @@ Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation 
 disables only the package default site just installed by that invocation. If an
 existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
-53 TCP/UDP on LAN_IP, loopback 3000/3002/3923/5055/7878/8081/8096/8888/8989/9696, and host 80/443 for Nginx.
+loopback 3000/3002/3923/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 
 ## Checks and local startup
 
@@ -53,20 +51,18 @@ before sharing. Do not publish resolved Compose configuration or `docker inspect
 Use the README's SSH tunnel and open localhost ports. Follow [media setup](media.md) to initialize the Jellyfin/Seerr owner and
 connect the acquisition services. Use `admin` plus the user-supplied Copyparty
 password; test authenticated upload, download, move, and delete using a disposable
-file. Confirm an anonymous client cannot list/download/write the file. Sign into
-Pi-hole at `http://localhost:8888/admin/` and test configuration before changing
-router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
+file. Confirm an anonymous client cannot list/download/write the file. OpenSpeedTest is at localhost:3000 through the tunnel.
 
 ## Public DNS and HTTPS
 
-1. Set A records for the apex and configured watch/files/speed/jellyfin subdomains to
+1. In GoDaddy, set A records for the apex and configured watch/files/speed/jellyfin subdomains to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.
 2. Check for CGNAT, double NAT, blocked ISP ports, or a changing public IP. These
    are external prerequisites, not problems setup can solve. DDNS is a later
    provider-specific choice if your address changes.
 3. Forward router TCP 80 and 443 to the Ohara LAN IP. Open these host firewall
-   ports deliberately while preserving SSH access. Never forward 53, 3000, 3002, 3923,
-   5055, 7878, 8081, 8096, 8888, 8989, or 9696. Docker-published ports can bypass UFW; loopback/LAN bindings
+   ports deliberately while preserving SSH access. Never forward backend ports
+   3000, 3002, 3923, 5055, 7878, 8081, 8096, 8989, or 9696. Docker-published ports can bypass UFW; loopback bindings
    are intentional. IPv6 firewalls require separate review before adding AAAA.
 4. Verify the HTTP maintenance response from mobile data. Check ACME challenge
    paths can be fetched externally, including if the router lacks hairpin NAT.
@@ -96,21 +92,31 @@ itself is not reversed when a later configuration check fails. Changing domains
 requires updating DNS/.env and rerunning issuance deliberately; setup preserves
 an already active HTTPS config.
 
-## LAN DNS and port conflicts
+## DNS and migration from a deployed Pi-hole
 
-Pi-hole listens only on LAN_IP:53 and has no public administration route. If port
-53 is occupied, inspect `sudo ss -lntup`, the LAN address assignment, and
-`resolvectl status`. A systemd-resolved stub bound only to 127.0.0.53 can coexist
-with a LAN-only binding; a wildcard DNS listener may conflict. Do not blindly
-disable systemd-resolved or replace `/etc/resolv.conf`. Plan any resolver change
-manually and keep a working upstream DNS path while installing/recovering Ohara.
-Never make Docker installation depend on a not-yet-started Pi-hole.
+Public domain records are managed at GoDaddy. Ohara no longer includes a local DNS
+server, DNS filtering, or DHCP service. The host and LAN clients use their existing
+router/ISP or explicitly configured resolver. LAN_IP is no longer required in .env;
+older LAN_IP lines are accepted and ignored. Port 53 and admin port 8888 are no
+longer published or checked by Ohara.
 
-After Pi-hole works, point router DHCP DNS to its reserved LAN address. Optionally
-add local DNS records mapping the public service hostnames to the LAN IP when
-hairpin NAT is unavailable; public records continue to point at the public IP.
-Test TCP and UDP DNS from a second LAN client, including a blocked-domain case.
-Changing router/client DNS is a manual deployment step, not done by this repo.
+If Pi-hole was actually deployed and clients/router DHCP still use its address,
+configure a working replacement DNS resolver first, renew client leases and verify
+lookups from another LAN device. Public GoDaddy records alone do not change the
+DNS resolver your clients use. If Pi-hole was never deployed, no cutover is needed.
+
+Removing its Compose definition does not stop an already-running container. During
+authorized deployment, identify only the old Ohara Pi-hole instance:
+
+```sh
+docker ps --filter label=com.docker.compose.project=ohara \
+  --filter label=com.docker.compose.service=pihole --format '{{.ID}} {{.Names}}'
+```
+
+After verifying resolver cutover, stop that identified container deliberately.
+Keep DATA_ROOT/pihole and local/pihole.env as recoverable retired state unless the
+user requests deletion. Do not use blanket pruning or stop unrelated containers.
+Setup/up do not rewrite router DNS, delete old files, or remove orphan containers.
 
 ## Migration from the previous repository
 
@@ -126,7 +132,7 @@ Do not use `docker system prune`, `down -v`, or blanket container removal. Retai
 services also have new bindings/config paths, so migrate their state explicitly
 rather than running two copies over the same database. Restore copied state to
 new paths if needed, review ownership, then run the local startup/account checks.
-Activate DNS/HTTPS next and change router DNS last. Retain the previous checkout,
+Activate public DNS/HTTPS next. Follow the retired DNS cutover steps above if applicable. Retain the previous checkout,
 config copies, and backup until restore and public behavior are verified.
 
 Credentials formerly committed in this repository must be treated as exposed:
@@ -139,7 +145,7 @@ external credentials automatically.
 
 Back up media libraries and Jellyfin/Radarr/Sonarr/Prowlarr/qBittorrent state,
 `local/media-credentials` and `local/media-state.json` (see [media.md](media.md)).
-Back up `.env`, `local/`, Copyparty files and state, Pi-hole data, Seerr config/
+Back up `.env`, `local/`, Copyparty files and state, Seerr config/
 SQLite database, Homepage configuration and local/homepage.env, managed Nginx config, and `/etc/letsencrypt` (including renewal
 config and deploy hook). Encrypt backups and keep an off-host copy; credentials
 and certificate private keys are sensitive. Stop database writers for consistent
@@ -149,7 +155,7 @@ Record the deployment commit and image digests with each backup.
 Restore first to an isolated temporary location. Verify file checksums, ownership,
 application login, DNS settings, and representative file reads before replacing
 live data. Do not expose restored services publicly while testing. Have a fallback
-LAN resolver available if Pi-hole is stopped. Only an actual restore demonstrates
+network/DNS path available during recovery. Only an actual restore demonstrates
 backup usefulness; a successful archive command alone does not.
 
 Upgrade through a PR changing reviewed `versions.env` digests. Check upstream
@@ -185,7 +191,6 @@ relying on it for your personal archive.
 - https://docs.docker.com/engine/install/debian/
 - https://docs.docker.com/engine/network/packet-filtering-firewalls/
 - https://docs.seerr.dev/getting-started/docker/
-- https://docs.pi-hole.net/docker/
 - https://github.com/9001/copyparty#reverse-proxy
 - https://github.com/openspeedtest/Docker-Image
 - https://letsencrypt.org/docs/challenge-types/
@@ -212,7 +217,6 @@ Nginx limits password callback attempts to five per minute per client IP, with a
 burst of five. Homepage's allowed host is the configured apex. It runs without
 root privileges, without Docker socket access, and without service API keys.
 Links do not grant access to the applications: each service retains its own login.
-Pi-hole administration is intentionally absent from the publicly served dashboard.
 
 Edit `${DATA_ROOT}/homepage/*.yaml` to customize links, settings, and widgets.
 Setup seeds files from `configs/homepage` only when absent and preserves edits;
