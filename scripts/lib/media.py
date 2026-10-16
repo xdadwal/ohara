@@ -17,8 +17,9 @@ def prepare(c, root, create, directory, owner, group):
     for name in ['jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']:
         directory(data / name, uid, gid)
     directory(media, uid, gid)
-    for name in ['downloads', 'library', 'downloads/incomplete', 'downloads/complete',
-                 'downloads/complete/movies', 'downloads/complete/tv', 'library/movies', 'library/tv']:
+    for name in ['downloads', 'library', 'recycle-bin', 'downloads/incomplete', 'downloads/complete',
+                 'downloads/complete/movies', 'downloads/complete/tv', 'library/movies', 'library/tv',
+                 'recycle-bin/movies', 'recycle-bin/tv']:
         directory(media / name, uid, gid)
     for name, port in PORTS.items():
         # API keys permit the connector to set forms authentication through the API.
@@ -82,6 +83,43 @@ def fields(resource, values):
     return resource
 
 
+def configure_storage(root, urls=None):
+    """Apply storage policy without owner initialization or relocating torrents."""
+    import json
+    values = credential_files.read(root/'local/media-credentials', SECRET_KEYS)
+    urls = urls or {**{name: f'http://127.0.0.1:{port}' for name, port in PORTS.items()},
+                    'qbittorrent': 'http://127.0.0.1:8081'}
+    qb = Client(urls['qbittorrent'])
+    qb.headers.update(Host='127.0.0.1:8081', Referer='http://127.0.0.1:8081/')
+    qb.call('/api/v2/auth/login', {'username':'admin', 'password':values['QBITTORRENT_PASSWORD']}, form=True)
+    preferences = qb.call('/api/v2/app/preferences')
+    if not isinstance(preferences, dict) or 'auto_tmm_enabled' not in preferences:
+        raise ValueError('qBittorrent did not return authenticated storage preferences')
+    categories = qb.call('/api/v2/torrents/categories')
+    for category in ('movies', 'tv'):
+        path = '/data/downloads/complete/'+category
+        if category in categories and categories[category].get('savePath') != path:
+            # Editing a category can relocate existing automatically managed torrents.
+            raise ValueError(f'qBittorrent {category} category has a custom path; review relocation before changing it')
+    if not preferences.get('auto_tmm_enabled'):
+        qb.call('/api/v2/app/setPreferences', {'json':json.dumps({'auto_tmm_enabled':True})}, form=True)
+    for category in ('movies', 'tv'):
+        path = '/data/downloads/complete/'+category
+        if category not in categories:
+            qb.call('/api/v2/torrents/createCategory', {'category':category, 'savePath':path}, form=True)
+    for name, category in [('radarr', 'movies'), ('sonarr', 'tv')]:
+        client = Client(urls[name], values[name.upper()+'_API_KEY'])
+        settings = client.call('/api/v3/config/mediamanagement')
+        before = dict(settings)
+        settings['copyUsingHardlinks'] = True
+        if not settings.get('recycleBin'):
+            settings.update(recycleBin='/data/recycle-bin/'+category, recycleBinCleanupDays=7)
+        if settings != before:
+            client.call('/api/v3/config/mediamanagement', settings, 'PUT')
+    print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
+          'and recycle bins. Existing torrents and custom recycle settings preserved.')
+
+
 def connect(c, root, email, urls=None):
     """Configure first-run accounts/connections via supported APIs, preserve reruns."""
     import json
@@ -122,19 +160,7 @@ def connect(c, root, email, urls=None):
                             authenticationMethod='forms', authenticationRequired='enabled')
             client.call(version+'/config/host', resource, 'PUT')
             done(name+'-auth')
-    qb = Client(urls['qbittorrent'])
-    # qBittorrent validates Host's port against its listening port. Test fixtures
-    # use random published ports; production deliberately uses 8081 on both sides.
-    qb.headers.update(Host='127.0.0.1:8081', Referer='http://127.0.0.1:8081/')
-    qb.call('/api/v2/auth/login', {'username':'admin', 'password':values['QBITTORRENT_PASSWORD']}, form=True)
-    # Supported qBittorrent releases differ in their successful login body.
-    # A protected API operation proves the cookie was actually authenticated.
-    qb.call('/api/v2/app/version')
-    categories = qb.call('/api/v2/torrents/categories')
-    for category in ['movies', 'tv']:
-        if category not in categories:
-            qb.call('/api/v2/torrents/createCategory', {'category': category,
-                    'savePath': '/data/downloads/complete/'+category}, form=True)
+    configure_storage(root, urls)
     for name, category in [('radarr', 'movies'), ('sonarr', 'tv')]:
         client = arr[name]
         path = '/data/library/'+category

@@ -34,6 +34,11 @@ docs/superpowers/plans/.
   external account/API credentials; never invent them. Credentials are in
   local/media-credentials; preserve the setup journal. Verify permitted movie/TV
   acquisition, import, playback and availability sync before declaring it ready.
+- For existing media accounts, use `scripts/media-setup --storage-only` for storage
+  policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
+  A completed command or cached Available label is not evidence of a present file:
+  verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
+  Preserve source torrents; never redownload or delete library files to fix metadata.
 - Public DNS records are managed at GoDaddy. No local DNS/filtering service is
   included. Backend web ports bind to loopback; only host Nginx uses public 80/443.
   Do not modify router/client DNS or delete retired DNS data during repo changes.

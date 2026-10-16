@@ -86,6 +86,8 @@ MEDIA_ROOT/
   downloads/complete/tv/
   library/movies/
   library/tv/
+  recycle-bin/movies/
+  recycle-bin/tv/
 ```
 
 Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`.
@@ -103,6 +105,48 @@ its cache/transcodes use DATA_ROOT/jellyfin-cache, so reserve enough disk space
 for transcoding.
 Hardware transcoding needs a separate GPU/device permission configuration;
 software transcoding is the initial default.
+
+### Storage policy and existing installations
+
+Initial media setup enables automatic torrent management for **new** torrents,
+creates movie/TV categories with their matching completed-download paths, enables
+Radarr/Sonarr hardlinks, and configures a seven-day recycle bin when none exists.
+Custom recycle paths/retention are preserved. Recycle bins are outside Jellyfin's
+library and are a recovery window, not a backup; explicit permanent deletion and
+files removed outside Radarr/Sonarr can bypass them.
+
+After updating an existing installation, run host setup to prepare the new
+directories, then `scripts/media-setup --storage-only`. This skips owner/account
+initialization and preserves credentials, torrents, naming formats and other
+preferences. Existing category paths that differ from the expected paths require
+manual review because changing them could relocate active torrents. Existing
+manually managed torrents are not moved by this command. To migrate one, verify
+its category and source first, then enable automatic management for that specific
+torrent in qBittorrent and verify its new path, completion and library hardlink.
+
+### Missing movie recovery and acceptance
+
+The October 2026 Oppenheimer incident imported successfully, then Radarr logged
+deletion of the movie and its library directory. qBittorrent retained the source;
+Jellyfin and Seerr still advertised cached availability. The download's generic
+completed path was a separate automatic-management setting issue, not the cause
+of deletion. Logs established deletion but did not establish who initiated it.
+
+Before repair, back up application settings and use supported application backups.
+Check the actual file on the host and its mapped container path, download status,
+movie record and import/deletion history. Re-add a missing movie using the same
+TMDB identity/root/profile with automatic searching disabled. Use Radarr manual
+import from the existing source with **Copy** and hardlinks enabled; preserve the
+torrent and avoid another download. A DownloadedMoviesScan can complete without
+importing: inspect the resulting movie file and manual-import decisions. For the
+manual-import API, movieId without downloadId examines the library directory;
+provide the correct downloadId when inspecting a download instead.
+
+Verify both files exist, have the same device/inode and link count at least two;
+confirm Radarr hasFile and its movie-file record. Refresh Jellyfin, wait for its
+library scan, then run Seerr's Radarr and full Jellyfin scans. Confirm TMDB identity,
+mapped path, availability and actual authenticated media reads. Browser playback
+is a separate acceptance step; metadata counts alone do not establish playback.
 
 Jellyfin has its own login. Create ordinary non-admin viewing accounts after setup;
 use them for routine playback and requests. Seerr authenticates Jellyfin users,
@@ -138,3 +182,7 @@ References: [Seerr services](https://docs.seerr.dev/using-seerr/settings/service
 [Sonarr](https://docs.linuxserver.io/images/docker-sonarr/),
 [Prowlarr](https://docs.linuxserver.io/images/docker-prowlarr/),
 [qBittorrent](https://docs.linuxserver.io/images/docker-qbittorrent/).
+
+Storage API references: [qBittorrent Web API](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-%28qBittorrent-5.0%29),
+[Radarr manual import controller](https://github.com/Radarr/Radarr/blob/develop/src/Radarr.Api.V3/ManualImport/ManualImportController.cs),
+[Seerr settings and scan jobs](https://github.com/seerr-team/seerr/blob/develop/server/routes/settings/index.ts).

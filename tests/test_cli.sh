@@ -11,6 +11,8 @@ done
 if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/tls" --staging --dns-provider godaddy >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/media-setup" --profile-only >"$TASK_TMP/out" 2>&1; then exit 1; fi
+if "$TASK_TMP/scripts/media-setup" --storage-only --owner-email smoke@example.com >"$TASK_TMP/out" 2>&1; then exit 1; fi
+if "$TASK_TMP/scripts/media-setup" --storage-only --profile ohara >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/setup" --dry-run >"$TASK_TMP/out" 2>&1; then
   echo 'Expected dry-run to reject missing config' >&2; exit 1
 fi

@@ -98,3 +98,10 @@ public activation, set Jellyfin Known Proxies to the actual host gateway and
 check permissions with an ordinary viewing account. A healthy empty stack does
 not prove request fulfillment: require a permitted movie/episode import and
 HTTPS playback plus Seerr availability sync.
+
+On existing installations, use `scripts/media-setup --storage-only` to apply the
+storage policy without logging into or initializing Jellyfin/Seerr owners. Run
+host setup first to prepare recycle directories. See media.md for deletion
+recovery and verification; cached availability and completed API jobs are not
+proof of a playable file. Never remove a movie, its files, or setup journal as
+an integration repair.
