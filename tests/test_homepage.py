@@ -115,3 +115,43 @@ class DashboardHostnameTests(unittest.TestCase):
             path = Path(directory) / 'config'
             path.write_text((ROOT / '.env.example').read_text().replace('HOMEPAGE_HOST=xdadwal.in', ''))
             self.assertEqual(config.load(path)['HOMEPAGE_HOST'], 'xdadwal.in')
+
+class WidgetCredentialTests(unittest.TestCase):
+    def test_optional_widget_keys_preserve_existing_inputs(self):
+        import credentials
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            credential_fixtures.write(root)
+            path = root/'local/homepage.env'
+            before = path.read_bytes()
+            credentials.load(root)
+            with path.open('a') as stream:
+                stream.write('HOMEPAGE_VAR_JELLYFIN_API_KEY=' + 'a'*32 + '\n')
+                stream.write('HOMEPAGE_VAR_SEERR_API_KEY=' + 'b'*68 + '\n')
+            values, _ = credentials.load(root)
+            self.assertEqual(values['HOMEPAGE_VAR_SEERR_API_KEY'], 'b'*68)
+            self.assertTrue(path.read_bytes().startswith(before))
+
+    def test_widget_keys_reject_malformed_values_without_echoing_them(self):
+        import credentials
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            credential_fixtures.write(root)
+            path = root/'local/homepage.env'
+            with path.open('a') as stream:
+                stream.write('HOMEPAGE_VAR_SEERR_API_KEY=invalid secret value\n')
+            with self.assertRaises(ValueError) as error:
+                credentials.load(root)
+            self.assertNotIn('invalid secret value', str(error.exception))
+
+    def test_widget_keys_accept_application_base64_tokens(self):
+        import credentials
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            credential_fixtures.write(root)
+            path = root/'local/homepage.env'
+            token = 'Disposable/Seerr+Token=' * 3
+            with path.open('a') as stream:
+                stream.write('HOMEPAGE_VAR_SEERR_API_KEY='+token+'\n')
+            values, _ = credentials.load(root)
+            self.assertEqual(values['HOMEPAGE_VAR_SEERR_API_KEY'], token)

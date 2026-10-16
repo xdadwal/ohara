@@ -3,10 +3,25 @@
         icon: jellyfin.png
         href: "https://{{HOMEPAGE_VAR_JELLYFIN_HOST}}"
         description: Watch movies and shows
+        widget:
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+          version: 2
+          enableBlocks: true
+          enableNowPlaying: true
+          enableUser: false
+          enableMediaControl: false
+          fields: [movies, series, episodes]
     - Seerr:
         icon: jellyseerr.png
         href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
         description: Discover and request movies and shows
+        widget:
+          type: seerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
+          fields: [pending, processing, issues]
 - Tools:
     - OpenSpeedTest:
         icon: openspeedtest.png

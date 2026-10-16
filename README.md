@@ -22,7 +22,8 @@ media settings on another machine, or to migrate private state safely.
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
-Jellyfin, Seerr, and OpenSpeedTest. Immich is a follow-up for personal photos/videos;
+Jellyfin, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
+widgets ([configuration](docs/homepage-widgets.md)). Immich is a follow-up for personal photos/videos;
 it will share the Ohara machine, with storage and backup paths still to be confirmed.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
 initialize accounts/connections and add your chosen indexers.
@@ -64,8 +65,9 @@ ssh -L 5055:127.0.0.1:5055 \
     -L 3000:127.0.0.1:3000 -L 3002:127.0.0.1:3002 user@server
 ```
 
-Homepage uses its own password login at the HTTPS apex; it has no Docker socket
-access or private service widgets. See [the Immich follow-up](docs/immich-next.md).
+Homepage uses its own password login at HOMEPAGE_HOST. Native Jellyfin and Seerr
+widgets use supplied application API keys over the Docker network; no Docker socket
+is exposed. See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
 router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.

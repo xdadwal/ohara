@@ -61,3 +61,9 @@ image, mounts, credential requirement and setup artifacts. Keep eight applicatio
 containers and two user-created credential input files. Retired FILES_ROOT and
 FILES_HOST inputs are ignored; existing data/config is preserved. See stack.md
 for the current inventory and operations.md for deployed-host migration.
+
+- On 2026-10-16, the user selected native Jellyfin/Seerr, resource, clock and
+  weather widgets. These supersede the initial links-only/no-API-key dashboard.
+  Use application-issued keys supplied privately, Open-Meteo browser location,
+  and built-in container/storage readings; do not add a monitoring service.
+  Preserve existing dashboard edits; see homepage-widgets.md.
