@@ -65,7 +65,8 @@ the separate apex route, private ACLs and existing wildcard lineage. HTTP mode
 rejects a separate dashboard hostname rather than replacing the portfolio route.
 Portfolio code/CSS updates and service restart instructions are in the portfolio
 checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
-the current host also keeps a private copy in `local/domain-setup/nginx.conf`.
+historical copies are archived under `~/ohara-backups`. For a fresh setup with the
+same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
 
 1. Set A records for the apex and configured watch/files/speed/jellyfin subdomains to
    your public IPv4 address. Do not add a wildcard or AAAA record by assumption.

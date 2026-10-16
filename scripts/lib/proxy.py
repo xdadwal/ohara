@@ -13,9 +13,12 @@ RENEW_HOOK = '#!/bin/sh\n/usr/sbin/nginx -t && /usr/bin/systemctl reload nginx\n
 
 def render(c, root, https=False):
     text = (root / 'configs/nginx' / ('https.template' if https else 'http.template')).read_text()
+    if https and int(c.get('PORTFOLIO_PORT', '0')):
+        text += '\n' + (root / 'configs/nginx/portfolio.template').read_text()
     for key in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST']:
         text = text.replace('@' + key + '@', c[key])
     text = text.replace('@HOSTS@', ' '.join(dict.fromkeys(c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST'])))
+    text = text.replace('@PORTFOLIO_PORT@', c.get('PORTFOLIO_PORT', '0'))
     # Keep header rules visible in rendered output for audits/tests.
     headers = (root / 'configs/nginx/proxy-headers.conf').read_text()
     return text.replace('include /etc/nginx/ohara-proxy-headers.conf;', headers)

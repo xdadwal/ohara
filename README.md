@@ -7,6 +7,8 @@ On the current host, the separate portfolio checkout at `/home/akshay/xdadwal.in
 runs as `portfolio.service` on loopback port 8010 and serves the apex. The password
 protected dashboard is at **ohara.xdadwal.in** (`HOMEPAGE_HOST` in `.env`). Other
 service hostnames are unchanged.
+See [replication](docs/replication.md) to reproduce both routes and the selected
+media settings on another machine, or to migrate private state safely.
 
 | Service | Purpose | Access |
 |---|---|---|
