@@ -53,6 +53,7 @@ def main():
         shutil.copy(ROOT / 'compose.yaml', root / 'compose.yaml')
         shutil.copy(ROOT / 'versions.env', root / 'versions.env')
         c = config.load(ROOT / '.env.example')
+        c['HOMEPAGE_HOST'] = 'ohara.' + c['DOMAIN']
         c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                  RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
         credential_fixtures.write(root)
@@ -166,32 +167,32 @@ def main():
             while True:
                 try:
                     runtime.run(docker+['exec',nginx_name,'nginx','-t'])
-                    assert tls_request(c['DOMAIN'])[0] in (302, 307)
+                    assert tls_request(c['HOMEPAGE_HOST'])[0] in (302, 307)
                     break
                 except (OSError, RuntimeError, http.client.HTTPException):
                     if time.monotonic()>deadline:
                         raise
                     time.sleep(1)
-            code, body, denied_headers = tls_request(c['DOMAIN'], '/api/services', full=True)
+            code, body, denied_headers = tls_request(c['HOMEPAGE_HOST'], '/api/services', full=True)
             redirect = dict((k.lower(),v) for k,v in denied_headers).get('location','')
             assert code in (401,403) or (code in (302,307) and '/auth/signin' in redirect), f'Homepage anonymous API returned {code}'
-            code, body, csrf_headers = tls_request(c['DOMAIN'], '/api/auth/csrf', full=True)
+            code, body, csrf_headers = tls_request(c['HOMEPAGE_HOST'], '/api/auth/csrf', full=True)
             assert code == 200, 'Homepage CSRF endpoint failed'
             csrf = json.loads(body)['csrfToken']
             cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
             hp = credential_files.read(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
             payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
-                                               'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
-            code, body, login_headers = tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', payload,
+                                               'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
+            code, body, login_headers = tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', payload,
                                                    {'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie}, full=True)
             assert code == 200 and 'error' not in json.loads(body).get('url',''), 'Homepage password login failed'
             session = '; '.join(value.split(';', 1)[0] for key,value in login_headers if key.lower() == 'set-cookie')
             assert session, 'Homepage session cookie missing'
-            code, body = tls_request(c['DOMAIN'], '/api/services', hdr={'Cookie':session})
+            code, body = tls_request(c['HOMEPAGE_HOST'], '/api/services', hdr={'Cookie':session})
             assert code == 200 and b'Seerr' in body and b'Copyparty' in body, 'Homepage authenticated service list failed'
             rejected = urllib.parse.urlencode({'csrfToken':csrf, 'password':'not-the-password',
-                                                'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
-            attempts = [tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', rejected,
+                                                'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
+            attempts = [tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', rejected,
                                     {'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie})[0]
                         for _ in range(8)]
             assert 429 in attempts, 'Homepage proxy login rate limit was not enforced'

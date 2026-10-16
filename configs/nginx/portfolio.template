@@ -1,0 +1,12 @@
+# Optional portfolio process is provisioned separately; backend stays on loopback.
+server {
+    listen 443 ssl;
+    server_name @DOMAIN@;
+    ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    location / {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+    }
+}

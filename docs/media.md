@@ -63,6 +63,11 @@ ssh -L 7878:127.0.0.1:7878 -L 8989:127.0.0.1:8989 \
 ```
 
 Add your chosen indexers and any required account/API credentials in Prowlarr.
+To reproduce this server's explicitly selected public indexers and enabled
+renaming, run `scripts/media-setup --profile ohara --profile-only` after account
+setup. This preserves existing accounts and naming formats; it does not invoke
+the first-run Jellyfin/Seerr login flow. See [replication.md](replication.md) for
+the selected indexers, category limitations and migration procedure.
 Test each indexer and trigger application sync. Prowlarr sends indexers to both
 Radarr and Sonarr; it is not a search provider itself. Do not treat healthy
 containers or successful API connections as proof of working acquisition.
