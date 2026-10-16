@@ -72,7 +72,7 @@ def nginx_config(old, c, root):
     required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST')}
     if required - changed == {c['NAVIDROME_HOST']} and c['NAVIDROME_HOST'] not in proxy.configured_names(old):
         result += '\n' + proxy.navidrome_config(c, root).replace('/live/ohara/', '/live/' + CERT_NAME + '/')
-        result += ('\nserver {\n    listen 80;\n    server_name ' + c['NAVIDROME_HOST'] + ';\n'
+        result += ('\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name ' + c['NAVIDROME_HOST'] + ';\n'
                    '    access_log off;\n    error_log /dev/null;\n'
                    '    location / { return 301 https://$host$request_uri; }\n}\n')
         changed.add(c['NAVIDROME_HOST'])

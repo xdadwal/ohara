@@ -8,29 +8,32 @@ HOMEPAGE_KEYS = {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH
 WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
+ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS
 
 
-def read(path, keys, optional=frozenset()):
+def read(path, keys, optional=frozenset(), ignored=frozenset()):
     path = Path(path)
     if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
         raise ValueError(f'{path.name}: Symlink private configuration is unsupported')
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     except OSError:
-        raise ValueError(f'Missing/unreadable private config: user-created local/{path.name}; follow docs/credentials.md') from None
+        raise ValueError(f'Missing/unreadable user-created private config: {path.name}; follow docs/credentials.md') from None
     with os.fdopen(descriptor) as stream:
         state = os.fstat(stream.fileno())
         if not stat.S_ISREG(state.st_mode) or state.st_mode & 0o077:
-            raise ValueError(f'local/{path.name}: require a regular private file (chmod 0600)')
+            raise ValueError(f'{path.name}: require a regular private file (chmod 0600)')
         values = {}
         seen = set()
         for number, line in enumerate(stream.read().splitlines(), 1):
             if not line.strip() or line.lstrip().startswith('#'):
                 continue
             key, separator, value = line.partition('=')
-            if not separator or key not in keys | optional or key in seen:
-                raise ValueError(f'local/{path.name}:{number}: unknown, duplicate or malformed key')
+            if not separator or key not in keys | optional | ignored or key in seen:
+                raise ValueError(f'{path.name}:{number}: unknown, duplicate or malformed key')
             seen.add(key)
+            if key in ignored:
+                continue
             if any(ord(character) < 32 or ord(character) == 127 for character in value):
                 raise ValueError(f'{key}: control characters are unsupported')
             if key in WIDGET_KEYS:
@@ -49,11 +52,13 @@ def read(path, keys, optional=frozenset()):
                     raise ValueError(f'{key}: supply at least {minimum} characters')
             values[key] = value
         if not keys <= set(values):
-            raise ValueError(f'local/{path.name}: missing required keys: '+', '.join(sorted(keys-set(values))))
+            raise ValueError(f'{path.name}: missing required keys: '+', '.join(sorted(keys-set(values))))
     return values
 
 
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
-    return (read(root/'local/homepage.env', HOMEPAGE_KEYS, WIDGET_KEYS),
-            read(root/'local/media-credentials', MEDIA_KEYS))
+    import config
+    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS, config.KEYS)
+    return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
+            {k:v for k,v in values.items() if k in MEDIA_KEYS})

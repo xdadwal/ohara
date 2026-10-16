@@ -13,7 +13,7 @@ port conflicts. Avoid exposing private configuration while inspecting it.
 
 Reuse settled choices: Asia/Kolkata timezone; HOMEPAGE_HOST for Homepage (default apex, or
 ohara.xdadwal.in with the separate apex portfolio profile);
-watch.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
+seerr.xdadwal.in for Seerr, jellyfin.xdadwal.in for playback, speed.xdadwal.in for
 OpenSpeedTest, and immich.xdadwal.in for the future same-host Immich project.
 Navidrome uses configurable NAVIDROME_HOST; music.xdadwal.in is the default; verify the hostname and public DNS before activation.
 Public DNS is managed at GoDaddy. Do not ask the user to choose these again
@@ -46,14 +46,14 @@ it must not hang waiting for terminal input or invent answers.
 ## Read user-managed credentials
 
 Follow [credentials.md](credentials.md). The user must create and fill
-local/homepage.env and local/media-credentials, mode 0600.
+.env, mode 0600.
 Never invent or generate passwords, API keys or Homepage session secrets. If an
 input file/key is missing or invalid, report its path/key and ask the user to
 complete it privately; never ask for the value in chat. Do not copy test fixtures
 or install filled example credentials. Inspect file validity without printing values.
 
 For Homepage media widgets, request actual Jellyfin/Seerr API keys in
-local/homepage.env only after account setup. These optional inputs do not block
+.env only after account setup. These optional inputs do not block
 bootstrap; do not invent them or ask for values in chat. Weather uses browser
 location permission; ask for a city/coordinates only if fixed weather is desired.
 Explain container resource limits and verify sensors on Linux; see homepage-widgets.md.
@@ -91,8 +91,8 @@ scope. Distinguish local success from public DNS/HTTPS and access from other dev
 Jellyfin, Navidrome, Radarr, Sonarr, Lidarr, Bazarr, Prowlarr and qBittorrent are included. Follow
 [media.md](media.md). Inspect media mounts/capacity, RUN_UID/RUN_GID and existing
 state first. Ask for the actual Seerr owner email if unknown, chosen indexers,
-and any required external account/API credentials. Read passwords/API keys from the user-created private input files. Never choose a source or create an external account by inference.
-Run scripts/media-setup after scripts/up; then verify private logins, both
+and any required external account/API credentials. Read passwords/API keys from the user-created private root `.env`. Never choose a source or create an external account by inference.
+Run scripts/media-setup after scripts/up; then verify private logins, the
 movie/TV/music download-client tests, Prowlarr application sync, Seerr default profiles/root
 folders, Jellyfin libraries and external URL. Keep admin UIs private. Before
 public activation, set Jellyfin Known Proxies to the actual host gateway and
@@ -109,9 +109,16 @@ for subtitle languages, providers and any required provider credentials. Preserv
 existing Bazarr configuration and manually verify Radarr/Sonarr connections, path
 access, and subtitle writes. Keep Lidarr/Bazarr private on loopback 8686/6767; do
 not create public admin subdomains. On existing installations, have the operator
-append missing Lidarr/Bazarr credentials and NAVIDROME_PASSWORD privately without
+append missing Lidarr/Bazarr credentials and NAVIDROME_PASSWORD to `.env` privately without
 replacing existing values. Navidrome needs no additional API key.
 
 The discussed NAS/multiple-node topology is future work. These services currently
 run in this Compose stack; their intended future home is the acquisition node.
 Do not add node orchestration, shared authentication or local DNS infrastructure.
+
+On existing installations, use `scripts/media-setup --storage-only` to apply the
+storage policy without logging into or initializing Jellyfin/Seerr owners. Run
+host setup first to prepare recycle directories. See media.md for deletion
+recovery and verification; cached availability and completed API jobs are not
+proof of a playable file. Never remove a movie, its files, or setup journal as
+an integration repair.

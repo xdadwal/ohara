@@ -52,7 +52,7 @@ class DNSTests(unittest.TestCase):
                 dns.credentials(alias)
 
     def test_rejects_wrong_zone_and_bad_challenge(self):
-        for change in ({'CERTBOT_DOMAIN': 'other.in'}, {'CERTBOT_DOMAIN': 'watch.xdadwal.in'},
+        for change in ({'CERTBOT_DOMAIN': 'other.in'}, {'CERTBOT_DOMAIN': 'seerr.xdadwal.in'},
                        {'CERTBOT_VALIDATION': '../bad'}):
             with self.assertRaises(ValueError):
                 dns.challenge(DATA, dict(ENV, **change))
@@ -209,7 +209,7 @@ class DNSTests(unittest.TestCase):
         self.assertIn('proxy_pass http://127.0.0.1:4533;', result)
         self.assertIn('deny all;', result)
         self.assertEqual(result.count('server_name music.xdadwal.in;'), 2)
-        self.assertIn('listen 80;\n    server_name music.xdadwal.in;', result)
+        self.assertIn('listen 80;\n    listen [::]:80;\n    server_name music.xdadwal.in;', result)
         self.assertIn('/live/ohara-wildcard/', result)
 
     def test_dns_migration_does_not_overwrite_existing_music_host(self):

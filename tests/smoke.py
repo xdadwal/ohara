@@ -82,8 +82,8 @@ def main():
                 compose(['up', '-d', '--wait', '--wait-timeout', '180'], timeout=900)
             except RuntimeError:
                 diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
-                for path, keys in [(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
-                    for value in credential_files.read(path, keys).values():
+                for path, keys in [(root/'.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
+                    for value in credential_files.load(root)[0].values():
                         if len(value) > 10:
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
@@ -105,7 +105,7 @@ def main():
             urls = {name: f'http://127.0.0.1:{value}' for name, value in ports.items()}
             media.connect(c, root, 'smoke@example.com', urls)
             media.connect(c, root, 'smoke@example.com', urls)
-            media_secrets = credential_files.read(root/'local/media-credentials', media.SECRET_KEYS)
+            media_secrets = credential_files.load(root)[1]
             seerr_api = media.Client(urls['seerr'])
             seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
             assert seerr_api.call('/api/v1/settings/public')['initialized'], 'Seerr wizard was not completed'
@@ -118,7 +118,7 @@ def main():
                 'HOMEPAGE_VAR_JELLYFIN_API_KEY': account['AccessToken'],
                 'HOMEPAGE_VAR_SEERR_API_KEY': seerr_api.call('/api/v1/settings/main')['apiKey'],
             }
-            with (root/'local/homepage.env').open('a') as stream:
+            with (root/'.env').open('a') as stream:
                 for key, value in widget_keys.items():
                     stream.write(key+'='+value+'\n')
             credential_files.load(root)
@@ -194,7 +194,7 @@ def main():
             assert code == 200, 'Homepage CSRF endpoint failed'
             csrf = json.loads(body)['csrfToken']
             cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
-            hp = credential_files.read(root/'local/homepage.env', credential_files.HOMEPAGE_KEYS, credential_files.WIDGET_KEYS)
+            hp = credential_files.load(root)[0]
             payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
                                                'callbackUrl':'https://'+c['HOMEPAGE_HOST'], 'json':'true'})
             code, body, login_headers = tls_request(c['HOMEPAGE_HOST'], '/api/auth/callback/credentials', 'POST', payload,

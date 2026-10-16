@@ -77,9 +77,18 @@ fresh initialization creates `admin`. Do not run initial setup over a restored
 account/database expecting it to migrate or rotate credentials. Preserve
 `local/media-state.json`; the `--profile-only` command can apply the non-secret
 profile without repeating owner/media-server login initialization.
+Run `scripts/migrate-credentials` first for legacy split inputs. After preparing
+storage with setup, apply `scripts/media-setup --storage-only` and
+`scripts/media-setup --quality-only` to restored accounts. See media.md for the
+seeding, recycle-bin and bounded 1080p policies; these commands do not initialize
+Jellyfin/Seerr owners.
 
 Recreate the portfolio service separately. Preserve or deliberately migrate
 existing Nginx routes; DNS renewal configuration does not install new routes.
+For an exact copy of this server's stable routes, including localhost and the
+public-IP test, follow [the tracked Nginx baseline](../configs/nginx/deployed/README.md).
+It requires the existing wildcard and local TLS materials at their documented
+paths; the generic fresh-host templates intentionally do not assume those files.
 Configure and test renewal on the target host. The currently deployed certificate
 was issued with manual TXT validation; GoDaddy API renewal has not been activated
 on this server and still requires a PAT and a successful live dry run.

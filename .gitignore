@@ -1,4 +1,5 @@
 .env
+.env-migrate-*
 local/
 __pycache__/
 *.pyc

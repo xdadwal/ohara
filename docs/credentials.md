@@ -1,97 +1,107 @@
 # User-managed credentials
 
-Ohara reads credentials from files you create. Agents and setup commands must not
-invent, generate, replace, or rotate passwords, acquisition API keys, or Homepage's
-session secret. Use your password manager or your own tools to choose the values,
-then save them locally. Do not send secret values through chat.
+The repository's ignored **`.env`** is the single editable input for deployment
+settings, Homepage login/widget keys and media-service credentials. Keep it owned
+by the operator with mode **0600**. Never send secret values through chat or commit
+this file. Agents and setup must not invent, generate or rotate passwords,
+acquisition API keys or Homepage's session secret.
 
-## Prepare the files
-
-The two tracked examples contain empty fields, not working default credentials.
-From the repository root, create private copies if they do not already exist:
+## Fresh installation
 
 ```sh
 umask 077
-mkdir -p local
-chmod 700 local
-test -e local/homepage.env || install -m 600 configs/credentials/homepage.env.example local/homepage.env
-test -e local/media-credentials || install -m 600 configs/credentials/media-credentials.example local/media-credentials
+test -e .env || install -m 600 .env.example .env
+chmod 600 .env
 ```
 
-Fill in those files using a local editor or password-manager export. Keep both
-files mode 0600, owned by the deployment operator. Do not replace existing files
-merely to follow these instructions. `.env` is non-secret deployment configuration;
-credentials belong in the ignored `local/` directory.
+Edit `.env` privately. Fill deployment settings and uncomment/fill the required
+credential entries copied from `.env.example` into `.env`; the example contains
+no working credential defaults.
 
-| File | Required inputs |
+| Service | Required keys |
 |---|---|
-| `local/homepage.env` | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
-| `local/media-credentials` | `JELLYFIN_PASSWORD`, `QBITTORRENT_PASSWORD`, `RADARR_PASSWORD`, `SONARR_PASSWORD`, `PROWLARR_PASSWORD`, `RADARR_API_KEY`, `SONARR_API_KEY`, `PROWLARR_API_KEY`, `LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD`, `BAZARR_API_KEY`, `NAVIDROME_PASSWORD` |
+| Homepage | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
+| Jellyfin | `JELLYFIN_PASSWORD` |
+| qBittorrent | `QBITTORRENT_PASSWORD` |
+| Radarr | `RADARR_PASSWORD`, `RADARR_API_KEY` |
+| Sonarr | `SONARR_PASSWORD`, `SONARR_API_KEY` |
+| Prowlarr | `PROWLARR_PASSWORD`, `PROWLARR_API_KEY` |
+| Lidarr | `LIDARR_PASSWORD`, `LIDARR_API_KEY` |
+| Bazarr | `BAZARR_PASSWORD`, `BAZARR_API_KEY` |
+| Navidrome | `NAVIDROME_PASSWORD` |
 
-Homepage passwords need at least 8 characters, preserving the
-operator's existing shorter passwords. Media-service passwords need at least
-16 characters. Use independent values per service.
-Homepage's session secret needs at least 32 characters. The five supplied service API
-keys must each be exactly 32 hexadecimal characters, matching those applications'
-format. Supply them yourself for a fresh installation; for an existing server,
-retrieve the actual keys through its private settings rather than choosing new ones.
-Navidrome requires its own password of at least 16 characters and no additional
-API key. Seerr uses the Jellyfin password for media-server login; it has no separate initial
-password in this setup. OpenSpeedTest has no login.
+Homepage passwords require at least 8 characters, media passwords 16, and the
+Homepage session secret 32. Acquisition API keys must be 32 hexadecimal characters.
+Use independent values. Existing installations must use their actual application
+values. Seerr initially authenticates through Jellyfin; OpenSpeedTest has no login.
+Navidrome uses its supplied password for supported first-run account creation and
+login verification; it needs no additional API key. Subtitle-provider credentials,
+when required, are entered privately in Bazarr after the operator chooses providers.
+Application databases retain their own account hashes/session tokens: this change
+consolidates operator inputs, not application-managed persistent state.
 
-Each non-comment line is literally `KEY=value`. Spaces, `$`, `#`, `=`, quotes and
-other printable punctuation within values are literal. Do not add shell quotes,
-`export`, multiline values or command substitutions expecting them to execute.
-No file is sourced or evaluated. Unknown/duplicate keys, empty/short values,
-control characters, symlinks and group/world-readable files are rejected. Errors
-name files/keys, never the supplied value. Compose consumes Homepage's environment
-with `format: raw` to preserve literal characters.
+Optional widget inputs are `HOMEPAGE_VAR_JELLYFIN_API_KEY` and
+`HOMEPAGE_VAR_SEERR_API_KEY`. Copy actual application-issued keys after account
+setup; omit/comment them until available. See [widget setup](homepage-widgets.md).
 
-Optional Homepage widget inputs are `HOMEPAGE_VAR_JELLYFIN_API_KEY` and
-`HOMEPAGE_VAR_SEERR_API_KEY`, copied from the actual applications into
-`local/homepage.env` after media setup. Omit them until available; do not leave
-uncommented empty values. Existing login-only files remain valid. See
-[widget setup](homepage-widgets.md).
+## Migrate the old files
 
-For an existing `local/media-credentials`, append only the missing
-`LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD` and `BAZARR_API_KEY` entries
-and `NAVIDROME_PASSWORD` privately using your editor or password manager. If the
-Lidarr/Bazarr entries already exist, append only the missing Navidrome password.
-Keep every existing value; do not
-overwrite the file from the template. The new passwords require at least 16
-characters and the new API keys exactly 32 hexadecimal characters. Setup does not
-generate these values. Subtitle-provider credentials, if required, are supplied
-by the operator in Bazarr after choosing providers; do not infer them.
+With the updated checkout, before running setup/up, privately add any missing
+`LIDARR_PASSWORD`, `LIDARR_API_KEY`, `BAZARR_PASSWORD`, `BAZARR_API_KEY` and
+`NAVIDROME_PASSWORD` entries to root `.env`, preserving existing values. Leave
+the legacy files intact for migration. The new passwords require at least 16
+characters and API keys exactly 32 hexadecimal characters. Then run:
 
-## Setup and preservation
+```sh
+chmod 600 .env
+scripts/migrate-credentials
+scripts/check
+scripts/up
+```
 
-Run `sudo scripts/setup --dry-run`, `sudo scripts/setup --non-interactive`, then
-`scripts/check` and `scripts/up`. Python validates both inputs before host provisioning
-or storage preparation. On a machine without Python, the shell bootstrap first
-requires the input files; Python itself must be installed before full content
-validation is possible. `scripts/check --static` intentionally skips private files.
-`scripts/media-setup --owner-email YOUR_REAL_EMAIL` creates first-run media accounts
-and connections using your supplied values.
+The migration validates both legacy files (`local/homepage.env` and
+`local/media-credentials`), preserves every value, and rejects conflicts with
+existing `.env` entries. It validates the combined file before atomically replacing
+`.env`, then removes the two old inputs. Original files are retained in a new
+private directory under `../ohara-backups/credentials-TIMESTAMP`; use
+`--backup-dir /private/new-directory` to choose another destination. No password,
+API key, database or setup journal is reset. Rerunning migration on a unified
+installation is a no-op. Missing/invalid legacy files stop migration without
+changing the active input. Keep the backup encrypted with your other recovery data.
 
-Setup derives media first-run configuration from these inputs and never writes
-either source file. Password hashing uses cryptographically random salts; salts
-are not login credentials. Applications also issue their own session and integration
-tokens through supported APIs. Those tokens are not strings invented by the agent.
+Legacy split files are deprecated and remain ignored by Git; runtime commands
+consume only `.env`. Never put new entries in the legacy files. The entries in `.env.example` are commented and empty; setup never supplies them.
 
-Reruns preserve existing application configuration and the media setup journal.
-Editing an input file alone is not a supported password rotation for existing
-accounts. Update the actual account through its supported private UI/API and keep
-its input file in sync; preserve/back up current configuration before rotation.
-Do not delete databases, source files or local/media-state.json to reset an account.
-If a required input is missing, restore it from your private backup; setup fails
-instead of generating replacement credentials. Previously generated files remain
-readable if valid; switching values requires a deliberate account update.
+## Literal values and validation
 
-Copyparty and Pi-hole are removed. The retired local/credentials file and their
-old private config files are not read or required. Setup does not create them,
-modify them, or delete them; retain backups before any manual cleanup.
+Each non-comment line is `KEY=value`. Credential values preserve spaces, `$`, `#`,
+`=`, quotes and other printable punctuation literally. Do not wrap values in shell
+quotes or add inline comments. Deployment fields such as paths/hostnames retain
+their existing stricter syntax. Never source/evaluate this file. Unknown/duplicate
+keys, missing required credentials, short values, control characters, symlinks
+and group/world-readable credential files are rejected without echoing values.
 
-Keep `.env`, `local/`, and application state in encrypted backups. Keep passwords,
-API keys, session secrets and resolved Compose output out of Git, logs and chat.
-Disposable tests use explicit dummy input files in isolated test directories;
-fixtures never feed deployment defaults or tracked example credentials.
+Use `scripts/check`, `scripts/up` and other project commands rather than direct
+`docker compose`: scripts disable Compose dotenv loading and pass only Homepage's
+allowlisted credentials through the child environment. Media passwords/API keys
+are consumed by host setup/API clients and are not injected into Homepage or
+unrelated containers. `scripts/check --static` renders empty secret placeholders
+and deliberately skips credential validation. Never publish resolved Compose
+output, container environment inspection or `.env` contents.
+
+## Setup and rotation
+
+Run setup/check/up as documented in README. Setup validates `.env` before host
+provisioning/storage changes and never rewrites it. Initial media configuration
+uses these supplied values; reruns preserve existing accounts and the journal.
+
+Editing `.env` alone does **not** rotate existing media accounts. Update an account
+through its supported private UI/API and keep `.env` synchronized. Homepage login
+and widget inputs take effect when its container is recreated with `scripts/up`.
+Do not delete databases or `local/media-state.json` to reset an account. Missing
+values must be restored/provided privately; setup never generates replacements.
+
+Keep `.env`, essential `local/`, application state and TLS material in encrypted
+backups. Retired Copyparty/Pi-hole inputs are not consumed and may be archived
+separately. Optional GoDaddy DNS API activation still uses the documented private
+JSON input and a root-only installed copy; no DNS token has been supplied here.

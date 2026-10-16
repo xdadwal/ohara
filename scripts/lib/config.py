@@ -10,14 +10,18 @@ PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
 IMAGES = {'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE', 'LIDARR_IMAGE', 'BAZARR_IMAGE', 'NAVIDROME_IMAGE'}
 
 
-def parse(path, keys, optional=frozenset()):
+def parse(path, keys, optional=frozenset(), ignored=frozenset()):
     values = {}
+    seen = set()
     for number, raw in enumerate(Path(path).read_text().splitlines(), 1):
         if not raw.strip() or raw.lstrip().startswith('#'):
             continue
         key, sep, value = raw.partition('=')
-        if not sep or key not in keys or key in values:
+        if not sep or key not in keys | ignored or key in seen:
             raise ValueError(f'{Path(path).name}:{number}: unknown, duplicate, or malformed key')
+        seen.add(key)
+        if key in ignored:
+            continue  # Credentials have separate literal-value validation; never return them.
         if not value or any(c.isspace() or ord(c) < 32 for c in value):
             raise ValueError(f'{key}: use a nonempty literal value without whitespace')
         values[key] = value
@@ -27,7 +31,8 @@ def parse(path, keys, optional=frozenset()):
 
 
 def load(path):
-    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'})
+    import credentials
+    values = parse(path, KEYS, {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
     values.pop('FILES_ROOT', None)
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.

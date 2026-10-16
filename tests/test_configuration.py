@@ -42,7 +42,7 @@ class ConfigurationTests(unittest.TestCase):
         base = (ROOT / '.env.example').read_text()
         for replacement in ['speed.xdadwal.in', 'other.example.com']:
             with self.assertRaises(ValueError):
-                self.load(base.replace('watch.xdadwal.in', replacement))
+                self.load(base.replace('seerr.xdadwal.in', replacement))
 
     def test_private_media_ports_cannot_back_public_portfolio(self):
         base = (ROOT / '.env.example').read_text()

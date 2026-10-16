@@ -38,11 +38,23 @@ def docker_prefix():
 def compose(c, root, args, *, capture=False, timeout=60, docker=None):
     # Do not let ambient COMPOSE_* variables or shell interpolation override config.
     env = {k: v for k, v in os.environ.items()
-           if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES}
+           if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES | credential_files.ALL_KEYS}
     env.update(c)
+    # Never give Compose the unified dotenv: it would parse/interpolate secrets.
+    # Static rendering deliberately uses empty placeholders. Real operations pass
+    # only Homepage's allowlisted values through the subprocess environment.
+    if 'config' not in args:
+        homepage, _ = credential_files.load(root)
+        env.update(homepage)
     env.update(config.images(root / 'versions.env'))
     env['COMPOSE_DISABLE_ENV_FILE'] = '1'
-    command = (docker if docker is not None else docker_prefix()) + [
+    prefix = docker if docker is not None else docker_prefix()
+    if prefix[:2] == ['sudo', '-n']:
+        # sudo normally drops the validated interpolation environment. Preserve
+        # names only (never values in argv), including only Homepage credentials.
+        allowed = config.KEYS | config.IMAGES | credential_files.HOMEPAGE_KEYS | credential_files.WIDGET_KEYS | {'COMPOSE_DISABLE_ENV_FILE'}
+        prefix = prefix[:2]+['--preserve-env='+','.join(sorted(allowed))]+prefix[2:]
+    command = prefix + [
         'compose', '--project-directory', str(root), '--env-file', '/dev/null',
         '-f', str(root / 'compose.yaml')] + args
     return run(command, capture=capture, timeout=timeout, env=env)
@@ -91,10 +103,9 @@ def check(c, root, *, static=False):
         bazarr_config = Path(c['DATA_ROOT'])/'bazarr/config/config.yaml'
         if not bazarr_config.exists() and not bazarr_config.is_symlink():
             bazarr_config = bazarr_config.with_suffix('.ini')
-        for path in [root / 'local/homepage.env', root / 'local/media-credentials'] + [
+        for path in [root / '.env'] + [
                 Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','lidarr','prowlarr')
-                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf',
-                     bazarr_config]:
+                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf', bazarr_config]:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
         for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'homepage', 'jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']] + [Path(c['MEDIA_ROOT'])]:
@@ -109,7 +120,7 @@ def check(c, root, *, static=False):
         for name in ['jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']:
             if not config.directory_writable(Path(c['DATA_ROOT'])/name, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError(f'{name}: storage is not writable by RUN_UID/RUN_GID; review ownership manually')
-        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'downloads/complete/music', 'library', 'library/movies', 'library/tv', 'library/music']:
+        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'downloads/complete/music', 'library', 'library/movies', 'library/tv', 'library/music', 'recycle-bin', 'recycle-bin/movies', 'recycle-bin/tv']:
             path = Path(c['MEDIA_ROOT'])/name
             if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')

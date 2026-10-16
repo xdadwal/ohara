@@ -8,7 +8,7 @@
   installation. Upstream release announcement: https://docs.seerr.dev/blog/seerr-release/.
 - Keep Copyparty and OpenSpeedTest; Pi-hole was subsequently removed. Remove the previous media download
   stack, monitoring, Tailscale, Chesskit, Homer, and standalone Redis definitions.
-- Proposed names: watch.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
+- Proposed names: seerr.xdadwal.in, files.xdadwal.in, speed.xdadwal.in.
   Configure in .env before issuance. The HTTPS apex runs Homepage with password
   authentication and a proxy rate limit on password attempts.
 - Homepage was selected on 2026-10-15: gethomepage/homepage v2.5.0, pinned by
@@ -34,7 +34,7 @@
 The user explicitly approved the services needed to fulfill Seerr requests.
 Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are included locally; this
 supersedes the earlier decision to remove media/download services. Jellyfin
-uses jellyfin.xdadwal.in, while Seerr stays at watch.xdadwal.in. Acquisition
+uses jellyfin.xdadwal.in, while Seerr stays at seerr.xdadwal.in. Acquisition
 UIs remain loopback-only. No indexer accounts, VPN, GPU or inbound peer ports
 are assumed. Shared storage supports consistent paths and hardlinks.
 

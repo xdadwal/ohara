@@ -138,11 +138,26 @@ rerun preservation, Homepage authentication/rate limiting, Nginx HTTPS routes an
 a 35 MiB speed upload. Fixture cleanup uses the retained qBittorrent image; no
 Copyparty image or config is needed. Historical entries describe older snapshots.
 
-Current credentials are only local/homepage.env and local/media-credentials.
+Current credentials are only .env.
 GoDaddy public DNS, deployed container shutdown, old certificate retirement/renewal,
 operator-edited Homepage config and production access remain deployment checks.
 No live share data, credentials, containers or public DNS records were changed.
 See stack.md for current applications and the pending Immich follow-up.
+
+## Unified credentials and media policy (2026-10-16)
+
+82 unit tests, setup/CLI checks, ShellCheck/compilation and an isolated eight-app
+Docker smoke passed. Smoke verifies first-run media connections and reruns,
+Homepage login with literal credential punctuation, native widgets and proxy routes.
+Migration tests cover preserved values, private backups, removed legacy inputs,
+conflicts and reruns. Runtime tests verify only Homepage credentials reach Compose,
+static rendering omits secrets, and Arr cleanup is disabled before seed limits.
+
+On the deployed host, migrated the two legacy inputs into private .env without
+changing values, kept originals in a private backup, recreated Homepage and verified
+login/session, both media widgets, qBittorrent login and Arr API authentication.
+All eight services remained running. Browser playback, a real TV request/import,
+off-host restore and automated GoDaddy renewal remain separate acceptance tasks.
 
 ## Homepage OpenSpeedTest widget (2026-10-16)
 
