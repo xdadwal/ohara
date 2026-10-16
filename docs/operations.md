@@ -81,6 +81,75 @@ router DNS. OpenSpeedTest is at localhost:3000 through the tunnel.
    complete speed test. The HTTPS apex should show Homepage password login;
    confirm service links appear after login and private APIs reject anonymous access. Rejecting an unknown hostname is intentional.
 
+### GoDaddy DNS validation and wildcard renewal
+
+Use DNS-01 when port 80 is unavailable or a wildcard certificate is required.
+The scripts support GoDaddy-managed authoritative DNS through the v3 API and a
+Personal Access Token (PAT). Create a PAT in the GoDaddy developer dashboard with
+the `domains.dns:update` capability; the legacy key/secret pair is not supported.
+The account must have DNS API access. Keep the token out of chat, Git and command
+arguments. Save a JSON file under ignored `local/`, for example
+`local/godaddy-dns.json`, with mode **0600**:
+
+```json
+{"domain": "xdadwal.in", "token": "YOUR_PERSONAL_ACCESS_TOKEN"}
+```
+
+The zone must match `DOMAIN`; all configured service names must be direct
+subdomains of that zone. For a new deployment, after local account setup:
+
+```sh
+sudo scripts/tls --staging --dns-provider godaddy \
+  --dns-credentials /absolute/path/to/local/godaddy-dns.json --agree-tos
+sudo scripts/tls --activate --dns-provider godaddy \
+  --dns-credentials /absolute/path/to/local/godaddy-dns.json \
+  --accounts-ready --agree-tos
+```
+
+For an **existing manually issued `ohara-wildcard` certificate**, use:
+
+```sh
+sudo scripts/tls --configure-renewal --dns-provider godaddy \
+  --dns-credentials /absolute/path/to/local/godaddy-dns.json --agree-tos
+```
+
+This tests staging validation using Certbot `reconfigure` before saving renewal
+options, then runs `renew --dry-run --run-deploy-hooks`. Existing Nginx routes,
+private administration ACLs and the production certificate remain in place during
+renewal configuration. Fresh activation preserves existing domain routes and ACLs;
+a fresh HTTP bootstrap receives the standard public HTTPS routes. Wildcard DNS
+does not automatically publish new applications or private administration.
+
+Hooks and credentials are installed root-only at
+`/usr/local/lib/ohara/dns_godaddy.py` and `/etc/ohara/dns-godaddy.json`.
+Renewals do not depend on the checkout path. Production lineage is
+`/etc/letsencrypt/live/ohara-wildcard`; `certbot.timer` performs renewal and the
+deploy hook validates/reloads Nginx. Staging uses separate hook, credentials,
+journal and certificate directories, so a staging test cannot replace production
+credentials. Rerun configuration after rotating the PAT, and monitor its expiry.
+
+The hook adds individual TXT records at `_acme-challenge`, preserves existing
+values (including simultaneous apex/wildcard challenges), and deletes only record
+IDs it created. It waits at least one hour plus a safety margin to expire DNS
+caches, then requires two consecutive successful checks through both Google and
+Cloudflare DNS-over-HTTPS. Initial configuration and dry runs can each take more
+than an hour; leave the command running. Existing challenge TTLs above 3600 cause
+an error: lower those TTLs and wait out the prior TTL before retrying. Providers,
+network failures, or stale journals may require inspection; failures do not prove
+renewal works. Inspect `/var/log/letsencrypt/letsencrypt.log` privately and the
+root-only journal `/var/lib/ohara/acme-dns` before retrying after interruption.
+Do not delete unrelated TXT records to resolve an error.
+
+Code tests mock GoDaddy and ACME. Only a successful live staging validation and
+renewal dry run establish that the supplied account/token can renew unattended.
+Until that succeeds, the existing manual certificate still requires manual renewal.
+
+References: [GoDaddy DNS API](https://developer.godaddy.com/en/docs/references/rest/domains/v3/list-dns-records),
+[PAT permissions](https://developer.godaddy.com/en/docs/api-users/auth),
+[Certbot renewal configuration](https://eff-certbot.readthedocs.io/en/stable/using.html#modifying-the-renewal-configuration-of-existing-certificates).
+
+### Default HTTP validation
+
 HTTP-01 needs public TCP 80, including for renewals; it cannot issue wildcard
 certificates. Certbot uses host webroot `/var/lib/ohara/acme`, lineage
 `/etc/letsencrypt/live/ohara`, the distribution `certbot.timer`, and an installed

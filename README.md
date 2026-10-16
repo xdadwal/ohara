@@ -61,6 +61,9 @@ access or private service widgets. See [the Immich follow-up](docs/immich-next.m
 
 Then follow [public activation and operations](docs/operations.md). Only forward
 router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.
+GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
+`scripts/tls --dns-provider godaddy`; see the private-token setup and existing
+certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
 
 ## For agents and contributors
 
