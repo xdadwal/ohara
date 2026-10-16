@@ -24,8 +24,9 @@ The optional `.env` keys `MEDIA_ROOT` and `JELLYFIN_HOST` default to
 media mount by setting MEDIA_ROOT explicitly. Its parent must already exist;
 setup does not mount disks or recursively change existing ownership.
 
-Run host setup and `scripts/up`. Setup generates independent strong passwords
-and API keys in `local/media-credentials` (0600). The initial username is `admin`.
+Create and fill the private input files in [credentials.md](credentials.md),
+then run host setup and `scripts/up`. Your supplied media passwords and API keys
+are read from `local/media-credentials` (0600). The initial username is `admin`.
 Jellyfin's password is also used for its Seerr media-server login, as required by
 that integration; other services have separate passwords. Neither passwords nor
 API keys are printed. Keep this recovery file in encrypted backups.
@@ -83,9 +84,9 @@ MEDIA_ROOT/
 ```
 
 Radarr root: `/data/library/movies`; Sonarr root: `/data/library/tv`.
-Both use qBittorrent hostname `qbittorrent`, port **8081**, generated password,
+Both use qBittorrent hostname `qbittorrent`, port **8081**, user-supplied password,
 and category `movies` or `tv`. The listening and published Web UI ports both use 8081 for qBittorrent Host validation. Prowlarr
-uses `http://radarr:7878` and `http://sonarr:8989` with their generated API keys.
+uses `http://radarr:7878` and `http://sonarr:8989` with their user-supplied API keys.
 Seerr uses container names and ports from the table, with both defaults enabled.
 If updating an existing Homepage deployment, add the Jellyfin entry from
 `configs/homepage/services.yaml` to your existing `${DATA_ROOT}/homepage/services.yaml`;

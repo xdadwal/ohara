@@ -3,7 +3,7 @@
 ## Host preparation
 
 For an agent-led installation, follow [agent-setup.md](agent-setup.md) for
-input collection, credential generation, and account setup boundaries.
+input collection, user-managed credentials, and account setup boundaries.
 
 Support target: Ubuntu 24.04 LTS or Debian 13 with systemd, amd64/arm64. Bootstrap
 installs missing Docker Engine/Buildx/Compose from Docker's official apt repository
@@ -24,7 +24,7 @@ not an invitation to expose `/home` or personal photo storage. Setup creates new
 application directories but never recursively changes existing ownership. Seerr
 needs UID 1000 write access; Copyparty needs RUN_UID/RUN_GID write access; Pi-hole
 manages its own `/etc/pihole` contents. Review permissions on existing directories
-manually before startup. Configuration and generated credentials live in `local/`.
+manually before startup. Configuration and user-supplied credentials live in `local/`.
 Do not commit that directory, `.env`, backups, certificate keys, or diagnostics
 containing credentials.
 
@@ -51,7 +51,7 @@ operation run `sudo nginx -t`; for applications inspect logs locally, redact the
 before sharing. Do not publish resolved Compose configuration or `docker inspect`.
 
 Use the README's SSH tunnel and open localhost ports. Follow [media setup](media.md) to initialize the Jellyfin/Seerr owner and
-connect the acquisition services. Use `admin` plus the generated Copyparty
+connect the acquisition services. Use `admin` plus the user-supplied Copyparty
 password; test authenticated upload, download, move, and delete using a disposable
 file. Confirm an anonymous client cannot list/download/write the file. Sign into
 Pi-hole at `http://localhost:8888/admin/` and test configuration before changing
@@ -201,8 +201,9 @@ entirely requires a separately planned cutover rather than automatic removal.
 
 ## Homepage
 
-Homepage serves the HTTPS apex. Setup writes a unique password and cookie-signing
-secret to `local/homepage.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
+Homepage serves the HTTPS apex. Supply its password and cookie-signing secret
+in user-created `local/homepage.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
+See [credentials.md](credentials.md) for empty templates and validation.
 After activation, sign in at `https://xdadwal.in` with that password. Authentication
 cookies are secure; use the configured HTTPS hostname for login, not a raw IP or
 an HTTP tunnel. Local health is `http://127.0.0.1:3002/api/healthcheck`.
@@ -218,12 +219,11 @@ Setup seeds files from `configs/homepage` only when absent and preserves edits;
 restart Homepage after changes using `scripts/up`. Service hostnames are supplied
 through environment variables, so changing `.env` does not require rewriting
 links. Setup does not overwrite an existing authentication file or silently rotate
-passwords. Keep it with your encrypted backups. Removing it creates a new password
-and invalidates old sessions on the next setup/restart.
+passwords. Keep it with your encrypted backups. If it is missing, setup fails; restore your file from a private backup.
 
 After updating an existing checkout to include Homepage, rerun setup before up.
-That creates its configuration directory and private auth file without changing
-existing service credentials. Rerun explicit HTTPS activation to replace an older
+Supply the private auth input first; setup creates its configuration directory
+without generating or changing service credentials. Rerun explicit HTTPS activation to replace an older
 apex maintenance route. The HTTP bootstrap remains maintenance-only until then.
 
 Upstream: https://gethomepage.dev/installation/ and

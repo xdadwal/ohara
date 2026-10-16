@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 import config
+import credentials as credential_files
 
 
 def run(args, *, capture=False, timeout=60, env=None, input=None):
@@ -86,7 +87,10 @@ def check(c, root, *, static=False):
                                capture=True, docker=['docker']))
     validate_model(model, c)
     if not static:
-        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env', root / 'local/media-credentials']:
+        credential_files.load(root)
+        for path in [root / 'local/copyparty.conf', root / 'local/pihole.env', root / 'local/homepage.env', root / 'local/media-credentials'] + [
+                Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','prowlarr')
+                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf']:
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
                 raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
         for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'pihole', 'copyparty', 'homepage', 'jellyfin', 'jellyfin-cache', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']] + [Path(c['FILES_ROOT']), Path(c['MEDIA_ROOT'])]:
@@ -107,9 +111,6 @@ def check(c, root, *, static=False):
             path = Path(c['MEDIA_ROOT'])/name
             if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
                 raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
-        hp = config.parse(root / 'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'})
-        if hp['HOMEPAGE_AUTH_ENABLED'] != 'true' or min(len(hp[k]) for k in ['HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD']) < 32:
-            raise ValueError('Homepage authentication must be enabled with strong generated credentials')
         import re
         text = (root / 'local/copyparty.conf').read_text()
         if re.search(r'^\s*[rwmdagAG.]+\s*:\s*[^#\n]*\*', text, re.MULTILINE):

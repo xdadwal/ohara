@@ -22,6 +22,7 @@ services:
       HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
     env_file:
       - path: ./local/homepage.env
+        format: raw
         required: false
     ports:
       - "127.0.0.1:3002:3000"
@@ -98,6 +99,7 @@ services:
       FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
     env_file:
       - path: ./local/pihole.env
+        format: raw
         # Static rendering must work without secrets, including Compose 2.38.
         # scripts/check and scripts/up still require this file before startup.
         required: false

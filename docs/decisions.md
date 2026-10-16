@@ -25,9 +25,9 @@
   current verification and remaining deployment checks are in operations.md.
 
 - Shared authentication (Authelia/Authentik) is deferred by user choice. Use
-  agent-generated unique per-service credentials. Initial setup agents collect
-  only missing machine/account inputs using docs/agent-setup.md; generated
-  credentials and application account provisioning are distinct steps.
+  user-managed per-service credentials from private input files. Initial setup
+  agents collect only missing machine/account inputs using docs/agent-setup.md;
+  reading credentials and provisioning application accounts are distinct steps.
 
 ## Media stack restored (2026-10-15)
 
@@ -37,3 +37,11 @@ supersedes the earlier decision to remove media/download services. Jellyfin
 uses jellyfin.xdadwal.in, while Seerr stays at watch.xdadwal.in. Acquisition
 UIs remain loopback-only. No indexer accounts, VPN, GPU or inbound peer ports
 are assumed. Shared storage supports consistent paths and hardlinks.
+
+## User-managed credentials (2026-10-16)
+
+The user superseded automatic credential generation. All login passwords, the
+three acquisition API keys, and Homepage's signing secret must come from
+user-created private files. Setup validates and reads them; it never substitutes
+generated defaults or recreates a missing file. See credentials.md. Normal
+password-hash salts and application-issued tokens remain application internals.

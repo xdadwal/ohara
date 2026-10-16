@@ -12,8 +12,10 @@ docs/superpowers/plans/.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials; a shared authentication service is
-  explicitly deferred. Generate strong unique passwords/secrets automatically,
-  preserve existing credentials, and keep values out of chat, logs, and Git.
+  explicitly deferred. Read user-created credential files as documented in
+  docs/credentials.md. Never invent or generate passwords, API keys or session
+  secrets. If files/values are missing, ask the user to fill the private files;
+  never request values in chat. Preserve inputs and keep values out of logs/Git.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.

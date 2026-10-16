@@ -18,7 +18,7 @@ Pi-hole administration remains private. Do not ask the user to choose these agai
 unless the target's existing configuration conflicts with them.
 
 Detect facts that the machine can establish. Do not ask the user to manually
-write .env, supply randomly generated passwords, install discoverable missing
+write .env, install discoverable missing
 dependencies, or provide user/group IDs you can inspect.
 
 ## Ask only for missing inputs
@@ -29,7 +29,7 @@ dependencies, or provide user/group IDs you can inspect.
 | LAN address | Multiple candidate interfaces exist, the intended interface is unclear, or a stable router reservation/static address must be chosen. Never treat the example address as confirmed. |
 | Storage | The dedicated file/data directories or disk selection are unknown. Present detected mounted disks and a suggested path; wait for the choice before creating storage on that disk. Do not format disks, migrate existing data, or change mounts without an explicit request. |
 | ACME email | No actual certificate-contact email has been supplied. The example email is not a confirmed identity. This blocks certificate issuance, not independent local checks. |
-| Application owner identity | Seerr, or later Immich, requires an owner email/name or an existing media account. Reuse supplied identity details; otherwise ask for the missing fields. Generate a new password locally when creating a local account. |
+| Application owner identity | Seerr, or later Immich, requires an owner email/name or an existing media account. Reuse supplied identity details; otherwise ask for the missing fields. Read the user-supplied password from the private credential file. |
 | Media setup | The local stack includes Jellyfin and acquisition services. Confirm media mount/capacity and real owner email, then use scripts/media-setup. Ask for indexer/source choices and any external credentials; never invent them. |
 | DNS/router access | Public DNS or forwarding cannot be inspected/configured through authorized tools. Give exact records/ports and request completion, then verify externally. Keep public activation pending until prerequisites work. |
 | Immich storage/backups | When implementing Immich, confirm media/database paths, capacity, and backup destination. Inspect hardware where possible. Do not block the utility stack on a future Immich decision. |
@@ -41,36 +41,27 @@ waiting. For required choices, wait rather than substituting guessed values.
 Unattended execution must fail clearly with the missing fields/next action;
 it must not hang waiting for terminal input or invent answers.
 
-## Generate and preserve credentials
+## Read user-managed credentials
 
-Use a cryptographically secure generator and unique values per service. Use the
-existing setup generator where supported; do not reset or rotate an existing
-account merely because the agent does not know its password.
+Follow [credentials.md](credentials.md). The user must create and fill
+local/credentials, local/homepage.env and local/media-credentials, mode 0600.
+Never invent or generate passwords, API keys or Homepage session secrets. If an
+input file/key is missing or invalid, report its path/key and ask the user to
+complete it privately; never ask for the value in chat. Do not copy test fixtures
+or install filled example credentials. Inspect file validity without printing values.
 
-| Service | Current automation and agent responsibility |
-|---|---|
-| Homepage | Setup generates its password and session secret in local/homepage.env. |
-| Copyparty | Setup generates its admin password in local/credentials and writes a salted password hash to local/copyparty.conf. |
-| Pi-hole | Setup generates its admin password in local/credentials and supplies it through local/pihole.env. |
-| Jellyfin and Seerr | scripts/media-setup creates the Jellyfin admin and Seerr owner through supported APIs using generated credentials and the supplied owner email. See media.md for connections, indexers and playback acceptance. |
-| Immich | Not implemented yet. Include account/bootstrap support in its own deployment work; do not claim its credentials or owner already exist. |
-| OpenSpeedTest | Has no application account; no credential needs generating. |
-
-Keep generated credentials in private local files with restrictive permissions,
-excluded from Git. For any newly automated account flow, document its private
-credential-file path. Never put passwords in CLI arguments, ordinary logs, PR
-text, or chat; report the retrieval path instead. Tell the user when a service
-uses an existing account rather than a newly generated password.
-
-Credential generation is not proof that an account exists. Verify the actual
-login, ownership, and expected permissions. Preserve existing .env values and
-configuration edits on reruns. Request a deliberate recovery/rotation decision
-when existing credentials are missing or fail, rather than silently replacing them.
+Setup derives service configuration from those inputs and preserves existing
+files. It does not rotate accounts. Use the supported first-run media APIs with
+the supplied credentials and real owner email. Keep the setup journal. If existing
+accounts reject credentials, stop for a deliberate recovery/rotation decision.
+Verify login, ownership and expected permissions; reading a file is not proof an
+account exists. Password hashing salts and application-issued session/integration
+tokens remain normal application internals, not agent-chosen credentials.
 
 ## Pi-hole configuration and LAN cutover
 
 When tasked with initial Pi-hole setup, the agent can configure the service;
-container startup and password generation are only the first steps. Inspect
+container startup and credential loading are only the first steps. Inspect
 existing settings and preserve custom records, lists, and allow/block rules.
 Use the installed version's supported UI/API/CLI and keep configuration consistent
 with the Compose environment. The current upstream defaults are 1.1.1.1/1.0.0.1;
@@ -106,8 +97,7 @@ scope. Distinguish local success from public DNS/HTTPS and LAN-client verificati
 Jellyfin, Radarr, Sonarr, Prowlarr and qBittorrent are now included. Follow
 [media.md](media.md). Inspect media mounts/capacity, RUN_UID/RUN_GID and existing
 state first. Ask for the actual Seerr owner email if unknown, chosen indexers,
-and any required external account/API credentials. Generate local passwords
-automatically. Never choose a source or create an external account by inference.
+and any required external account/API credentials. Read passwords/API keys from the user-created private input files. Never choose a source or create an external account by inference.
 Run scripts/media-setup after scripts/up; then verify private logins, both
 download-client tests, Prowlarr application sync, Seerr default profiles/root
 folders, Jellyfin libraries and external URL. Keep admin UIs private. Before

@@ -8,6 +8,7 @@ import socket
 import subprocess
 
 import config
+import credentials as credential_files
 from runtime import run
 
 
@@ -73,6 +74,7 @@ def password_hash(password, salt):
 
 
 def prepare_storage(c, root):
+    data, _, _ = credential_files.load(root)
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'
@@ -92,28 +94,11 @@ def prepare_storage(c, root):
         if os.geteuid() == 0:
             os.chown(path, user, grp)
 
-    hp = local / 'homepage.env'
-    if hp.is_symlink():
-        raise ValueError('Symlink private configuration is unsupported')
-    create_owned(hp, 'HOMEPAGE_AUTH_ENABLED=true\n'
-                 + 'HOMEPAGE_AUTH_SECRET=' + secrets.token_urlsafe(48) + '\n'
-                 + 'HOMEPAGE_AUTH_PASSWORD=' + secrets.token_urlsafe(32) + '\n', owner, group)
     for template in (root / 'configs/homepage').glob('*.yaml'):
         destination = Path(c['DATA_ROOT']) / 'homepage' / template.name
         if destination.is_symlink():
             raise ValueError('Symlink Homepage configuration is unsupported')
         create_owned(destination, template.read_text(), uid, gid, 0o640)
-    if not credentials.exists():
-        # Do not silently rotate one credential when the recovery file was removed.
-        if (local / 'copyparty.conf').exists() or (local / 'pihole.env').exists():
-            raise ValueError('Private configuration exists without local/credentials; restore it before setup')
-        create_owned(credentials, 'COPYPARTY_PASSWORD=' + secrets.token_urlsafe(24) + '\n'
-                     + 'PIHOLE_PASSWORD=' + secrets.token_urlsafe(24) + '\n', owner, group)
-    data = config.parse(credentials, {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
-    # Restrict generated credentials so no control characters/config syntax is possible.
-    import re
-    if any(not re.fullmatch(r'[A-Za-z0-9_-]{24,}', v) for v in data.values()):
-        raise ValueError('local/credentials: invalid generated credential format')
     cp = local / 'copyparty.conf'
     if not cp.exists():
         salt = secrets.token_hex(24)
@@ -122,7 +107,7 @@ def prepare_storage(c, root):
     create_owned(local / 'pihole.env', 'FTLCONF_webserver_api_password=' + data['PIHOLE_PASSWORD'] + '\n', owner, group)
     from media import prepare
     prepare(c, root, create_owned, ensure_directory, owner, group)
-    print('Storage ready; credentials are in local/credentials and local/homepage.env (not printed).')
+    print('Storage ready; user-supplied credential files preserved (values not printed).')
 
 
 def preflight(c):
@@ -177,6 +162,7 @@ def pihole_running(c):
 
 def prepare(c, root, dry_run=False):
     require_root()
+    credential_files.load(root)
     architecture = preflight(c)
     identity, codename = os_info(Path('/etc/os-release').read_text())
     reject_conflicts()

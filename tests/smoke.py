@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+import credential_fixtures
+import credentials as credential_files
 import media
 import proxy
 import runtime
@@ -54,6 +56,7 @@ def main():
         c = config.load(ROOT / '.env.example')
         c.update(DATA_ROOT=str(root / 'data'), FILES_ROOT=str(root / 'files'), MEDIA_ROOT=str(root / 'media'),
                  RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
+        credential_fixtures.write(root)
         host.prepare_storage(c, root)
         # Real container runs as 1000 in both production and disposable Linux CI.
         if os.geteuid() == 0:
@@ -80,7 +83,7 @@ def main():
             except RuntimeError:
                 diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
                 for path, keys in [(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
-                    for value in config.parse(path, keys).values():
+                    for value in credential_files.read(path, keys).values():
                         if len(value) > 10:
                             diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
@@ -102,7 +105,7 @@ def main():
             urls = {name: f'http://127.0.0.1:{value}' for name, value in ports.items()}
             media.connect(c, root, 'smoke@example.com', urls)
             media.connect(c, root, 'smoke@example.com', urls)
-            media_secrets = config.parse(root/'local/media-credentials', media.SECRET_KEYS)
+            media_secrets = credential_files.read(root/'local/media-credentials', media.SECRET_KEYS)
             seerr_api = media.Client(urls['seerr'])
             seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
             assert seerr_api.call('/api/v1/settings/public')['initialized'], 'Seerr wizard was not completed'
@@ -117,7 +120,7 @@ def main():
                 assert request(ports[name], 'localhost', '/api/v3/system/status')[0] in (401,403)
             prowlarr = media.Client(urls['prowlarr'], media_secrets['PROWLARR_API_KEY'])
             assert len(prowlarr.call('/api/v1/applications')) == 2, 'Prowlarr application sync duplicated'
-            credentials = config.parse(root / 'local/credentials', {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
+            credentials = credential_files.read(root / 'local/credentials', {'COPYPARTY_PASSWORD', 'PIHOLE_PASSWORD'})
             auth = 'Basic ' + base64.b64encode(('admin:' + credentials['COPYPARTY_PASSWORD']).encode()).decode()
             headers = {'Authorization': auth}
             code, _ = request(ports['copyparty'], 'localhost', '/probe.txt', 'PUT', b'ohara probe', headers)
@@ -187,7 +190,7 @@ def main():
             assert code == 200, 'Homepage CSRF endpoint failed'
             csrf = json.loads(body)['csrfToken']
             cookie = '; '.join(value.split(';', 1)[0] for key,value in csrf_headers if key.lower() == 'set-cookie')
-            hp = config.parse(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
+            hp = credential_files.read(root/'local/homepage.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})
             payload = urllib.parse.urlencode({'csrfToken':csrf, 'password':hp['HOMEPAGE_AUTH_PASSWORD'],
                                                'callbackUrl':'https://'+c['DOMAIN'], 'json':'true'})
             code, body, login_headers = tls_request(c['DOMAIN'], '/api/auth/callback/credentials', 'POST', payload,
