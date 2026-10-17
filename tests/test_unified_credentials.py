@@ -117,13 +117,18 @@ class UnifiedCredentialsTests(unittest.TestCase):
             hp, media = credentials.load(root)
             c = config.load(root/'.env')
             with patch.dict(os.environ, {'RADARR_PASSWORD':'ambient-secret',
-                                        'HOMEPAGE_AUTH_PASSWORD':'ambient-password'}), patch.object(runtime, 'run') as run:
+                                        'HOMEPAGE_AUTH_PASSWORD':'ambient-password',
+                                        'HOMEPAGE_VAR_NAVIDROME_TOKEN':'ambient-token'}), patch.object(runtime, 'run') as run:
                 runtime.compose(c, root, ['up','-d'], docker=['docker'])
                 env = run.call_args.kwargs['env']
                 self.assertEqual(env['HOMEPAGE_AUTH_PASSWORD'], hp['HOMEPAGE_AUTH_PASSWORD'])
                 self.assertFalse(set(env) & set(media))
+                self.assertEqual(env['HOMEPAGE_VAR_NAVIDROME_TOKEN'],
+                                 credentials.navidrome_widget_environment(media)['HOMEPAGE_VAR_NAVIDROME_TOKEN'])
+                self.assertNotIn(media['NAVIDROME_PASSWORD'], env.values())
                 self.assertNotIn(str(root/'.env'), run.call_args.args[0])
                 runtime.compose(c, root, ['config','--no-env-resolution'], docker=['docker'])
                 self.assertFalse(set(run.call_args.kwargs['env']) & credentials.ALL_KEYS)
+                self.assertFalse(set(run.call_args.kwargs['env']) & credentials.DERIVED_WIDGET_KEYS)
             (root/'.env').chmod(0o644)
             with self.assertRaisesRegex(ValueError, '0600'): credentials.load(root)

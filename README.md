@@ -73,7 +73,9 @@ ssh -L 5055:127.0.0.1:5055 \
 
 Homepage uses its own password login at HOMEPAGE_HOST. Native Jellyfin and Seerr
 widgets use supplied application API keys over the Docker network; no Docker socket
-is exposed. See [the Immich follow-up](docs/immich-next.md).
+is exposed. The Navidrome Now Playing widget uses a token derived locally from
+its existing password; see [widget setup](docs/homepage-widgets.md).
+See [the Immich follow-up](docs/immich-next.md).
 
 Then follow [public activation and operations](docs/operations.md). Only forward
 router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.

@@ -82,10 +82,11 @@ def main():
                 compose(['up', '-d', '--wait', '--wait-timeout', '180'], timeout=900)
             except RuntimeError:
                 diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
-                for path, keys in [(root/'.env', {'HOMEPAGE_AUTH_ENABLED','HOMEPAGE_AUTH_SECRET','HOMEPAGE_AUTH_PASSWORD'})]:
-                    for value in credential_files.load(root)[0].values():
-                        if len(value) > 10:
-                            diagnostic = diagnostic.replace(value, '<redacted>')
+                homepage_values, media_values = credential_files.load(root)
+                for value in [*homepage_values.values(),
+                              *credential_files.navidrome_widget_environment(media_values).values()]:
+                    if len(value) > 10:
+                        diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
                 raise
             ports = {name: port(name, number) for name, number in [('homepage',3000),('seerr',5055),('speedtest',3000),('jellyfin',8096),('radarr',7878),('sonarr',8989),('prowlarr',9696),('qbittorrent',8081),('lidarr',8686),('bazarr',6767),('navidrome',4533)]}
@@ -122,6 +123,8 @@ def main():
                 for key, value in widget_keys.items():
                     stream.write(key+'='+value+'\n')
             credential_files.load(root)
+            private_widget_values = list(widget_keys.values()) + list(
+                credential_files.navidrome_widget_environment(media_secrets).values())
             compose(['up', '-d', '--force-recreate', 'homepage'])
             for name, category in [('radarr','movies'), ('sonarr','tv'), ('lidarr','music')]:
                 if name != 'lidarr':
@@ -204,18 +207,21 @@ def main():
             assert session, 'Homepage session cookie missing'
             code, body = tls_request(c['HOMEPAGE_HOST'], '/api/services', hdr={'Cookie':session})
             assert code == 200 and b'Seerr' in body and b'Jellyfin' in body, 'Homepage authenticated service list failed'
-            assert not any(value.encode() in body for value in widget_keys.values()), 'Service list exposed widget credentials'
+            assert not any(value.encode() in body for value in private_widget_values), 'Service list exposed widget credentials'
             speed_service = next(service for group in json.loads(body) for service in group['services']
                                  if service['name'] == 'OpenSpeedTest')
             assert not speed_service.get('widgets'), 'Speed test should be a link-only card'
             assert speed_service['href'] == 'https://'+c['SPEED_HOST'], 'Speed test link must use its public HTTPS hostname'
             for service, endpoint, field in [('Jellyfin','CountV2','MovieCount'),
                                               ('Seerr','request/count','pending'),
-                                              ('Seerr','issue/count','open')]:
+                                              ('Seerr','issue/count','open'),
+                                              ('Navidrome','getNowPlaying','subsonic-response')]:
                 query = urllib.parse.urlencode({'group':'Media', 'service':service, 'index':0, 'endpoint':endpoint})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/services/proxy?'+query, hdr={'Cookie':session})
                 assert code == 200 and field in json.loads(result), f'{service}: native widget API failed'
-                assert not any(value.encode() in result for value in widget_keys.values()), 'Widget API exposed credentials'
+                assert not any(value.encode() in result for value in private_widget_values), 'Widget API exposed credentials'
+                if service == 'Navidrome':
+                    assert json.loads(result)['subsonic-response']['status'] == 'ok', 'Navidrome widget authentication failed'
             for resource in ['cpu', 'memory', 'uptime']:
                 query = urllib.parse.urlencode({'type':resource})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})

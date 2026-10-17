@@ -43,6 +43,9 @@ consolidates operator inputs, not application-managed persistent state.
 Optional widget inputs are `HOMEPAGE_VAR_JELLYFIN_API_KEY` and
 `HOMEPAGE_VAR_SEERR_API_KEY`. Copy actual application-issued keys after account
 setup; omit/comment them until available. See [widget setup](homepage-widgets.md).
+Navidrome's Homepage widget needs no extra input: commands derive its Subsonic
+token locally from NAVIDROME_PASSWORD and the template's non-secret salt. Only
+the derived token is passed to Homepage; the plaintext password is not.
 
 ## Migrate the old files
 

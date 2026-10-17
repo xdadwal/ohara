@@ -29,8 +29,9 @@ Only router TCP 80/443 is forwarded to Ohara. Application ports remain loopback-
 private administration uses SSH forwarding. There is no shared authentication service.
 Credentials come from user-created .env.
 See credentials.md for empty templates and validation. Homepage includes native
-Jellyfin/Seerr widgets, clock, Open-Meteo weather and container/storage resources;
-media widgets need the actual application API keys supplied privately. See
+Jellyfin/Seerr widgets, Navidrome Now Playing, clock, Open-Meteo weather and
+container/storage resources. Jellyfin/Seerr use privately supplied API keys;
+Navidrome uses a token derived locally from its existing password. See
 [widget setup and existing-install migration](homepage-widgets.md).
 
 Prowlarr syncs the chosen indexers to Radarr/Sonarr/Lidarr. Seerr sends movie/series

@@ -26,6 +26,12 @@
         icon: navidrome.png
         href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
         description: Listen to your music library
+        widget:
+          type: navidrome
+          url: http://navidrome:4533
+          user: admin
+          token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
+          salt: ohara-homepage
 - Tools:
     - OpenSpeedTest:
         icon: openspeedtest.png
