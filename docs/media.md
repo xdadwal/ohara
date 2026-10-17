@@ -210,9 +210,10 @@ is triggered; existing large files are retained.
 
 | Service | Minimum | Preferred | Maximum | Example maximum |
 |---|---:|---:|---:|---|
-| Radarr movies | 8 MB/min | 30 MB/min | 60 MB/min | ~7 GiB for 120 minutes |
-| Sonarr episodes | 5 MB/min | 20 MB/min | 40 MB/min | ~1.8 GiB for 45 minutes |
+| Radarr movies | 8 MiB/min | 30 MiB/min | 79.47 MiB/min | ~10 GB (9.31 GiB) for 120 minutes |
+| Sonarr episodes | 5 MiB/min | 20 MiB/min | 52.98 MiB/min | ~2.5 GB (2.33 GiB) for 45 minutes |
 
+GB examples use decimal units; Arr size definitions use binary MiB per minute.
 These are Ohara's storage-conscious defaults, not a guarantee of visual quality.
 Size definitions apply globally to these four qualities, including titles using
 other profiles. Quality exclusions apply only to HD-1080p. Seerr's configured
@@ -226,6 +227,23 @@ cannot overwrite it. Both H.264 and HEVC remain eligible to preserve availabilit
 this policy does not guarantee direct play on every Jellyfin client. See the
 [Radarr quality documentation](https://wiki.servarr.com/radarr/settings#quality)
 and [Sonarr quality documentation](https://wiki.servarr.com/sonarr/settings#quality).
+
+### Seeder preference
+
+Radarr and Sonarr already rank torrent seeds/peers after quality, custom-format
+score and indexer priority (Sonarr also considers episode coverage). Keep the
+selected indexers at equal priority 25 so an indexer preference does not override
+seed-count ranking. The Prowlarr Standard sync profile retains a one-seeder minimum
+to preserve availability for older titles; this is a rejection threshold, not a
+preference score. Indexer-reported seed counts may be stale and do not guarantee
+speed or completion. RSS only compares the releases it sees, not every existing
+release on the indexer.
+
+Blu-ray remains above WEB, with HDTV as fallback. More seeds do not override that
+quality ordering. Grouping qualities would make them equal for ranking and should
+be an explicit owner decision. No custom seeder-ranking script or periodic broad
+search is needed. See the [Radarr ranking FAQ](https://wiki.servarr.com/radarr/faq#how-are-possible-downloads-compared)
+and [Sonarr ranking FAQ](https://wiki.servarr.com/sonarr/faq#how-are-possible-downloads-compared).
 
 ## Public activation and acceptance
 

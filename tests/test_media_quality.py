@@ -55,4 +55,4 @@ class QualityTests(unittest.TestCase):
                     self.assertTrue('/qualitydefinition/' in path or '/qualityprofile/' in path)
                 if body and '/qualitydefinition/' in path:
                     self.assertEqual((body['minSize'],body['preferredSize'],body['maxSize']),
-                                     (8,30,60) if name=='radarr' else (5,20,40))
+                                     (8,30,79.47) if name=='radarr' else (5,20,52.98))

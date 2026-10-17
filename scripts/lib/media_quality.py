@@ -28,8 +28,9 @@ def configure(profile):
 def apply(root, urls=None):
     _, values = credentials.load(root)
     urls = urls or {'radarr':'http://127.0.0.1:7878', 'sonarr':'http://127.0.0.1:8989'}
+    # Arr uses MiB/min: approximately 10 decimal GB/120 min and 2.5 GB/45 min.
     plans = []
-    for name, minimum, preferred, maximum in [('radarr', 8, 30, 60), ('sonarr', 5, 20, 40)]:
+    for name, minimum, preferred, maximum in [('radarr', 8, 30, 79.47), ('sonarr', 5, 20, 52.98)]:
         client = Client(urls[name], values[name.upper()+'_API_KEY'])
         profiles = client.call('/api/v3/qualityprofile')
         profile = next((x for x in profiles if x['name'] == 'HD-1080p'), None)
