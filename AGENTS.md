@@ -9,6 +9,8 @@ docs/superpowers/plans/.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
   the separate portfolio service serves the apex; no Docker socket. Media widgets
   read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
+  Navidrome's Now Playing widget uses a Subsonic token derived locally from the
+  existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
   Immich will share this machine in its own Compose project; deployment is pending
   storage/hardware/backup details. See docs/immich-next.md.
   Media services are explicitly approved; follow docs/media.md. Do not introduce

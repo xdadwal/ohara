@@ -9,6 +9,15 @@ WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
 ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS
+DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN'}
+
+
+def navidrome_widget_environment(media):
+    """Subsonic token auth; derive locally, never forward the account password."""
+    import hashlib
+    # Must match the non-secret salt in configs/homepage/services.yaml.
+    token = hashlib.md5((media['NAVIDROME_PASSWORD']+'ohara-homepage').encode()).hexdigest()
+    return {'HOMEPAGE_VAR_NAVIDROME_TOKEN': token}
 
 
 def read(path, keys, optional=frozenset(), ignored=frozenset()):

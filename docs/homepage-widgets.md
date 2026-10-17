@@ -6,6 +6,24 @@ Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
 ## Connect media widgets
 
+Navidrome has a native **Now Playing** widget. It shows active tracks and their
+artist/album/user, or "Nothing streaming" when idle. It does not provide library
+counts or configurable fields.
+
+The template connects privately to `http://navidrome:4533` as `admin` using
+Subsonic token authentication. Project commands derive
+`HOMEPAGE_VAR_NAVIDROME_TOKEN` locally as MD5 of the existing `NAVIDROME_PASSWORD`
+plus the fixed non-secret salt `ohara-homepage`. The password remains only in
+the unified private `.env`; it is not passed into Homepage. No additional secret
+input or credential file is needed. Use scripts/up after changing the actual
+Navidrome password and synchronizing `.env`, to refresh the derived token.
+
+On an existing dashboard, merge only the Navidrome widget block from
+`configs/homepage/services.yaml` into its existing service card. Preserve the
+other cards/widgets. Recreate Homepage with scripts/up to load the token.
+Verify login and its `getNowPlaying` widget API; an idle response is successful.
+See [Homepage's Navidrome widget](https://gethomepage.dev/widgets/services/navidrome/).
+
 Complete media setup first, then copy the actual application-issued keys into
 .env using a private editor. Keep mode 0600; never send keys in chat,
 commit them, invent replacements, or use the Jellyfin account password as an API key.
