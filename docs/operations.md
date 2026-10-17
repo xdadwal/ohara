@@ -30,6 +30,12 @@ existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
 loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 
+## Optional remote SSH
+
+See [Tailscale](tailscale.md) for the separate host client installer, owner browser
+enrollment, ordinary OpenSSH, and SSH-only tailnet network policy. Setup/up never
+install or enroll it automatically. Public HTTPS remains on the existing network.
+
 ## Checks and local startup
 
 - `scripts/check --static`: parse config, validate digest pins and Compose inventory/

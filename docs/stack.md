@@ -18,6 +18,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | Prowlarr | Indexers and sync to Radarr/Sonarr/Lidarr | Private loopback 9696 |
 | qBittorrent | Downloads | Private loopback 8081 |
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
+| Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
 
 The portfolio profile sets HOMEPAGE_HOST=ohara.xdadwal.in and PORTFOLIO_PORT=8010.

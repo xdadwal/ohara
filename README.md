@@ -81,6 +81,14 @@ GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
 `scripts/tls --dns-provider godaddy`; see the private-token setup and existing
 certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
 
+## Optional remote SSH
+
+Use the host Tailscale client for private SSH access while public HTTPS and LAN
+traffic keep their existing routes. Run `scripts/tailscale --dry-run`, then
+`sudo scripts/tailscale --install`; enrollment is a separate browser login.
+Follow [Tailscale setup](docs/tailscale.md) for routing flags, SSH access policy
+and verification. No additional .env credentials or Compose service are needed.
+
 ## For agents and contributors
 
 Start with [AGENTS.md](AGENTS.md), [decisions](docs/decisions.md), and
