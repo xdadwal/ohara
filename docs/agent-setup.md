@@ -122,3 +122,12 @@ host setup first to prepare recycle directories. See media.md for deletion
 recovery and verification; cached availability and completed API jobs are not
 proof of a playable file. Never remove a movie, its files, or setup journal as
 an integration repair.
+
+## Optional Tailscale
+
+If remote SSH is requested, follow [tailscale.md](tailscale.md). Inspect existing
+client/container roles, Linux SSH account/key readiness and tailnet policy first.
+Ask only for missing account/device/SSH user choices; the owner completes browser
+login privately. No generated credentials or new .env values are needed. Install
+with scripts/tailscale only on an authorized host; verify remote key login and
+SSH-only network grants independently of public service checks.

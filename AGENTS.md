@@ -58,6 +58,13 @@ docs/superpowers/plans/.
 - Use `scripts/media-setup --quality-only` for the bounded HD-1080p policy on
   existing accounts. Size definitions affect all profiles; preserve existing
   files and do not search/redownload to enforce future acquisition preferences.
+- Optional remote SSH uses the host Tailscale client; see docs/tailscale.md and
+  scripts/tailscale --help. Install only on an authorized target; enrollment
+  requires the owner browser login, never generated auth keys. Use ordinary
+  OpenSSH and preserve existing SSH keys. Do not enable Tailscale SSH, DNS
+  acceptance, subnet routing, exit nodes, Serve or Funnel. Review existing
+  client roles before changing preferences; restrict tailnet network policy to
+  the intended SSH users/devices and port. No public SSH port forward.
 - Public DNS records are managed at GoDaddy. No local DNS/filtering service is
   included. Backend web ports bind to loopback; only host Nginx uses public 80/443.
   Do not modify router/client DNS or delete retired DNS data during repo changes.
