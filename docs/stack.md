@@ -20,6 +20,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
+| bpytop (host) | CPU, memory, disk, network and process monitoring | Interactive terminal or SSH |
 
 The portfolio profile sets HOMEPAGE_HOST=ohara.xdadwal.in and PORTFOLIO_PORT=8010.
 The separate FastAPI portfolio then serves the apex through Nginx; it is a host

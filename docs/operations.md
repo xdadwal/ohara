@@ -7,9 +7,14 @@ input collection, user-managed credentials, and account setup boundaries.
 
 Support target: Ubuntu 24.04 LTS or Debian 13 with systemd, amd64/arm64. Bootstrap
 installs missing Docker Engine/Buildx/Compose from Docker's official apt repository
-and distribution Nginx/Certbot. It preserves existing package versions and fails
+and distribution Nginx/Certbot/bpytop. It preserves existing package versions and fails
 on conflicting Docker packages. No curl-to-shell installer, Samba, shell-profile
 replacement, Wi-Fi configuration, resolver disabling, or bot cron installation.
+
+Run `bpytop` in a terminal or an interactive SSH session for host resource
+monitoring; press `q` to exit. On an existing host, install just this tool with
+`sudo apt-get update && sudo apt-get install bpytop`. It uses the distribution's
+Python/psutil dependencies and does not require a daemon or a public web port.
 
 Install Git and clone this repository first. `sudo scripts/setup` initially copies
 `.env.example` to `.env` and exits nonzero so you can edit it. Set the timezone, domain/subdomains, ACME email, storage paths, and file-service UID/GID.
