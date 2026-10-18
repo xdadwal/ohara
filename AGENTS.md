@@ -29,6 +29,10 @@ docs/superpowers/plans/.
   Continue independent checks while waiting; do not guess required answers.
 - `compose.yaml`, `.env.example`, and `versions.env` define deployment;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
+- Use `scripts/ohara doctor --json` for read-only maintainer diagnostics; warnings
+  and skipped checks are unverified, not success. See docs/maintainer.md. Optional
+  terminal tools use `scripts/ohara tools --dry-run` / explicit `--install`; do not
+  rewrite dotfiles or launch unattended interactive monitors.
 - Commands resolve their own repository path. Use `scripts/setup --help`,
   `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.
 - Setup prepares a supported Linux host; `up` starts local services; TLS activation

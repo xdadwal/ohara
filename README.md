@@ -83,6 +83,14 @@ GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
 `scripts/tls --dns-provider godaddy`; see the private-token setup and existing
 certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
 
+## Maintainer tools
+
+Use `./scripts/ohara doctor` for read-only host/storage/service diagnostics, or
+add `--json` for agents. `./scripts/ohara tools --dry-run` previews optional tmux
+and bpytop availability; `sudo ./scripts/ohara tools --install` installs missing
+packages without changing your shell. The unified command also supports check,
+up and status; existing scripts remain available. See [maintainer commands](docs/maintainer.md).
+
 ## Optional remote SSH
 
 Use the host Tailscale client for private SSH access while public HTTPS and LAN

@@ -36,6 +36,13 @@ See [Tailscale](tailscale.md) for the separate host client installer, owner brow
 enrollment, ordinary OpenSSH, and SSH-only tailnet network policy. Setup/up never
 install or enroll it automatically. Public HTTPS remains on the existing network.
 
+## Maintainer diagnostics and terminal tools
+
+Use `scripts/ohara doctor` (or `--json`) for read-only host and stack checks.
+Optional tmux/bpytop installation is separate and explicit through
+`scripts/ohara tools --install`. See [maintainer commands](maintainer.md) for
+thresholds, permissions, exit codes and verification limits.
+
 ## Checks and local startup
 
 - `scripts/check --static`: parse config, validate digest pins and Compose inventory/
