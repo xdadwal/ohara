@@ -47,7 +47,8 @@ request, import, availability refresh and playback still need deployment accepta
 
 DATA_ROOT defaults to /ohara for application state. MEDIA_ROOT defaults to
 DATA_ROOT/media, with downloads and library trees shared consistently by acquisition
-services. Jellyfin's library mount is read-only. Navidrome uses the official
+services. Jellyfin's library mount is writable so authorized Jellyfin users can
+delete media. Navidrome uses the official
 `deluan/navidrome` image, stores writable state in DATA_ROOT/navidrome at `/data`,
 and reads MEDIA_ROOT/library/music read-only at `/music`. Bootstrap targets Ubuntu 24.04 or
 Debian 13 with systemd on amd64/arm64. Compose plus small rerunnable scripts are used;

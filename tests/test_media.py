@@ -117,7 +117,7 @@ class MediaTests(unittest.TestCase):
         for name in ['jellyfin', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent']:
             self.assertEqual(model['services'][name].get('user'), c['RUN_UID']+':'+c['RUN_GID'])
         library = next(v for v in model['services']['jellyfin']['volumes'] if v['target']=='/media')
-        self.assertTrue(library['read_only'])
+        self.assertFalse(library.get('read_only', False))
         for name in ['radarr', 'sonarr', 'qbittorrent']:
             self.assertEqual([v['source'] for v in model['services'][name]['volumes'] if v['target']=='/data'], [c['MEDIA_ROOT']])
 

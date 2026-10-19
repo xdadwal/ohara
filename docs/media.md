@@ -129,8 +129,13 @@ and add the Jellyfin entry from
 `configs/homepage/services.yaml` to your existing `${DATA_ROOT}/homepage/services.yaml`;
 setup preserves that file and your customizations.
 
-Jellyfin reads the library **read-only** at `/media/movies` and `/media/tv`;
-its cache/transcodes use DATA_ROOT/jellyfin-cache, so reserve enough disk space
+Jellyfin mounts the library **read-write** at `/media/movies` and `/media/tv`,
+allowing deletion by users with Jellyfin's content-deletion permission. Keep that
+permission limited to trusted accounts. Deleting library files in Jellyfin bypasses
+the Arr recycle bins; a monitored missing item can be acquired again by Radarr/Sonarr.
+Source torrent hardlinks remain separate directory entries and are preserved.
+Jellyfin does not mount the downloads directory.
+Its cache/transcodes use DATA_ROOT/jellyfin-cache, so reserve enough disk space
 for transcoding. Navidrome uses the official `deluan/navidrome` image with
 writable application state at `DATA_ROOT/navidrome` mounted as `/data`, and
 `MEDIA_ROOT/library/music` mounted read-only as `/music`. Its host port 4533
