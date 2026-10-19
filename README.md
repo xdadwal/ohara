@@ -38,6 +38,9 @@ See [the current stack overview](docs/stack.md) for access, storage and pending 
 
 Bootstrap target: **Ubuntu 24.04 LTS or Debian 13**, systemd, amd64/arm64. Reserve
 a stable LAN IP and prepare your storage mounts first. Ansible is not required.
+Setup also installs [bpytop](https://github.com/aristocratos/bpytop) from the
+distribution packages for terminal monitoring. Run `bpytop` locally or over SSH
+to view CPU, memory, disk, network and process usage; press `q` to quit.
 
 ```sh
 git clone https://github.com/xdadwal/ohara.git
