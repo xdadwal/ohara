@@ -82,7 +82,7 @@ services:
       - type: bind
         source: ${MEDIA_ROOT}/library
         target: /media
-        read_only: true
+        read_only: false
         bind: {create_host_path: false}
       - type: bind
         source: ${DATA_ROOT}/jellyfin-cache
