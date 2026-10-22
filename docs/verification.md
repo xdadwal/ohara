@@ -175,3 +175,34 @@ No browser session was available: rendered layout at desktop/mobile widths, clic
 Start and completing an in-frame measurement remain manual browser acceptance.
 Existing edited dashboards require merging the documented widget block; setup
 preserves those operator edits. No live deployment was changed.
+
+## Immich implementation (2026-10-22)
+
+Implemented an optional independent `ohara-immich` project from official v3.3.5
+release Compose dependencies. Registry indexes for the server, PostgreSQL and
+Valkey were checked for amd64/arm64 and pinned separately. Machine learning is
+absent from the project and disabled in the effective server settings. No
+production Immich directories, credentials, accounts, DNS or Nginx routes changed.
+
+Static/mocked verification: all 131 Python tests pass, including storage path and
+mount rejection, secret/environment isolation, preservation and port exposure
+checks. `tests/test_setup.sh`, `tests/test_cli.sh`, `tests/static.sh`,
+`scripts/check --static`, `scripts/immich check --static` and `git diff --check`
+pass. Existing main-stack image inventory is unchanged.
+
+Disposable runtime verification on this Linux host: `tests/smoke.sh` passes for
+the eleven-app stack, media API setup/reruns, Homepage auth/widgets, Nginx and
+35 MiB speed upload, AdGuard DNS/filtering, and LAN proxy ACLs/routes.
+`python3 tests/smoke_immich.py` passes with random test project/port and isolated
+named volumes: all three containers healthy, ping API, first-owner signup/login,
+effective machine-learning disabled setting, and a tiny PNG upload followed by
+byte-identical original download. Its test containers/volumes were removed.
+The opt-in Immich proxy template also passes `nginx -t` in a disposable pinned
+Nginx container with a temporary test certificate; no host configuration reload.
+
+Real provisioning/production acceptance remains pending: real database password,
+photo-library sizing/growth, independent backup destination/retention, actual
+owner onboarding, representative photo/video/phone tests and isolated backup
+restoration. Public/private hostname access, DNS/TLS activation, large uploads
+through that live route and Homepage link remain pending. Disposable tests do
+not establish these outcomes or full supported-host provisioning.

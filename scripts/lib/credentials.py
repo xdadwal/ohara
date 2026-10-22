@@ -9,7 +9,8 @@ WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
 DNS_KEYS = {'ADGUARD_PASSWORD'}
-ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | DNS_KEYS
+IMMICH_KEYS = {'IMMICH_DB_PASSWORD'}
+ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS
 DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN'}
 
 
@@ -70,6 +71,6 @@ def read(path, keys, optional=frozenset(), ignored=frozenset()):
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
-    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS)
+    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS, config.KEYS)
     return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
             {k:v for k,v in values.items() if k in MEDIA_KEYS})

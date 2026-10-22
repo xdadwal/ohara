@@ -117,3 +117,13 @@ the initial username is `admin`. Initial setup hashes it locally with bcrypt.
 It is never passed to Compose or Homepage. Existing AdGuard accounts/configuration
 are preserved; editing the input alone does not rotate a password. See
 [AdGuard operations](adguard.md). The eleven-app stack does not require this key.
+
+## Optional Immich database
+
+Immich reads `IMMICH_DB_PASSWORD` from the same private `.env`, mode 0600. Supply
+an independent value of at least 16 ASCII letters/digits, following upstream's
+character restrictions. Only its server and database containers receive this
+value. The main stack does not require it. No password is generated or rotated;
+changing the input alone does not change an existing database account. The Immich
+owner has a separate application account, created privately during onboarding.
+See [Immich operations](immich.md) for preparation and backup requirements.

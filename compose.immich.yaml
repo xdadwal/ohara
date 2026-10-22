@@ -1,0 +1,66 @@
+# Adapted from the official v3.3.5 release Compose, never from main.
+# Operate only with scripts/immich; do not load the unified .env into containers.
+name: ohara-immich
+services:
+  immich-server:
+    image: ${IMMICH_SERVER_IMAGE}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      DB_HOSTNAME: database
+      DB_USERNAME: postgres
+      DB_DATABASE_NAME: immich
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD}
+      REDIS_HOSTNAME: redis
+      IMMICH_CONFIG_FILE: /etc/immich/immich.json
+    ports:
+      - "127.0.0.1:2283:2283"
+    volumes:
+      - type: bind
+        source: ${IMMICH_LIBRARY_ROOT}
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${IMMICH_CONFIG_PATH}
+        target: /etc/immich/immich.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    healthcheck:
+      disable: false
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+  redis:
+    image: ${IMMICH_CACHE_IMAGE}
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "redis-cli ping | grep -q PONG || exit 1"]
+    logging: *logging
+  database:
+    image: ${IMMICH_DATABASE_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - type: bind
+        source: ${IMMICH_DATABASE_ROOT}
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
+    shm_size: 128mb
+    healthcheck:
+      disable: false
+    logging: *logging

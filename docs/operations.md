@@ -304,9 +304,11 @@ run bootstrap twice on a disposable supported systemd VM and verify preservation
 then follow the real-host acceptance steps above. amd64/arm64 manifests are pinned;
 architecture availability is not the same as tested performance on your hardware.
 
-## Immich follow-up
+## Immich
 
-See [immich-next.md](immich-next.md) for the scope and pending choices. Confirm host placement, hardware, storage capacity, backup location and photo
+Use [Immich operations](immich.md) and `scripts/immich` for its independent project,
+with machine learning disabled and no automatic public activation.
+See [immich-next.md](immich-next.md) for remaining deployment choices. Confirm host placement, hardware, storage capacity, backup location and photo
 hostname first. Use the official release-matched Compose deployment, including
 its required database/cache services; keep PostgreSQL on suitable local storage.
 Keep its database and personal photo storage isolated from other services. Use a dedicated subdomain with the documented large-upload/WebSocket

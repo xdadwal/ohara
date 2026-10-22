@@ -11,8 +11,10 @@ docs/superpowers/plans/.
   read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
   Navidrome's Now Playing widget uses a Subsonic token derived locally from the
   existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
-  Immich will share this machine in its own Compose project; deployment is pending
-  storage/hardware/backup details. See docs/immich-next.md.
+  Immich is implemented as an optional separate Compose project with machine
+  learning disabled; production startup is pending credentials, backup destination
+  and acceptance. Use scripts/immich and docs/immich.md; preserve its independent
+  database/cache and stable /data container path.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials in the single private `.env`; a shared

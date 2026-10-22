@@ -1,0 +1,9 @@
+{
+  "machineLearning": {"enabled": false},
+  "job": {
+    "thumbnailGeneration": {"concurrency": 1},
+    "metadataExtraction": {"concurrency": 1},
+    "videoConversion": {"concurrency": 1}
+  },
+  "ffmpeg": {"threads": 2}
+}
