@@ -80,7 +80,7 @@ def compose(c, root, args, *, static=False, capture=False, timeout=60, allow_sho
         env=env, capture=capture, timeout=timeout)
 
 
-def validate_model(model, c, root):
+def validate_model(model, c, root, *, omitted_create_host_path=True):
     values, pins = settings(c), images(root)
     if model.get('name') != 'ohara-immich' or set(model['services']) != {'immich-server', 'redis', 'database'}:
         raise ValueError('Unexpected Immich project/services; machine learning must stay absent')
@@ -113,7 +113,7 @@ def validate_model(model, c, root):
         if service.get('env_file'):
             raise ValueError('Immich must not consume dotenv files')
         for mount in service.get('volumes', []):
-            if mount['target'] in ('/data', '/var/lib/postgresql/data') and mount.get('bind', {}).get('create_host_path', True):
+            if mount['target'] in ('/data', '/var/lib/postgresql/data') and mount.get('bind', {}).get('create_host_path', omitted_create_host_path):
                 raise ValueError('Immich must not auto-create storage paths')
     policy = json.loads((root / 'configs/immich/immich.json').read_text())
     immich_oauth.validate_policy(policy)
@@ -121,9 +121,41 @@ def validate_model(model, c, root):
         raise ValueError('Immich machine learning must be disabled')
 
 
+def omitted_bind_creation_default(root):
+    """Compose versions omit either false or true; calibrate without a daemon."""
+    probe = """name: ohara-bind-validation
+services:
+  probe:
+    image: scratch
+    volumes:
+      - type: bind
+        source: /ohara-bind-validation-false
+        target: /false
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /ohara-bind-validation-true
+        target: /true
+        bind:
+          create_host_path: true
+"""
+    env = {key: value for key, value in os.environ.items() if key in {'PATH', 'HOME'}}
+    env['COMPOSE_DISABLE_ENV_FILE'] = '1'
+    result = json.loads(runtime.run(['docker', 'compose', '--project-directory', str(root),
+        '--env-file', '/dev/null', '-f', '-', 'config', '--format', 'json'],
+        capture=True, input=probe, env=env))
+    flags = {v['target']: v.get('bind', {}).get('create_host_path')
+             for v in result['services']['probe']['volumes']}
+    if flags == {'/false': None, '/true': True}:
+        return False  # Older Compose JSON omits false.
+    if flags.get('/false') is False and flags.get('/true') in (True, None):
+        return True   # Newer Compose JSON omits the default true.
+    raise ValueError('Compose does not preserve explicit bind creation flags; update Docker Compose')
+
+
 def check(c, root, *, static=False, allow_short=False):
     model = json.loads(compose(c, root, ['config', '--format', 'json'], static=True, capture=True))
-    validate_model(model, c, root)
+    validate_model(model, c, root, omitted_create_host_path=omitted_bind_creation_default(root))
     if not static:
         password(root, allow_short=allow_short)
         storage(c, require_directories=True)

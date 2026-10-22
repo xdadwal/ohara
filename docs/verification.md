@@ -391,3 +391,21 @@ The Google basic-identity-scope exception means Google's Testing user list is
 not the application membership gate. No users, invitations or messages were
 created/sent during this change. Full Google browser acceptance remains an owner
 check; endpoint/configuration verification is not a completed Google login.
+
+### Production-readiness CI compatibility check (2026-10-22)
+
+The live service is healthy; the main remaining archive-readiness gap is an
+independent media/database backup and isolated restore, plus real browser,
+phone/video and outside-network acceptance. PR #21 remained open. Hosted CI at
+a60ae88 passed both the existing-stack and Immich container jobs but failed the
+static configuration job because Compose versions serialize create_host_path
+booleans differently: older releases omit false; current Compose omits true.
+
+Fixed validation by rendering a non-secret, daemon-free two-bind reference model
+with explicit false/true flags and using its observed encoding. This avoids
+weakening the storage guard: explicit/implicit true is still rejected, and a
+Compose implementation losing both flag values fails closed. Regression tests
+cover both encodings, rejection of unsafe binds and indistinguishable flags.
+All 152 Python tests, setup/CLI/static checks, the Immich static check and Git
+whitespace checks pass locally. No production services/configuration changed.
+Hosted CI must rerun for this commit before release approval.

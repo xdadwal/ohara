@@ -163,6 +163,13 @@ class ImmichTests(unittest.TestCase):
                 'environment': dict.fromkeys(['POSTGRES_PASSWORD', 'POSTGRES_USER', 'POSTGRES_DB', 'POSTGRES_INITDB_ARGS'], ''),
                 'volumes': [{'source': values['IMMICH_DATABASE_ROOT'], 'target': '/var/lib/postgresql/data', 'bind': {'create_host_path': False}}]}}}
         immich.validate_model(model, self.c, ROOT)
+        omitted = copy.deepcopy(model)
+        for service in omitted['services'].values():
+            for volume in service.get('volumes', []):
+                volume.get('bind', {}).pop('create_host_path', None)
+        immich.validate_model(omitted, self.c, ROOT, omitted_create_host_path=False)
+        with self.assertRaises(ValueError):
+            immich.validate_model(omitted, self.c, ROOT, omitted_create_host_path=True)
         for change in ('public', 'extra', 'secret', 'mount', 'autocreate'):
             broken = copy.deepcopy(model)
             server = broken['services']['immich-server']
@@ -178,3 +185,19 @@ class ImmichTests(unittest.TestCase):
                 server['volumes'][0]['bind']['create_host_path'] = True
             with self.subTest(change=change), self.assertRaises(ValueError):
                 immich.validate_model(broken, self.c, ROOT)
+
+    def test_compose_bind_boolean_serializations_are_calibrated(self):
+        for false, true, expected in [(None, True, False), (False, None, True), (False, True, True)]:
+            volumes = [{'target': target, 'bind': {} if value is None else {'create_host_path': value}}
+                       for target, value in [('/false', false), ('/true', true)]]
+            result = json.dumps({'services': {'probe': {'volumes': volumes}}})
+            with self.subTest(false=false, true=true), patch('immich.runtime.run', return_value=result) as run:
+                self.assertIs(immich.omitted_bind_creation_default(ROOT), expected)
+                self.assertEqual(run.call_args.args[0][0:2], ['docker', 'compose'])
+                self.assertNotIn('up', run.call_args.args[0])
+
+    def test_compose_cannot_silently_ignore_explicit_bind_flags(self):
+        result = json.dumps({'services': {'probe': {'volumes': [
+            {'target': '/false'}, {'target': '/true'}]}}})
+        with patch('immich.runtime.run', return_value=result), self.assertRaisesRegex(ValueError, 'update Docker Compose'):
+            immich.omitted_bind_creation_default(ROOT)
