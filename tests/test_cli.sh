@@ -5,9 +5,10 @@ TASK_TMP="$(mktemp -d)"
 trap 'rm -rf "$TASK_TMP"' EXIT
 cp -R "$ROOT_DIR/scripts" "$TASK_TMP/scripts"
 cp "$ROOT_DIR/.env.example" "$TASK_TMP/.env.example"
-for command in setup check up status tls media-setup tailscale; do
+for command in setup check up status tls media-setup tailscale adguard; do
   (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
 done
+(cd /; "$TASK_TMP/scripts/lan-proxy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/migrate-credentials" --help >/dev/null)
 if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/tls" --staging --dns-provider godaddy >"$TASK_TMP/out" 2>&1; then exit 1; fi

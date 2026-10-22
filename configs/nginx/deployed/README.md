@@ -11,6 +11,9 @@ public routes and certificate paths, never private keys or application credentia
   music HTTP redirect and HTTPS route suppress URL-bearing access/error logs.
 - `ohara-public-ip-test.conf`: HTTP-only reachability probe for 45.120.160.21.
   It returns a fixed message and exposes no application data.
+- `ohara-lan.conf`: separately approved on 2026-10-22; seven LAN-only administration
+  HTTPS routes with source-address restrictions and loopback backends. Apply with
+  `sudo scripts/lan-proxy --apply` after review; see [LAN services](../../../docs/lan-services.md).
 
 The generic `../http.template`, `../https.template`, `../portfolio.template` and
 `../proxy-headers.conf` remain the fresh-host rendering sources. Their shared

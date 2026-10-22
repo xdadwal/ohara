@@ -4,6 +4,12 @@ Fresh installations seed Jellyfin, Seerr, clock, weather and resource widgets.
 OpenSpeedTest is a link-only card opening an on-demand browser-to-Ohara test. No new services are added.
 Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
+AdGuard and media administration cards use LAN-only HTTPS subdomains under
+HOMEPAGE_VAR_DOMAIN (supplied from DOMAIN). On this host, install the reviewed
+[LAN Nginx routes](lan-services.md) and local DNS rewrites before using them.
+Backends remain on loopback; SSH forwarding is still an alternative. The cards
+pass no administration credentials to Homepage.
+
 ## Connect media widgets
 
 Navidrome has a native **Now Playing** widget. It shows active tracks and their

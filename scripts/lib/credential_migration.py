@@ -42,7 +42,7 @@ def migrate(root, backup=None):
             stream.flush()
             os.fsync(stream.fileno())
         credentials.read(temporary, credentials.HOMEPAGE_KEYS | credentials.MEDIA_KEYS,
-                         credentials.WIDGET_KEYS, config.KEYS)
+                         credentials.WIDGET_KEYS | credentials.DNS_KEYS, config.KEYS)
         config.load(temporary)
         backup = Path(backup) if backup else root.parent/'ohara-backups'/(
             'credentials-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))

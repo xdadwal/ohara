@@ -23,6 +23,7 @@ media settings on another machine, or to migrate private state safely.
 | Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
+| AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
@@ -85,6 +86,14 @@ router TCP ports **80 and 443**. Never forward DNS or backend/admin ports.
 GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
 `scripts/tls --dns-provider godaddy`; see the private-token setup and existing
 certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
+
+## Optional LAN DNS
+
+For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
+It starts independently with `scripts/adguard up`; router/client DNS cutover is
+a separate verified step. Existing applications and public DNS are preserved.
+For AdGuard and media administration in a browser without SSH tunnels, see
+[LAN-only HTTPS service routes](docs/lan-services.md).
 
 ## Optional remote SSH
 

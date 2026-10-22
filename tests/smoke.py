@@ -192,7 +192,9 @@ def main():
             while True:
                 try:
                     runtime.run(docker+['exec',nginx_name,'nginx','-t'])
-                    assert tls_request(c['HOMEPAGE_HOST'])[0] in (302, 307)
+                    status = tls_request(c['HOMEPAGE_HOST'])[0]
+                    if status not in (302, 307):
+                        raise RuntimeError(f'Homepage not ready through proxy (HTTP {status})')
                     break
                 except (OSError, RuntimeError, http.client.HTTPException):
                     if time.monotonic()>deadline:
