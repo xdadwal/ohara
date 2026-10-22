@@ -102,6 +102,11 @@ preserving the machine-learning-disabled policy.
 
 ## Backup and restore acceptance
 
+Scheduled local database dumps are disabled by operator choice with
+`backup.database.enabled: false` in the managed configuration. Existing dumps
+are preserved, and manual database dumps remain available for deliberate exports
+or migrations. Independent backups remain deferred.
+
 Before relying on Immich as a personal archive, select an independent/off-host
 backup destination and retention policy. A directory on this NVMe or Immich's
 built-in `backups` directory alone is not independent protection. No backup job
