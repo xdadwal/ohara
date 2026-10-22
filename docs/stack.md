@@ -32,6 +32,9 @@ Only router TCP 80/443 is forwarded to Ohara. Application web ports remain
 loopback-only; private administration uses SSH forwarding. Optional AdGuard DNS
 is the explicit LAN-only exception, never a router port forward.
 There is no shared authentication service.
+This host also has approved [LAN-only HTTPS administration routes](lan-services.md)
+for AdGuard, Radarr, Sonarr, Prowlarr, qBittorrent, Lidarr and Bazarr. Their backend
+ports stay on loopback; native application logins remain required.
 Credentials come from user-created .env.
 See credentials.md for empty templates and validation. Homepage includes native
 Jellyfin/Seerr widgets, Navidrome Now Playing, clock, Open-Meteo weather and

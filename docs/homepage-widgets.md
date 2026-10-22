@@ -4,10 +4,11 @@ Fresh installations seed Jellyfin, Seerr, clock, weather and resource widgets.
 OpenSpeedTest is a link-only card opening an on-demand browser-to-Ohara test. No new services are added.
 Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
-The AdGuard Home card links to `http://localhost:3003`. Its private dashboard
-requires an SSH tunnel from the browser's machine:
-`ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101` on this host.
-See [AdGuard operations](adguard.md). The card passes no credentials to Homepage.
+AdGuard and media administration cards use LAN-only HTTPS subdomains under
+HOMEPAGE_VAR_DOMAIN (supplied from DOMAIN). On this host, install the reviewed
+[LAN Nginx routes](lan-services.md) and local DNS rewrites before using them.
+Backends remain on loopback; SSH forwarding is still an alternative. The cards
+pass no administration credentials to Homepage.
 
 ## Connect media widgets
 

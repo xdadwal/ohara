@@ -39,7 +39,9 @@ all other capabilities are dropped and no-new-privileges is enabled.
 Host port 53 TCP/UDP binds only ADGUARD_BIND_IP; the DNS client allowlist is
 ADGUARD_NETWORK. No DHCP, DoH/DoT listener or public dashboard is published.
 
-The private dashboard binds `127.0.0.1:3003`. From another computer:
+The dashboard backend binds `127.0.0.1:3003`. On this host, the approved
+[LAN-only Nginx route](lan-services.md) provides `https://adguard.xdadwal.in`
+without a tunnel once applied. SSH forwarding remains an alternative:
 
 ```sh
 ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101

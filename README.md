@@ -92,6 +92,8 @@ certificate migration in [operations](docs/operations.md#godaddy-dns-validation-
 For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
 It starts independently with `scripts/adguard up`; router/client DNS cutover is
 a separate verified step. Existing applications and public DNS are preserved.
+For AdGuard and media administration in a browser without SSH tunnels, see
+[LAN-only HTTPS service routes](docs/lan-services.md).
 
 ## Optional remote SSH
 

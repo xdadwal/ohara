@@ -41,6 +41,12 @@ Optional LAN DNS/filtering is managed separately; follow [AdGuard Home](adguard.
 for configuration, direct UDP/TCP tests, DHCP cutover and rollback. It does not
 change host/router/client DNS automatically and must never be publicly forwarded.
 
+## LAN-only administration
+
+For local browser access to private administration without SSH tunnels, follow
+[LAN-only service routes](lan-services.md). This is a separately applied,
+host-specific Nginx baseline, not a public admin deployment.
+
 ## Optional remote SSH
 
 See [Tailscale](tailscale.md) for the separate host client installer, owner browser

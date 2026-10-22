@@ -47,7 +47,9 @@ docs/superpowers/plans/.
   NAVIDROME_HOST defaults to music.xdadwal.in; verify target DNS before activation. Ask for Bazarr
   subtitle languages/providers and any provider credentials; never assume them.
   Preserve existing Bazarr configuration and manually verify its connections.
-  Lidarr (8686) and Bazarr (6767) stay private, without public admin subdomains.
+  Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
+  LAN-only administration subdomains for these and the other internal services
+  are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.
   A future NAS/multiple-node topology is discussed, not implemented; these services
   run in the current Compose stack, with a future acquisition node intended.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage

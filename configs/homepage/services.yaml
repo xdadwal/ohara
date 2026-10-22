@@ -35,9 +35,34 @@
 - Tools:
     - AdGuard Home:
         icon: adguard-home.png
-        href: http://localhost:3003
-        description: DNS administration (requires SSH tunnel)
+        href: "https://adguard.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: DNS administration (local network)
     - OpenSpeedTest:
         icon: openspeedtest.png
         href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
         description: Test your connection to Ohara
+- Administration:
+    - Radarr:
+        icon: radarr.png
+        href: "https://radarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Movies (local network)
+    - Sonarr:
+        icon: sonarr.png
+        href: "https://sonarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: TV shows (local network)
+    - Prowlarr:
+        icon: prowlarr.png
+        href: "https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Indexers (local network)
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Downloads (local network)
+    - Lidarr:
+        icon: lidarr.png
+        href: "https://lidarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Music acquisition (local network)
+    - Bazarr:
+        icon: bazarr.png
+        href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Subtitles (local network)
