@@ -41,6 +41,12 @@ def main():
         try:
             runtime.run(docker+['run', '-d', '--name', name, '--network', 'none']+mount+
                         [IMAGE, 'nginx', '-c', '/fixture/nginx.conf', '-g', 'daemon off;'])
+            # docker run -d returns before Nginx necessarily opens its listeners.
+            # Wait only for startup; route and access-control assertions stay strict.
+            runtime.run(docker+['exec', name, 'curl', '--noproxy', '*', '-fsS',
+                                '--retry', '20', '--retry-connrefused', '--retry-delay', '1',
+                                '--retry-max-time', '30', '--max-time', '5',
+                                'http://127.0.0.1:18081/'], timeout=40)
 
             def status(hostname, interface, tls, forged=False):
                 port = '443' if tls else '80'

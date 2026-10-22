@@ -35,7 +35,7 @@ class AdguardTests(unittest.TestCase):
         rewrites = data['filtering']['rewrites']
         self.assertEqual({r['domain'] for r in rewrites}, {
             'xdadwal.in', 'ohara.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in',
-            'tv.xdadwal.in', 'music.xdadwal.in', 'adguard.xdadwal.in',
+            'tv.xdadwal.in', 'music.xdadwal.in', 'immich.xdadwal.in', 'adguard.xdadwal.in',
             'radarr.xdadwal.in', 'sonarr.xdadwal.in', 'prowlarr.xdadwal.in',
             'qbittorrent.xdadwal.in', 'lidarr.xdadwal.in', 'bazarr.xdadwal.in'})
         self.assertTrue(all(r['answer'] == c['ADGUARD_BIND_IP'] and '*' not in r['domain'] for r in rewrites))

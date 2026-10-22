@@ -2,11 +2,11 @@
 set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-for file in scripts/setup scripts/check scripts/up scripts/status scripts/tls scripts/media-setup scripts/tailscale scripts/adguard tests/*.sh; do
+for file in scripts/setup scripts/check scripts/up scripts/status scripts/tls scripts/media-setup scripts/tailscale scripts/adguard scripts/immich tests/*.sh; do
   bash -n "$file"
 done
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck scripts/setup scripts/check scripts/up scripts/status scripts/tls scripts/media-setup scripts/tailscale scripts/adguard tests/*.sh
+  shellcheck scripts/setup scripts/check scripts/up scripts/status scripts/tls scripts/media-setup scripts/tailscale scripts/adguard scripts/immich tests/*.sh
 else
   echo 'ShellCheck missing; install it or run the CI checks.' >&2
   exit 1

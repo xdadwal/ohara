@@ -31,7 +31,7 @@ def initial_config(c, password_hash):
     names = sorted({c[k] for k in ('DOMAIN', 'HOMEPAGE_HOST', 'REQUESTS_HOST',
                                   'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')} |
                    {service+'.'+c['DOMAIN'] for service in
-                    ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr')})
+                    ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'immich')})
     return {
         'schema_version': 34,  # Pinned AdGuard v0.107.79 schema.
         'http': {'address': '0.0.0.0:3000'},

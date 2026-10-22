@@ -175,3 +175,251 @@ No browser session was available: rendered layout at desktop/mobile widths, clic
 Start and completing an in-frame measurement remain manual browser acceptance.
 Existing edited dashboards require merging the documented widget block; setup
 preserves those operator edits. No live deployment was changed.
+
+## Immich implementation (2026-10-22)
+
+Implemented an optional independent `ohara-immich` project from official v3.3.5
+release Compose dependencies. Registry indexes for the server, PostgreSQL and
+Valkey were checked for amd64/arm64 and pinned separately. Machine learning is
+absent from the project and disabled in the effective server settings. No
+production Immich directories, credentials, accounts, DNS or Nginx routes changed.
+
+Static/mocked verification: all 131 Python tests pass, including storage path and
+mount rejection, secret/environment isolation, preservation and port exposure
+checks. `tests/test_setup.sh`, `tests/test_cli.sh`, `tests/static.sh`,
+`scripts/check --static`, `scripts/immich check --static` and `git diff --check`
+pass. Existing main-stack image inventory is unchanged.
+
+Disposable runtime verification on this Linux host: `tests/smoke.sh` passes for
+the eleven-app stack, media API setup/reruns, Homepage auth/widgets, Nginx and
+35 MiB speed upload, AdGuard DNS/filtering, and LAN proxy ACLs/routes.
+`python3 tests/smoke_immich.py` passes with random test project/port and isolated
+named volumes: all three containers healthy, ping API, first-owner signup/login,
+effective machine-learning disabled setting, and a tiny PNG upload followed by
+byte-identical original download. Its test containers/volumes were removed.
+The opt-in Immich proxy template also passes `nginx -t` in a disposable pinned
+Nginx container with a temporary test certificate; no host configuration reload.
+
+Real provisioning/production acceptance remains pending: real database password,
+photo-library sizing/growth, independent backup destination/retention, actual
+owner onboarding, representative photo/video/phone tests and isolated backup
+restoration. Public/private hostname access, DNS/TLS activation, large uploads
+through that live route and Homepage link remain pending. Disposable tests do
+not establish these outcomes or full supported-host provisioning.
+
+### Public activation preparation (2026-10-22)
+
+The operator requested live startup, public HTTPS and a Homepage card. Inspection
+confirmed no production Immich containers/storage yet, about 236 GiB free on the
+approved local filesystem, existing custom Homepage configuration, and
+immich.xdadwal.in resolving to 45.120.160.21. IMMICH_DB_PASSWORD is absent and
+noninteractive sudo requires authentication; neither was bypassed. No production
+service, Homepage, Nginx or DNS changes were made in this preparation.
+
+Added a host-specific transactional scripts/immich-proxy installer and a seed
+Homepage link. 134 Python tests, setup/CLI/static checks pass. A disposable Nginx
+instance verified the actual rendered candidate's syntax, HTTPS proxy, HTTP
+redirect, mobile discovery path and replacement of spoofed forwarding headers.
+Production activation, owner login, certificate validation, off-host backups and
+external reachability remain pending. The existing PR includes this preparation.
+
+### Private Immich startup (2026-10-22)
+
+The operator supplied the private database password and explicitly accepted its
+shorter length. Added a per-command --allow-short-db-password exception; normal
+checks keep their original default. Empty/unsupported inputs remain rejected, and
+the main stack ignores this optional project's credential. All 135 Python tests
+and CLI/static checks pass. No password was generated, changed or printed.
+
+Ran scripts/immich prepare and up with the explicit exception, using the approved
+/ohara/immich/library and /ohara/immich/postgres paths on the root ext4 NVMe.
+All three production containers are healthy and the local API ping succeeds.
+The onboarding endpoint reports no owner account yet. Public activation and the
+live Homepage card remain pending owner login; sudo authentication remains
+unavailable in the agent session. Off-host backups/restoration and real photo,
+video and phone acceptance remain unverified.
+
+### LAN onboarding and Homepage/AdGuard integration (2026-10-22)
+
+With operator authorization, installed the separate ohara-immich.conf route in
+LAN-only onboarding mode using the existing wildcard certificate. The installer
+validated the real certificate chain/hostname/expiry and tested/reloaded Nginx;
+its exact live file is tracked under configs/nginx/deployed/. No other Nginx file
+or certificate was replaced. Trusted HTTPS works via loopback and the server's
+192.168.1.101 LAN address; HTTP redirects to HTTPS. A request from an untrusted
+Docker subnet was denied with 403 even with a forged LAN X-Forwarded-For header.
+
+Added only the Immich Photos section to live Homepage services.yaml, preserving
+all prior contents and file permissions with a private backup under local/.
+Restarted only Homepage. Verified its trusted HTTPS password login and the
+authenticated services API returning the Immich link. Added the exact AdGuard
+rewrite immich.xdadwal.in -> 192.168.1.101 through its authenticated API, verified
+all old rewrites remain, and verified UDP and TCP DNS answers. Updated its fresh
+seed and documented the existing-install change. No router/client DNS or public
+GoDaddy record was changed.
+
+Owner creation/login, unrestricted public access, actual archive/phone acceptance
+and off-host backup/restore remain pending. LAN reachability does not establish
+Internet reachability. No private credentials were recorded in repository files.
+
+Captured the service-addition workflow in docs/adding-services.md and linked it
+from AGENTS.md and docs/agent-setup.md, including complete integration, scoped
+credential exceptions, terminal-specific sudo authentication and LAN onboarding.
+
+Final checks for this phase: all 137 Python tests, setup, CLI and static checks
+pass. The focused disposable AdGuard smoke passes with the updated Immich seed;
+both main-stack and Immich static Compose checks pass.
+
+### Owner completion and public route (2026-10-22)
+
+The operator confirmed owner setup. The API now reports both isInitialized and
+isOnboarded true, with smart search, facial recognition and OCR still disabled.
+Applied scripts/immich-proxy --apply --accounts-ready: validated the existing
+wildcard certificate, privately backed up the LAN-only route, tested Nginx and
+reloaded. The tracked ohara-immich.conf matches the live public route; no other
+host routes, certificates or DNS records changed. HTTPS ping works through the
+public hostname from this host and from the Homepage container. A previously
+disallowed Docker subnet now also receives 200, verifying the LAN gate removal.
+The external web-fetch tool could not access the hostname, so independent
+Internet/browser reachability is not established by these local checks.
+
+Prepared the native Homepage Immich widget version 2 with users/photos/videos/
+storage, HTTPS transport through host Nginx, and the optional allowlisted
+HOMEPAGE_VAR_IMMICH_API_KEY. The live card remains link-only until the operator
+supplies an actual server.statistics API key privately. No API key was generated
+or invented. 138 Python tests pass, including optional-key routing/isolation;
+setup/CLI/static checks and both static Compose checks pass. Archive/phone/video
+acceptance and independent backup/restore remain pending.
+
+### Live Immich statistics widget (2026-10-22)
+
+The operator supplied HOMEPAGE_VAR_IMMICH_API_KEY privately in .env. Validated the
+private input and retrieved the production Immich server statistics over trusted
+HTTPS with that key; no key value was printed or written outside private inputs.
+Merged only the native widget block into the existing live Immich card, retaining
+all other dashboard contents and permissions with a private backup under local/.
+Recreated only Homepage using the project's allowlisted environment wrapper.
+
+Verified trusted Homepage password login, all four existing dashboard groups,
+the native Immich widget in its authenticated services response, and a successful
+statistics_v2 widget-proxy response with photo/video/storage data. The actual key
+was absent from both browser-facing responses. No other application was restarted.
+The previously tested repository configuration already included this widget and
+credential allowlist; this step changes live configuration and deployment notes.
+Browser layout and archive/phone/video/backup acceptance remain separate checks.
+
+### Immich widget field selection (2026-10-22)
+
+At the operator's request, changed only the live/seed Immich fields to photos,
+videos and storage, hiding the user count. The prior live dashboard is privately
+backed up, other contents/permissions are preserved, and only Homepage restarted.
+Verified the exact field list through the authenticated services API and confirmed
+the native statistics_v2 response still succeeds. Git whitespace checks pass.
+
+### Invite-only Google OAuth preparation (2026-10-22)
+
+The operator requested Google accounts with invite-only membership. Reviewed the
+official Immich OAuth/user-management guidance, Google OIDC setup, and the pinned
+v3.3.5 authentication service: it links an existing account by normalized email
+and rejects a missing account when autoRegister is false. This is admin-created
+membership, not a new invitation-email or shared-authentication service.
+
+Added optional private Google client inputs, a server-only derived configuration
+and scripts/immich oauth. Managed policy enforces autoRegister=false,
+autoLaunch=false, password fallback and machine learning disabled. Activation
+recreates only Immich server and restores the previous configuration on failure;
+failed/prior configurations remain private. Google credentials never enter
+Compose interpolation environments or unrelated service inputs.
+
+149 Python tests and setup/CLI/static checks pass, including literal secret
+preservation, isolation, private-file permissions, registration/lockout policy
+and failed-activation rollback. The disposable Immich smoke passes owner login,
+photo round trip and effective disabled auto registration/password fallback.
+Both static Compose checks and whitespace validation pass. Restarted only the
+production Immich server to load the explicit disabled-registration baseline;
+the API continues to report password login enabled, Google OAuth disabled and ML
+disabled. Actual Google OAuth client inputs are absent, so activation and approved/
+uninvited Google account browser tests remain pending. No external account,
+client secret, users, passwords or API keys were generated or changed.
+
+### Live invite-only Google OAuth activation (2026-10-22)
+
+The operator filled the private Google Web client JSON. Verified regular/private
+file permissions, JSON structure, credential formats and declared redirect URIs
+without displaying values. A token request with an intentionally invalid test
+code returned invalid_grant rather than invalid_client; this is an initial check,
+not proof of a complete authorization-code exchange or Console redirect settings.
+Imported only the supplied client fields into the existing .env atomically,
+preserving all other inputs and a private backup. No credential was generated.
+
+Ran scripts/immich oauth with the existing database-password exception. Only the
+Immich server was recreated; PostgreSQL, Valkey and other services remained up.
+All three Immich containers are healthy. Verified private generated-file mode
+0600, Google enabled, autoRegister=false, autoLaunch=false, password fallback and
+machine learning disabled. Google OIDC discovery and both web/mobile authorize
+requests succeed with the expected client, HTTPS Google endpoint, limited scopes
+and canonical redirects; no client secret appears in the authorization URLs.
+The existing statistics API key still retrieves production server statistics.
+
+The implementation's 149-test/static/disposable checks passed in the preceding
+phase; no implementation code changed in this activation. Full approved-account
+Google login/logout, rejected uninvited-account login, account linking and mobile
+acceptance still need real owner/browser checks. No such checks are inferred from
+the successful initial provider or authorization URL responses.
+
+### Google-only login and user onboarding (2026-10-22)
+
+At the operator's explicit request, changed the Google OAuth renderer to disable
+password login. Validation permits Google-only mode only with OAuth configured
+and rejects a policy disabling both login methods. Fresh-install bootstrap keeps
+password login until Google is configured; future OAuth regenerations retain
+Google-only mode. Existing accounts/password hashes/sessions were not reset.
+
+150 Python tests, setup/CLI/static checks and both static Compose checks pass.
+The disposable Immich smoke still passes fresh owner login and a photo round
+trip. Reconfigured/recreated only production Immich server. All three containers
+are healthy. Verified the live feature API reports OAuth enabled/password login
+disabled, the password endpoint explicitly returns 401 with the disabled-login
+message, OAuth authorize returns the Google endpoint, autoRegister stays false,
+ML remains disabled, and the existing widget statistics key still works.
+
+Documented the pinned v3.3.5 new-user form workflow: admin pre-creates the exact
+Google email/name with an appropriate quota, leaves password fields blank,
+disables required password change and keeps ordinary users non-admin. The owner
+shares the service URL manually; first Google login links the existing account.
+The Google basic-identity-scope exception means Google's Testing user list is
+not the application membership gate. No users, invitations or messages were
+created/sent during this change. Full Google browser acceptance remains an owner
+check; endpoint/configuration verification is not a completed Google login.
+
+### Production-readiness CI compatibility check (2026-10-22)
+
+The live service is healthy; the main remaining archive-readiness gap is an
+independent media/database backup and isolated restore, plus real browser,
+phone/video and outside-network acceptance. PR #21 remained open. Hosted CI at
+a60ae88 passed both the existing-stack and Immich container jobs but failed the
+static configuration job because Compose versions serialize create_host_path
+booleans differently: older releases omit false; current Compose omits true.
+
+Fixed validation by rendering a non-secret, daemon-free two-bind reference model
+with explicit false/true flags and using its observed encoding. This avoids
+weakening the storage guard: explicit/implicit true is still rejected, and a
+Compose implementation losing both flag values fails closed. Regression tests
+cover both encodings, rejection of unsafe binds and indistinguishable flags.
+All 152 Python tests, setup/CLI/static checks, the Immich static check and Git
+whitespace checks pass locally. No production services/configuration changed.
+Hosted CI must rerun for this commit before release approval.
+
+### Operator release decisions and green CI (2026-10-22)
+
+The operator confirmed successful OAuth login, accepted capacity for the current
+single-user deployment, and explicitly deferred backups/restore testing for
+later. Updated current status, agent instructions and PR scope to reflect those
+choices without claiming unperformed backup, restore or remaining acceptance
+checks. No live settings, quotas, authentication or storage were changed.
+
+Both hosted CI runs for 5c21a89 passed: pull_request run 39831104313 and push run
+39831093941. Each passed configuration, existing-stack containers and
+immich-containers. The 152 local tests and required checks had already passed.
+The previous Compose serialization CI blocker is resolved. This follow-up changes
+only documentation; whitespace validation passes. PR #21 remains unmerged.

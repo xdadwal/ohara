@@ -23,6 +23,7 @@ jobs:
         run: |
           cp .env.example .env
           scripts/check --static
+          scripts/immich check --static
   containers:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -34,3 +35,13 @@ jobs:
       - name: DNS smoke test dependencies
         run: sudo apt-get update && sudo apt-get install -y python3-bcrypt dnsutils
       - run: PATH=/usr/bin:$PATH tests/smoke.sh
+
+  immich-containers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python3 tests/smoke_immich.py

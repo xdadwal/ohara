@@ -1,0 +1,32 @@
+{
+  "backup": {
+    "database": {
+      "enabled": false
+    }
+  },
+  "machineLearning": {
+    "enabled": false
+  },
+  "job": {
+    "thumbnailGeneration": {
+      "concurrency": 1
+    },
+    "metadataExtraction": {
+      "concurrency": 1
+    },
+    "videoConversion": {
+      "concurrency": 1
+    }
+  },
+  "ffmpeg": {
+    "threads": 2
+  },
+  "oauth": {
+    "enabled": false,
+    "autoRegister": false,
+    "autoLaunch": false
+  },
+  "passwordLogin": {
+    "enabled": true
+  }
+}

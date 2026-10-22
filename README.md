@@ -23,12 +23,14 @@ media settings on another machine, or to migrate private state safely.
 | Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
+| Immich (optional separate project) | Personal photos/videos; machine learning disabled | immich.xdadwal.in; owner setup complete |
 | AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
-widgets ([configuration](docs/homepage-widgets.md)). Immich is a follow-up for personal photos/videos;
-it will share the Ohara machine, with storage and backup paths still to be confirmed.
+widgets ([configuration](docs/homepage-widgets.md)). Immich is available as a separate optional project for personal photos/videos,
+with machine learning disabled. See [Immich operations](docs/immich.md); Immich is running with public HTTPS and owner setup complete on this host;
+backup/restore acceptance remains pending.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
 initialize accounts/connections and add your chosen indexers. Music flows from Lidarr into the shared music library and Navidrome. Select subtitle languages
 and providers explicitly in Bazarr; Seerr requests remain movies and series only.

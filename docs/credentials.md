@@ -117,3 +117,31 @@ the initial username is `admin`. Initial setup hashes it locally with bcrypt.
 It is never passed to Compose or Homepage. Existing AdGuard accounts/configuration
 are preserved; editing the input alone does not rotate a password. See
 [AdGuard operations](adguard.md). The eleven-app stack does not require this key.
+
+## Optional Immich database
+
+Immich reads `IMMICH_DB_PASSWORD` from the same private `.env`, mode 0600. Supply
+an independent value of at least 16 ASCII letters/digits, following upstream's
+character restrictions. Only its server and database containers receive this
+value. The main stack does not require it. No password is generated or rotated;
+changing the input alone does not change an existing database account. The Immich
+owner has a separate application account, created privately during onboarding.
+See [Immich operations](immich.md) for preparation and backup requirements.
+
+The operator explicitly accepted the existing shorter Immich DB password on this
+host. `scripts/immich prepare|check|up --allow-short-db-password` supports this
+per-command exception without changing normal validation defaults or unrelated
+service credentials. Empty or non-alphanumeric values remain rejected.
+
+Optional HOMEPAGE_VAR_IMMICH_API_KEY is an Immich-issued key restricted to
+server.statistics, supplied privately after owner setup. It is forwarded only
+to Homepage for its native statistics widget. See homepage-widgets.md.
+
+## Optional Immich Google OAuth
+
+Supply IMMICH_GOOGLE_CLIENT_ID and IMMICH_GOOGLE_CLIENT_SECRET privately in .env
+only after creating a real Google Web application OAuth client. Other services
+ignore these inputs. scripts/immich oauth validates them and renders a private
+server-only configuration; it does not generate or rotate provider credentials.
+The Google secret is not injected into Compose environments or Homepage. See
+[Google OAuth setup](immich-google-oauth.md) for redirects and invite-only policy.

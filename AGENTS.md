@@ -2,7 +2,9 @@
 
 Ohara provisions a small Linux homeserver. Read README.md, docs/stack.md and docs/operations.md
 before changing deployment behavior. The approved migration plan is under
-docs/superpowers/plans/.
+docs/superpowers/plans/. For future service additions, follow
+[docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
+integration, exact privileged commands and LAN-only owner onboarding where needed.
 
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
@@ -11,8 +13,20 @@ docs/superpowers/plans/.
   read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
   Navidrome's Now Playing widget uses a Subsonic token derived locally from the
   existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
-  Immich will share this machine in its own Compose project; deployment is pending
-  storage/hardware/backup details. See docs/immich-next.md.
+  Immich is implemented as an optional separate Compose project with machine
+  learning disabled; owner onboarding is complete and public HTTPS is active.
+  Homepage has its link and native statistics widget using the privately supplied
+  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). The owner verified Google
+  login and accepted capacity for the current single-user release. Independent
+  backups/restore testing are explicitly deferred by the owner; do not treat
+  them as release blockers or claim they are implemented.
+  Use scripts/immich and docs/immich.md; preserve its independent
+  database/cache and stable /data container path. Google OAuth must remain
+  invite-only (autoRegister=false), with Google-only login and password login
+  disabled by operator request. Pre-create approved users by exact Google email;
+  leave their password fields empty and disable required password change. Use
+  scripts/immich oauth and docs/immich-google-oauth.md; actual Google client inputs
+  belong only in private .env, never in the versioned JSON or Homepage.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials in the single private `.env`; a shared

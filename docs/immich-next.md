@@ -1,44 +1,39 @@
-# Immich follow-up
+# Immich deployment status
 
-Immich has not been deployed. It will manage personal photos/videos using the
-upstream production Docker Compose deployment. It will run on the **same fresh
-Linux machine as Ohara**, as confirmed by the user. Keep an independent Compose project for its application/database lifecycle.
+The independent Immich project is running on this Ohara host with PostgreSQL and
+Valkey; machine learning is disabled. Its approved paths are
+`/ohara/immich/library` and `/ohara/immich/postgres`. The operator supplied the
+DB password and explicitly accepted its shorter length through a per-command
+exception.
 
-## Decisions before implementation
+Owner onboarding and public HTTPS at `https://immich.xdadwal.in` are configured.
+Homepage has the native widget showing photos, videos and total storage usage;
+its private statistics key and authenticated proxy were verified. AdGuard rewrites
+the hostname to 192.168.1.101 for local clients, with UDP/TCP answers verified.
 
-1. Available CPU/RAM/architecture, accounting for the other Ohara services. Current upstream guidance
-   lists 6 GB minimum RAM, 8 GB recommended, 2 CPU cores minimum and 4 recommended.
-   On amd64, current v3 machine learning requires x86-64-v2 instructions.
-2. Media storage path, filesystem and capacity, including current library size
-   and growth. Plan for thumbnails/transcoded videos as well as originals.
-3. Database path on local SSD storage, not a network share.
-4. An independent backup destination for originals and database, and a restore
-   test. A second directory on the same disk is not an off-host backup.
-5. Confirmed hostname: `immich.xdadwal.in`. Confirm whether access will be public.
-   Reuse host Nginx for HTTPS and bind the Immich web port to loopback.
+Google-only OAuth is enabled with password login and automatic registration
+disabled. The operator confirmed successful OAuth login on 2026-10-22. Only an
+administrator can provision another user by their exact Google account email;
+see the workflow in [Google OAuth setup](immich-google-oauth.md).
 
-## Implementation scope
+## Current release decisions
 
-- Add an independently operated Compose project using the official release-matched
-  Immich files. Keep its required database/cache and machine-learning services;
-  removing standalone Redis from Ohara does not remove Immich dependencies.
-- Document required settings in a separate example env file and pin a tested
-  release. Reuse the Ohara host bootstrap where appropriate; avoid coupling
-  photo-service restarts or database state to the small utility stack.
-- Create explicit persistent paths and verify mounts, available capacity and
-  permissions before startup. Do not expose the photo archive through a file-sharing service
-  or import/delete existing originals by assumption.
-- Configure HTTPS with the supported large-upload/WebSocket proxy settings and
-  a dedicated hostname. Do not serve Immich from a URL subpath.
-- Create the owner account, configure phone photo/video backup, and test upload,
-  download, playback, metadata and representative large videos.
-- Back up both media and database, restore into an isolated instance and verify
-  representative albums/assets before treating deployment as ready.
-- Add the immich.xdadwal.in Homepage link once deployment is verified.
+The operator accepted capacity for the current single-user deployment; no extra
+capacity or quota work is required for this release. Independent backups,
+retention and isolated restore testing are explicitly deferred for later, rather
+than release blockers. No backup/restore readiness is claimed.
 
-## Current primary references (checked 2026-10-15)
+Both hosted push and pull-request CI runs for implementation commit 5c21a89 passed
+all three jobs: configuration, existing stack containers and Immich containers.
+All 152 local Python tests and required setup/CLI/static checks passed too. The
+PR description and documentation record the accepted scope; merging still
+requires separate operator authorization.
 
-- [Requirements](https://docs.immich.app/install/requirements/)
-- [Official Compose installation](https://docs.immich.app/install/docker-compose/)
-- [Reverse proxy](https://docs.immich.app/administration/reverse-proxy/)
-- [Backup and restore](https://docs.immich.app/administration/backup-and-restore/)
+## Follow-up work
+
+Independent media/database backups and restoration are deferred. Real phone
+backup, representative large-video/playback tests, an uninvited Google account
+rejection test and independent off-network browser access are not recorded as
+verified. These remain follow-up acceptance items; successful owner OAuth login
+must not be conflated with completion of every one of these checks. See
+[Immich operations](immich.md).
