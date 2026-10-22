@@ -10,7 +10,8 @@ Owner onboarding is complete. Public HTTPS at `https://immich.xdadwal.in` was
 activated with the existing wildcard certificate, preserving the previous
 LAN-only route in a private backup. Homepage has a live link, and AdGuard rewrites
 the hostname to 192.168.1.101 locally. The native Homepage statistics widget is
-prepared and awaits HOMEPAGE_VAR_IMMICH_API_KEY supplied privately in .env.
+live, using HOMEPAGE_VAR_IMMICH_API_KEY supplied privately in .env. Its
+authenticated statistics proxy was verified without exposing the key.
 
 The hostname and Homepage-to-Immich HTTPS path respond successfully from this
 host; independent off-network browser reachability is not yet confirmed.

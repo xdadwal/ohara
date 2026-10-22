@@ -290,3 +290,20 @@ supplies an actual server.statistics API key privately. No API key was generated
 or invented. 138 Python tests pass, including optional-key routing/isolation;
 setup/CLI/static checks and both static Compose checks pass. Archive/phone/video
 acceptance and independent backup/restore remain pending.
+
+### Live Immich statistics widget (2026-10-22)
+
+The operator supplied HOMEPAGE_VAR_IMMICH_API_KEY privately in .env. Validated the
+private input and retrieved the production Immich server statistics over trusted
+HTTPS with that key; no key value was printed or written outside private inputs.
+Merged only the native widget block into the existing live Immich card, retaining
+all other dashboard contents and permissions with a private backup under local/.
+Recreated only Homepage using the project's allowlisted environment wrapper.
+
+Verified trusted Homepage password login, all four existing dashboard groups,
+the native Immich widget in its authenticated services response, and a successful
+statistics_v2 widget-proxy response with photo/video/storage data. The actual key
+was absent from both browser-facing responses. No other application was restarted.
+The previously tested repository configuration already included this widget and
+credential allowlist; this step changes live configuration and deployment notes.
+Browser layout and archive/phone/video/backup acceptance remain separate checks.

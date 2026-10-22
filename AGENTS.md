@@ -15,8 +15,8 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
   Immich is implemented as an optional separate Compose project with machine
   learning disabled; owner onboarding is complete and public HTTPS is active.
-  Homepage has its link; its statistics widget awaits the privately supplied
-  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics only). Backup destination and
+  Homepage has its link and native statistics widget using the privately supplied
+  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). Backup destination and
   archive acceptance remain pending.
   Use scripts/immich and docs/immich.md; preserve its independent
   database/cache and stable /data container path.

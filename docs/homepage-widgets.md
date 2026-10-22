@@ -132,4 +132,7 @@ URL https://immich.{{HOMEPAGE_VAR_DOMAIN}}, version 2 and the environment-variab
 key placeholder. Homepage reaches the host Nginx route with trusted TLS; no
 shared Docker network, host ports or backend exposure are added. Recreate only
 Homepage to load the allowlisted key, then verify its authenticated widget API.
-The existing live card remains link-only until this actual key is supplied.
+The current host has this widget live. The operator supplied the API key privately;
+only Homepage was recreated. Its authenticated native statistics proxy succeeds,
+existing dashboard groups remain, and browser-facing service/statistics responses
+were checked for absence of the actual key.
