@@ -81,7 +81,9 @@ Run `scripts/migrate-credentials` first for legacy split inputs. After preparing
 storage with setup, apply `scripts/media-setup --storage-only` and
 `scripts/media-setup --quality-only` to restored accounts. See media.md for the
 seeding, recycle-bin and bounded 1080p policies; these commands do not initialize
-Jellyfin/Seerr owners.
+Jellyfin/Seerr owners. Storage setup applies the global 72-hour seeding limit and
+then deletes torrents/download files. Verify imports and hardlinks first; resume
+reviewed stopped torrents manually as described in [media.md](media.md).
 
 Recreate the portfolio service separately. Preserve or deliberately migrate
 existing Nginx routes; DNS renewal configuration does not install new routes.

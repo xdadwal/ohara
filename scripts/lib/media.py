@@ -112,8 +112,9 @@ def configure_storage(root, urls=None):
             if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
                 download['removeCompletedDownloads'] = False
                 client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
-    policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':True, 'max_ratio':0,
-              'max_ratio_act':0, 'max_seeding_time_enabled':True, 'max_seeding_time':0}
+    policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':False,
+              'max_ratio_act':3, 'max_seeding_time_enabled':True, 'max_seeding_time':4320,
+              'max_inactive_seeding_time_enabled':False}
     if any(preferences.get(key) != value for key, value in policy.items()):
         qb.call('/api/v2/app/setPreferences', {'json':json.dumps(policy)}, form=True)
     for category in ('movies', 'tv'):
@@ -130,7 +131,8 @@ def configure_storage(root, urls=None):
         if settings != before:
             client.call('/api/v3/config/mediamanagement', settings, 'PUT')
     print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
-          'and recycle bins. Existing torrents and custom recycle settings preserved.')
+          'recycle bins, and removal of torrents/download files after 72 hours of seeding. '
+          'Existing torrent states/overrides and custom recycle settings preserved.')
 
 
 def connect(c, root, email, urls=None):

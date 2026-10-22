@@ -156,18 +156,30 @@ Custom recycle paths/retention are preserved. Recycle bins are outside Jellyfin'
 library and are a recovery window, not a backup; explicit permanent deletion and
 files removed outside Radarr/Sonarr can bypass them.
 
-The selected qBittorrent policy stops seeding after completion (ratio and seeding
-time limits zero, action Stop). It retains the torrent and downloaded files for
-import/recovery. Storage setup applies the global default; existing per-torrent
-share-limit overrides require separate review. This does not prevent uploading
-pieces while a torrent is downloading.
-The managed Radarr/Sonarr download clients disable completed-download removal so
-reaching the seeding limit does not automatically delete the stopped torrent/source.
+The selected qBittorrent policy seeds completed downloads for **72 hours (4320
+minutes)**, then **removes the torrent and its downloaded files** using qBittorrent's
+built-in seeding limit. Ratio and inactive-seeding limits are disabled so they do
+not trigger earlier removal. This is cumulative seeding time, not elapsed time
+since completion: queued/stopped time does not count. No cron job or cleanup
+service is needed. The policy is global, including music and uncategorized torrents.
+Existing per-torrent share-limit overrides require separate review.
+
+Hard-linked library files survive removal of the download entry. Disk space is
+freed only after the last hard link is removed; deleting a title in Jellyfin alone
+can leave its source taking space until qBittorrent reaches the seeding limit.
+Downloads that have not been imported are also deleted when the limit is reached;
+verify imports and library hardlinks before enabling this policy on restored data.
+The managed Radarr/Sonarr download clients keep completed-download removal disabled;
+qBittorrent owns the timed deletion of source torrents/files.
 
 After updating an existing installation, run host setup to prepare the new
 directories, then `scripts/media-setup --storage-only`. This skips owner/account
 initialization and preserves credentials, torrents, naming formats and other
-preferences. Existing category paths that differ from the expected paths require
+preferences. The command does not resume stopped torrents: after reviewing their
+files/imports and share-limit overrides, select the completed torrents to resume
+in qBittorrent. Leave missing-files torrents for separate recovery. Torrents already
+at the 72-hour limit may be removed as soon as qBittorrent evaluates their limits.
+Existing category paths that differ from the expected paths require
 manual review because changing them could relocate active torrents. Existing
 manually managed torrents are not moved by this command. To migrate one, verify
 its category and source first, then enable automatic management for that specific
