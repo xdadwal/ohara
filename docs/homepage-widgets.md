@@ -4,6 +4,11 @@ Fresh installations seed Jellyfin, Seerr, clock, weather and resource widgets.
 OpenSpeedTest is a link-only card opening an on-demand browser-to-Ohara test. No new services are added.
 Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
+The AdGuard Home card links to `http://localhost:3003`. Its private dashboard
+requires an SSH tunnel from the browser's machine:
+`ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101` on this host.
+See [AdGuard operations](adguard.md). The card passes no credentials to Homepage.
+
 ## Connect media widgets
 
 Navidrome has a native **Now Playing** widget. It shows active tracks and their

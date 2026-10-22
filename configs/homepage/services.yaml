@@ -33,6 +33,10 @@
           token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
           salt: ohara-homepage
 - Tools:
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: http://localhost:3003
+        description: DNS administration (requires SSH tunnel)
     - OpenSpeedTest:
         icon: openspeedtest.png
         href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
