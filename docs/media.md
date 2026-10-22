@@ -172,6 +172,14 @@ verify imports and library hardlinks before enabling this policy on restored dat
 The managed Radarr/Sonarr download clients keep completed-download removal disabled;
 qBittorrent owns the timed deletion of source torrents/files.
 
+Radarr/Sonarr connection validation can warn that qBittorrent removes completed
+sources (Radarr requires at least 14 days to accept automatic removal). Fresh setup
+validates/registers the download clients before applying the selected shorter
+retention policy. Later manual connection tests can still show this warning;
+verify imports well before cleanup. When adding a missing client to an existing
+installation, temporarily choose Stop in qBittorrent, test/save the client, then
+reapply `scripts/media-setup --storage-only` to restore this policy.
+
 After updating an existing installation, run host setup to prepare the new
 directories, then `scripts/media-setup --storage-only`. This skips owner/account
 initialization and preserves credentials, torrents, naming formats and other
