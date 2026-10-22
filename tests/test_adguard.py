@@ -89,6 +89,17 @@ class AdguardTests(unittest.TestCase):
                 adguard.prepare(c, root)
             self.assertFalse((root/'adguard').exists())
 
+    def test_operator_chosen_short_password_is_preserved_but_empty_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root/'.env'
+            path.write_text('ADGUARD_PASSWORD=short\n')
+            path.chmod(0o600)
+            self.assertEqual(adguard.password(root), 'short')
+            path.write_text('ADGUARD_PASSWORD=\n')
+            with self.assertRaises(ValueError):
+                adguard.password(root)
+
     def test_optional_compose_ports_validate(self):
         with patch.object(adguard.runtime, 'docker_prefix', return_value=['docker']):
             adguard.check(self.settings(), ROOT)

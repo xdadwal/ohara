@@ -16,8 +16,8 @@ password. Add these literal entries privately to the single mode-0600 `.env`:
 # Replace with the real LAN address and subnet, not an example on another host.
 ADGUARD_BIND_IP=192.168.1.101
 ADGUARD_NETWORK=192.168.1.0/24
-# Add ADGUARD_PASSWORD with your independent chosen password (16+ characters,
-# at most 72 UTF-8 bytes). Never paste it into chat or shell command arguments.
+# Add ADGUARD_PASSWORD with your independent chosen nonempty password,
+# at most 72 UTF-8 bytes. Never paste it into chat or shell command arguments.
 ```
 
 ```sh

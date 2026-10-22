@@ -112,7 +112,7 @@ JSON input and a root-only installed copy; no DNS token has been supplied here.
 ## Optional AdGuard account
 
 The optional DNS project reads `ADGUARD_PASSWORD` from the same private `.env`.
-Choose a separate password of at least 16 characters and at most 72 UTF-8 bytes;
+Choose a separate nonempty password of at most 72 UTF-8 bytes;
 the initial username is `admin`. Initial setup hashes it locally with bcrypt.
 It is never passed to Compose or Homepage. Existing AdGuard accounts/configuration
 are preserved; editing the input alone does not rotate a password. See

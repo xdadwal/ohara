@@ -56,7 +56,8 @@ def read(path, keys, optional=frozenset(), ignored=frozenset()):
                 if not re.fullmatch(r'[a-fA-F0-9]{32}', value):
                     raise ValueError(f'{key}: supply a 32-character hexadecimal API key')
             else:
-                minimum = (32 if key.endswith('_SECRET') else
+                minimum = (1 if key in DNS_KEYS else
+                           32 if key.endswith('_SECRET') else
                            8 if key == 'HOMEPAGE_AUTH_PASSWORD' else 16)
                 if len(value) < minimum:
                     raise ValueError(f'{key}: supply at least {minimum} characters')
