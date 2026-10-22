@@ -148,7 +148,8 @@ A new machine with the same working hostname can keep the client-facing URL.
 
 ## HTTPS and Homepage activation
 
-Public versus private hostname access is still unconfirmed. No public route,
+The operator requested public HTTPS at `immich.xdadwal.in` and a Homepage link.
+Activation remains pending private inputs and verified owner onboarding. No public route,
 DNS change, certificate issuance, live Nginx baseline update or Homepage link is
 performed automatically. `scripts/tls` continues to manage only its established
 service inventory; it does not activate Immich.
@@ -157,17 +158,31 @@ service inventory; it does not activate Immich.
 large request bodies, unbuffered uploads, forwarded headers, WebSockets and long
 streaming timeouts. Serve the root of `immich.xdadwal.in`, never a URL subpath.
 After private account and restore acceptance, verify DNS and a certificate that
-covers the hostname. Render `${IMMICH_HOST}`, `${CERTIFICATE}` and
-`${CERTIFICATE_KEY}` explicitly, leaving Nginx `$host` and other runtime variables
-intact. Review existing routes, certificate renewal coverage and ACLs. Install as
+covers the hostname. Preview the rendered host-specific candidate with `scripts/immich-proxy`.
+After verifying the private owner login, apply with:
+
+```sh
+sudo scripts/immich-proxy --apply --accounts-ready
+```
+
+The installer verifies the existing certificate chain/hostname/expiry, initialized
+owner state and disabled ML features; it refuses duplicate/unmanaged routes.
+It installs only `/etc/nginx/conf.d/ohara-immich.conf`, validates and reloads Nginx,
+and restores the previous file on failure. No certificate is issued or replaced.
+`--accounts-ready` attests to an actual private login check; an initialized flag
+alone does not establish successful login. This installer is specific to the
+existing xdadwal.in wildcard host. Its no-argument preview needs no root access.
+For another host, render `${IMMICH_HOST}`, `${CERTIFICATE}` and
+`${CERTIFICATE_KEY}` explicitly, leaving Nginx runtime variables intact. Review existing routes, certificate renewal coverage and ACLs. Install as
 a separate managed block with an HTTP redirect/ACME route appropriate to the
 chosen certificate method; route `/.well-known/immich` to Immich rather than a
 generic dotfile denial. Test `nginx -t` before reloading and retain rollback copies.
 
-A deliberate live change must update `configs/nginx/deployed/` too. Verify trusted
+After successful application, track the exact live `ohara-immich.conf` under
+`configs/nginx/deployed/` and update its README. Verify trusted
 HTTPS, phone connection, photo upload/download and a representative large video
-from the intended networks. Add the Homepage service link only after deployment
-is verified, preserving operator edits. No Homepage API key is needed for a link.
+from the intended networks. The Homepage seed includes a plain Immich card; merge only that card into the
+live dashboard after deployment is verified, preserving operator edits. No Homepage API key is needed for a link.
 
 ## Verification
 

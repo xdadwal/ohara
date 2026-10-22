@@ -105,3 +105,12 @@ Sources checked 2026-10-16:
 - https://gethomepage.dev/widgets/info/resources/
 - https://gethomepage.dev/widgets/info/openmeteo/
 - https://github.com/gnmyt/MySpeed/blob/development/server/util/speedtest.js
+
+## Immich link
+
+The Photos section in the seed contains a plain link to
+`https://immich.{{HOMEPAGE_VAR_DOMAIN}}`. It needs no API key or shared Docker
+network. On an existing dashboard, merge only this section after the optional
+Immich instance and HTTPS route are verified. Preserve the rest of services.yaml,
+including embedded widget credentials; do not print or replace the entire file.
+The requested live link remains pending Immich startup/activation.

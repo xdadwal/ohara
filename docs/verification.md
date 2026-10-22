@@ -206,3 +206,19 @@ owner onboarding, representative photo/video/phone tests and isolated backup
 restoration. Public/private hostname access, DNS/TLS activation, large uploads
 through that live route and Homepage link remain pending. Disposable tests do
 not establish these outcomes or full supported-host provisioning.
+
+### Public activation preparation (2026-10-22)
+
+The operator requested live startup, public HTTPS and a Homepage card. Inspection
+confirmed no production Immich containers/storage yet, about 236 GiB free on the
+approved local filesystem, existing custom Homepage configuration, and
+immich.xdadwal.in resolving to 45.120.160.21. IMMICH_DB_PASSWORD is absent and
+noninteractive sudo requires authentication; neither was bypassed. No production
+service, Homepage, Nginx or DNS changes were made in this preparation.
+
+Added a host-specific transactional scripts/immich-proxy installer and a seed
+Homepage link. 134 Python tests, setup/CLI/static checks pass. A disposable Nginx
+instance verified the actual rendered candidate's syntax, HTTPS proxy, HTTP
+redirect, mobile discovery path and replacement of spoofed forwarding headers.
+Production activation, owner login, certificate validation, off-host backups and
+external reachability remain pending. The existing PR includes this preparation.

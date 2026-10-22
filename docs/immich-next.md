@@ -10,6 +10,6 @@ or AI jobs. The planned hostname remains `immich.xdadwal.in`.
 
 Pending before production use: library size/growth, independent backup destination
 and retention, user-supplied database password, private owner setup, upload/video
-checks and an isolated backup restore. Public versus private hostname access is
-still to be selected. No live deployment or public activation is implied by the
+checks and an isolated backup restore. Public HTTPS and a Homepage link have been requested; activation is pending
+private inputs, owner readiness and host administrator access. No live deployment or public activation is implied by the
 repository implementation.
