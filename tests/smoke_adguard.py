@@ -2,6 +2,9 @@
 import base64
 import json
 import os
+import select
+import socket
+import struct
 from pathlib import Path
 import subprocess
 import sys
@@ -94,6 +97,25 @@ def main():
                 assert query(c['JELLYFIN_HOST'], 'AAAA') == '', 'Rewritten name leaked IPv6'
                 assert query('blocked.example.test') == '0.0.0.0', 'Controlled filter failed'
                 assert query('example.org'), 'Encrypted upstream lookup failed'
+            # Browsers issue parallel lookups; the default subnet-wide limit
+            # silently drops bursts even when isolated lookups work.
+            labels = b''.join(bytes([len(label)])+label.encode() for label in c['JELLYFIN_HOST'].split('.'))+b'\0'
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.setblocking(False)
+                for ident in range(30):
+                    packet = struct.pack('!HHHHHH', ident, 0x100, 1, 0, 0, 0)+labels+struct.pack('!HH', 1, 1)
+                    sock.sendto(packet, ('127.0.0.1', int(ports['1053/udp'][0]['HostPort'])))
+                received = set()
+                deadline = time.monotonic()+3
+                while len(received) < 30 and time.monotonic() < deadline:
+                    ready, _, _ = select.select([sock], [], [], max(0, deadline-time.monotonic()))
+                    if not ready:
+                        break
+                    packet, _ = sock.recvfrom(4096)
+                    ident, flags = struct.unpack('!HH', packet[:4])
+                    if flags & 15 == 0 and packet.endswith(socket.inet_aton(c['ADGUARD_BIND_IP'])):
+                        received.add(ident)
+                assert len(received) == 30, f'Parallel LAN DNS requests dropped: {30-len(received)}'
             docker('restart', name)
             ports = json.loads(docker('inspect', '--format', '{{json .NetworkSettings.Ports}}', name, capture=True))
             http_port = ports['3000/tcp'][0]['HostPort']
@@ -106,7 +128,7 @@ def main():
                     if time.monotonic() > deadline:
                         raise RuntimeError('Disposable AdGuard restart failed') from None
                     time.sleep(0.25)
-            print('PASS: disposable AdGuard non-root startup, protected API, UDP/TCP rewrites, IPv6 response, filtering, encrypted upstream and restart.')
+            print('PASS: disposable AdGuard non-root startup, protected API, UDP/TCP rewrites, IPv6 response, filtering, encrypted upstream, parallel DNS burst and restart.')
         finally:
             docker('rm', '-f', name)
 
