@@ -222,3 +222,19 @@ instance verified the actual rendered candidate's syntax, HTTPS proxy, HTTP
 redirect, mobile discovery path and replacement of spoofed forwarding headers.
 Production activation, owner login, certificate validation, off-host backups and
 external reachability remain pending. The existing PR includes this preparation.
+
+### Private Immich startup (2026-10-22)
+
+The operator supplied the private database password and explicitly accepted its
+shorter length. Added a per-command --allow-short-db-password exception; normal
+checks keep their original default. Empty/unsupported inputs remain rejected, and
+the main stack ignores this optional project's credential. All 135 Python tests
+and CLI/static checks pass. No password was generated, changed or printed.
+
+Ran scripts/immich prepare and up with the explicit exception, using the approved
+/ohara/immich/library and /ohara/immich/postgres paths on the root ext4 NVMe.
+All three production containers are healthy and the local API ping succeeds.
+The onboarding endpoint reports no owner account yet. Public activation and the
+live Homepage card remain pending owner login; sudo authentication remains
+unavailable in the agent session. Off-host backups/restoration and real photo,
+video and phone acceptance remain unverified.

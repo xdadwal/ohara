@@ -22,7 +22,7 @@ def navidrome_widget_environment(media):
     return {'HOMEPAGE_VAR_NAVIDROME_TOKEN': token}
 
 
-def read(path, keys, optional=frozenset(), ignored=frozenset()):
+def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengths=None):
     path = Path(path)
     if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
         raise ValueError(f'{path.name}: Symlink private configuration is unsupported')
@@ -60,6 +60,7 @@ def read(path, keys, optional=frozenset(), ignored=frozenset()):
                 minimum = (1 if key in DNS_KEYS else
                            32 if key.endswith('_SECRET') else
                            8 if key == 'HOMEPAGE_AUTH_PASSWORD' else 16)
+                minimum = (minimum_lengths or {}).get(key, minimum)
                 if len(value) < minimum:
                     raise ValueError(f'{key}: supply at least {minimum} characters')
             values[key] = value
@@ -71,6 +72,6 @@ def read(path, keys, optional=frozenset(), ignored=frozenset()):
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
-    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS, config.KEYS)
+    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS | IMMICH_KEYS)
     return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
             {k:v for k,v in values.items() if k in MEDIA_KEYS})

@@ -5,7 +5,9 @@ Immich is implemented as the independent `ohara-immich` Compose project in
 start it. The release is v3.3.5, with immutable images in `versions.immich.env`
 matching the official release Compose dependencies. PostgreSQL and Valkey run in
 containers with no published ports. Only Immich publishes `127.0.0.1:2283`.
-The production instance has not been started or exposed by this repository change.
+The production instance was started privately on 2026-10-22 after the operator
+supplied the database password. All three containers are healthy; owner
+onboarding and public HTTPS activation remain pending.
 
 The owner selected no AI features. There is no machine-learning container;
 `configs/immich/immich.json` sets `machineLearning.enabled=false`. Uploads,
@@ -25,6 +27,13 @@ size/growth and an independent backup destination remain operator inputs.
 Keep credentials in the existing private root `.env`, mode 0600. Privately append
 `IMMICH_DB_PASSWORD` with an independent password of at least 16 ASCII letters
 and digits, following upstream's character restrictions. No value is generated.
+An operator may explicitly accept an existing shorter alphanumeric password with
+`--allow-short-db-password` on `prepare`, `check` and `up`. The default remains
+16 characters; empty values and unsupported characters are always rejected.
+The operator authorized this exception for the current host on 2026-10-22.
+Use that flag on subsequent operations while retaining this input. Main-stack
+credential checks ignore this optional project's password.
+
 Keep this value synchronized with the actual database account; editing it does
 not rotate an initialized PostgreSQL password. Immich's owner account is separate
 and is created privately through the application during onboarding.

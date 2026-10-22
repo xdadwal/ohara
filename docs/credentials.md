@@ -127,3 +127,8 @@ value. The main stack does not require it. No password is generated or rotated;
 changing the input alone does not change an existing database account. The Immich
 owner has a separate application account, created privately during onboarding.
 See [Immich operations](immich.md) for preparation and backup requirements.
+
+The operator explicitly accepted the existing shorter Immich DB password on this
+host. `scripts/immich prepare|check|up --allow-short-db-password` supports this
+per-command exception without changing normal validation defaults or unrelated
+service credentials. Empty or non-alphanumeric values remain rejected.

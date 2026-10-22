@@ -50,20 +50,21 @@ def images(root):
     return values
 
 
-def password(root):
+def password(root, *, allow_short=False):
     value = credentials.read(root / '.env', credentials.IMMICH_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.IMMICH_KEYS))['IMMICH_DB_PASSWORD']
-    if not re.fullmatch(r'[A-Za-z0-9]{16,}', value):
+        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.IMMICH_KEYS),
+        minimum_lengths={'IMMICH_DB_PASSWORD': 1} if allow_short else None)['IMMICH_DB_PASSWORD']
+    if not re.fullmatch(r'[A-Za-z0-9]+', value) or (len(value) < 16 and not allow_short):
         raise ValueError('IMMICH_DB_PASSWORD: supply at least 16 ASCII letters/digits privately in .env')
     return value
 
 
-def compose(c, root, args, *, static=False, capture=False, timeout=60):
+def compose(c, root, args, *, static=False, capture=False, timeout=60, allow_short=False):
     values = settings(c) | images(root) | {
         'TZ': c['TZ'], 'IMMICH_CONFIG_PATH': str(root / 'configs/immich/immich.json'),
         'COMPOSE_DISABLE_ENV_FILE': '1',
         # Static/status/stop operations never need the real credential.
-        'IMMICH_DB_PASSWORD': '' if static else password(root),
+        'IMMICH_DB_PASSWORD': '' if static else password(root, allow_short=allow_short),
     }
     env = {k: v for k, v in os.environ.items() if k in {
         'PATH', 'HOME', 'USER', 'XDG_RUNTIME_DIR', 'DOCKER_CONFIG', 'DOCKER_HOST',
@@ -117,11 +118,11 @@ def validate_model(model, c, root):
         raise ValueError('Immich machine learning must be disabled')
 
 
-def check(c, root, *, static=False):
+def check(c, root, *, static=False, allow_short=False):
     model = json.loads(compose(c, root, ['config', '--format', 'json'], static=True, capture=True))
     validate_model(model, c, root)
     if not static:
-        password(root)
+        password(root, allow_short=allow_short)
         storage(c, require_directories=True)
     print('Immich configuration valid; machine learning disabled; web port loopback-only.')
 
@@ -152,9 +153,9 @@ def storage(c, *, require_directories=False):
         print(f'Immich {kind.lower()} mount verified; {free // 1024**3} GiB free (library capacity still needs review).')
 
 
-def prepare(c, root):
+def prepare(c, root, *, allow_short=False):
     check(c, root, static=True)
-    password(root)
+    password(root, allow_short=allow_short)
     storage(c)
     for key in ('IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT'):
         # No recursive ownership change; image entrypoints manage their own state.
@@ -162,10 +163,10 @@ def prepare(c, root):
     print('Immich storage prepared; existing content and ownership preserved.')
 
 
-def up(c, root):
-    check(c, root)
+def up(c, root, *, allow_short=False):
+    check(c, root, allow_short=allow_short)
     # An existing project may already own 2283. Compose detects other port conflicts.
-    compose(c, root, ['up', '-d', '--wait', '--wait-timeout', '180'], timeout=300)
+    compose(c, root, ['up', '-d', '--wait', '--wait-timeout', '180'], timeout=300, allow_short=allow_short)
     print('Immich started privately; complete owner setup and backup/restore acceptance before HTTPS activation.')
 
 

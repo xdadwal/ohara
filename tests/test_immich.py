@@ -93,6 +93,18 @@ class ImmichTests(unittest.TestCase):
             daemon.assert_not_called()
             self.assertEqual(run.call_args.kwargs['env']['IMMICH_DB_PASSWORD'], '')
 
+    def test_short_password_requires_explicit_exception(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text('IMMICH_DB_PASSWORD=TestOnly7\n')
+            (root / '.env').chmod(0o600)
+            with self.assertRaises(ValueError):
+                immich.password(root)
+            self.assertEqual(immich.password(root, allow_short=True), 'TestOnly7')
+            (root / '.env').write_text('IMMICH_DB_PASSWORD=\n')
+            with self.assertRaises(ValueError):
+                immich.password(root, allow_short=True)
+
     def test_password_rejects_unsupported_characters_without_echo(self):
         with patch('immich.credentials.read', return_value={'IMMICH_DB_PASSWORD': 'sensitive$unsupported123'}):
             with self.assertRaises(ValueError) as caught:

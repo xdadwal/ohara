@@ -16,16 +16,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['check', 'prepare', 'up', 'status', 'stop'])
     parser.add_argument('--static', action='store_true', help='check Compose without private credentials, storage or Docker daemon')
+    parser.add_argument('--allow-short-db-password', action='store_true',
+                        help='explicit operator exception: accept a nonempty alphanumeric DB password shorter than 16 characters')
     args = parser.parse_args()
     if args.static and args.command != 'check':
         parser.error('--static is only supported with check')
     c = config.load(ROOT / ('.env.example' if args.static else '.env'))
     if args.command == 'check':
-        immich.check(c, ROOT, static=args.static)
+        immich.check(c, ROOT, static=args.static, allow_short=args.allow_short_db_password)
     elif args.command == 'prepare':
-        immich.prepare(c, ROOT)
+        immich.prepare(c, ROOT, allow_short=args.allow_short_db_password)
     elif args.command == 'up':
-        immich.up(c, ROOT)
+        immich.up(c, ROOT, allow_short=args.allow_short_db_password)
     elif args.command == 'status':
         return immich.status(c, ROOT)
     else:
