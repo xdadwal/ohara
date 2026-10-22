@@ -50,14 +50,8 @@ ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101
 Open `http://localhost:3003`, username **admin**, using the supplied password.
 Use the actual SSH username/address for another host.
 
-Initial settings use Cloudflare DNS over HTTPS at `https://1.1.1.1/dns-query` and
-`https://1.0.0.1/dns-query`, with normal TLS certificate verification. These IP
-endpoints avoid an initial plaintext DNS bootstrap dependency; there is no
-plaintext fallback upstream. Bootstrap DNS addresses remain available for any
-hostname-based upstream an operator later adds. The default subnet-wide DNS
-rate limit is disabled because this resolver accepts only allowlisted LAN clients:
-the default 20 requests/second can silently drop browser bursts or aggregated
-router traffic. The LAN allowlist and LAN-only binding remain mandatory. The AdGuard DNS
+Initial settings use Cloudflare DNS over HTTPS, with 1.1.1.1/1.0.0.1 only for
+bootstrap name resolution and no plaintext fallback upstream. The AdGuard DNS
 filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.

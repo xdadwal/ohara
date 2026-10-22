@@ -39,12 +39,7 @@ def initial_config(c, password_hash):
         'dns': {
             'bind_hosts': ['0.0.0.0'], 'port': 1053,
             'allowed_clients': [network],
-            # Only allowlisted LAN clients can query; do not aggregate the whole
-            # subnet behind the default 20 queries/second drop threshold.
-            'ratelimit': 0,
-            # IP-address HTTPS endpoints retain TLS validation without requiring
-            # a successful plaintext bootstrap lookup before encrypted DNS works.
-            'upstream_dns': ['https://1.1.1.1/dns-query', 'https://1.0.0.1/dns-query'],
+            'upstream_dns': ['https://dns.cloudflare.com/dns-query'],
             'bootstrap_dns': ['1.1.1.1', '1.0.0.1'],
             'fallback_dns': [], 'use_private_ptr_resolvers': False,
             'hostsfile_enabled': False,

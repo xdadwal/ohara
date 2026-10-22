@@ -43,8 +43,6 @@ class AdguardTests(unittest.TestCase):
         self.assertFalse(data['dns']['hostsfile_enabled'])
         self.assertFalse(data['dhcp']['enabled'])
         self.assertEqual(data['dns']['allowed_clients'], ['192.168.1.0/24'])
-        self.assertEqual(data['dns']['ratelimit'], 0)
-        self.assertEqual(data['dns']['upstream_dns'], ['https://1.1.1.1/dns-query', 'https://1.0.0.1/dns-query'])
         self.assertTrue(all(u.startswith('https://') for u in data['dns']['upstream_dns']))
         self.assertFalse(data['dns']['fallback_dns'])
 
