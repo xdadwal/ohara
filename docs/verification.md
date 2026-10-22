@@ -366,3 +366,28 @@ phase; no implementation code changed in this activation. Full approved-account
 Google login/logout, rejected uninvited-account login, account linking and mobile
 acceptance still need real owner/browser checks. No such checks are inferred from
 the successful initial provider or authorization URL responses.
+
+### Google-only login and user onboarding (2026-10-22)
+
+At the operator's explicit request, changed the Google OAuth renderer to disable
+password login. Validation permits Google-only mode only with OAuth configured
+and rejects a policy disabling both login methods. Fresh-install bootstrap keeps
+password login until Google is configured; future OAuth regenerations retain
+Google-only mode. Existing accounts/password hashes/sessions were not reset.
+
+150 Python tests, setup/CLI/static checks and both static Compose checks pass.
+The disposable Immich smoke still passes fresh owner login and a photo round
+trip. Reconfigured/recreated only production Immich server. All three containers
+are healthy. Verified the live feature API reports OAuth enabled/password login
+disabled, the password endpoint explicitly returns 401 with the disabled-login
+message, OAuth authorize returns the Google endpoint, autoRegister stays false,
+ML remains disabled, and the existing widget statistics key still works.
+
+Documented the pinned v3.3.5 new-user form workflow: admin pre-creates the exact
+Google email/name with an appropriate quota, leaves password fields blank,
+disables required password change and keeps ordinary users non-admin. The owner
+shares the service URL manually; first Google login links the existing account.
+The Google basic-identity-scope exception means Google's Testing user list is
+not the application membership gate. No users, invitations or messages were
+created/sent during this change. Full Google browser acceptance remains an owner
+check; endpoint/configuration verification is not a completed Google login.

@@ -19,7 +19,8 @@ Library size/growth, independent backup destination/retention, real photo/video
 and phone checks and an isolated restore remain pending. See
 [Immich operations](immich.md). Do not treat the archive as backup-ready yet.
 
-Google OAuth is now enabled with automatic registration disabled and password
-fallback preserved. The supplied client passed initial validation and web/mobile
+Google OAuth is enabled with automatic registration and password login disabled.
+Only administrators can provision approved users by their exact Google email;
+see the onboarding workflow in immich-google-oauth.md. The supplied client passed initial validation and web/mobile
 authorization URL checks. An approved-account Google login and uninvited-account
 rejection still need a real browser test; see immich-google-oauth.md.

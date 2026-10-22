@@ -16,8 +16,9 @@ def validate_policy(policy):
     oauth = policy.get('oauth', {})
     if oauth.get('autoRegister') is not False or oauth.get('autoLaunch') is not False:
         raise ValueError('Immich OAuth must disable auto registration and automatic redirects')
-    if policy.get('passwordLogin', {}).get('enabled') is not True:
-        raise ValueError('Keep existing password login enabled until Google login is verified')
+    password_login = policy.get('passwordLogin', {}).get('enabled')
+    if not isinstance(password_login, bool) or (not password_login and not oauth.get('enabled')):
+        raise ValueError('Immich requires at least one enabled login method')
     if oauth.get('enabled'):
         if (oauth.get('issuerUrl') != 'https://accounts.google.com' or
                 oauth.get('scope') != 'openid email profile' or
@@ -56,6 +57,7 @@ def render(root, c):
         'mobileOverrideEnabled': True,
         'mobileRedirectUri': 'https://immich.' + c['DOMAIN'] + '/api/oauth/mobile-redirect',
     }
+    policy['passwordLogin'] = {'enabled': False}
     validate_policy(policy)
     return json.dumps(policy, indent=2) + '\n'
 

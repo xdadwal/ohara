@@ -35,27 +35,34 @@ class ImmichOAuthTests(unittest.TestCase):
             immich_oauth.prepare(self.root, self.c)
         self.assertFalse((self.root / 'local').exists())
 
-    def test_render_enforces_existing_users_only_and_preserves_password_login(self):
+    def test_render_enforces_existing_users_only_and_google_only_login(self):
         self.inputs()
         policy = json.loads(immich_oauth.render(self.root, self.c))
         self.assertIs(policy['oauth']['enabled'], True)
         self.assertIs(policy['oauth']['autoRegister'], False)
         self.assertIs(policy['oauth']['autoLaunch'], False)
-        self.assertIs(policy['passwordLogin']['enabled'], True)
+        self.assertIs(policy['passwordLogin']['enabled'], False)
         self.assertIs(policy['machineLearning']['enabled'], False)
         self.assertEqual(policy['oauth']['clientSecret'], self.secret)
         self.assertEqual(policy['oauth']['issuerUrl'], 'https://accounts.google.com')
         self.assertEqual(policy['oauth']['mobileRedirectUri'], 'https://immich.xdadwal.in/api/oauth/mobile-redirect')
 
-    def test_policy_rejects_open_registration_or_owner_lockout(self):
+    def test_policy_rejects_open_registration_redirects_and_ml(self):
         self.inputs()
         policy = json.loads(immich_oauth.render(self.root, self.c))
         for section, key, value in [('oauth', 'autoRegister', True), ('oauth', 'autoLaunch', True),
-                                    ('passwordLogin', 'enabled', False), ('machineLearning', 'enabled', True)]:
+                                    ('machineLearning', 'enabled', True)]:
             broken = json.loads(json.dumps(policy))
             broken[section][key] = value
             with self.subTest(section=section, key=key), self.assertRaises(ValueError):
                 immich_oauth.validate_policy(broken)
+
+    def test_disabling_both_login_methods_is_rejected(self):
+        self.inputs()
+        policy = json.loads(immich_oauth.render(self.root, self.c))
+        policy['oauth']['enabled'] = False
+        with self.assertRaisesRegex(ValueError, 'at least one'):
+            immich_oauth.validate_policy(policy)
 
     def test_generated_config_and_backup_are_private_and_idempotent(self):
         self.inputs()

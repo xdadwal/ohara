@@ -228,5 +228,6 @@ in the managed policy; administrators provision approved users by their Google
 email. Google credentials come only from the private .env and are rendered into
 a private read-only server configuration by scripts/immich oauth. Live Google
 login is enabled with the supplied client credentials; browser acceptance with
-approved and uninvited accounts remains pending. Password
-login is preserved, with no new authentication infrastructure or SMTP service.
+approved and uninvited accounts remains pending. Google is the only enabled
+interactive login method; password login is disabled. The onboarding workflow is
+in that guide, with no extra authentication or SMTP service.

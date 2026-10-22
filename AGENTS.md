@@ -20,7 +20,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   archive acceptance remain pending.
   Use scripts/immich and docs/immich.md; preserve its independent
   database/cache and stable /data container path. Google OAuth must remain
-  invite-only (autoRegister=false), with password fallback until verified. Use
+  invite-only (autoRegister=false), with Google-only login and password login
+  disabled by operator request. Pre-create approved users by exact Google email;
+  leave their password fields empty and disable required password change. Use
   scripts/immich oauth and docs/immich-google-oauth.md; actual Google client inputs
   belong only in private .env, never in the versioned JSON or Homepage.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
