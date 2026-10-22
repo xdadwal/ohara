@@ -307,3 +307,11 @@ was absent from both browser-facing responses. No other application was restarte
 The previously tested repository configuration already included this widget and
 credential allowlist; this step changes live configuration and deployment notes.
 Browser layout and archive/phone/video/backup acceptance remain separate checks.
+
+### Immich widget field selection (2026-10-22)
+
+At the operator's request, changed only the live/seed Immich fields to photos,
+videos and storage, hiding the user count. The prior live dashboard is privately
+backed up, other contents/permissions are preserved, and only Homepage restarted.
+Verified the exact field list through the authenticated services API and confirmed
+the native statistics_v2 response still succeeds. Git whitespace checks pass.

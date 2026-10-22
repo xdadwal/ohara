@@ -42,7 +42,7 @@
           url: "https://immich.{{HOMEPAGE_VAR_DOMAIN}}"
           key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
           version: 2
-          fields: [users, photos, videos, storage]
+          fields: [photos, videos, storage]
 - Tools:
     - AdGuard Home:
         icon: adguard-home.png

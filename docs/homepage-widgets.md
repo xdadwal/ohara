@@ -119,8 +119,8 @@ Immich currently serves LAN-only owner onboarding.
 
 ### Immich statistics widget
 
-The seed uses the native Immich widget version 2 with users, photos, videos and
-storage. Create an application-issued API key in Immich Account Settings > API
+The seed and current live card use the native Immich widget version 2 with photo
+count, video count and total storage usage; the user count is hidden. Create an application-issued API key in Immich Account Settings > API
 Keys with only server.statistics permission, then place it privately in .env as
 HOMEPAGE_VAR_IMMICH_API_KEY. This optional key is allowlisted only to Homepage;
 it is never injected into Immich, database or media container environments. Never put the
