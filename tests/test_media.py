@@ -19,7 +19,10 @@ class MediaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             credential_fixtures.write(root)
-            preferences = {'auto_tmm_enabled': False, 'unrelated': 'preserved'}
+            preferences = {'auto_tmm_enabled': False, 'unrelated': 'preserved',
+                           'max_ratio_enabled': True, 'max_ratio': 0, 'max_ratio_act': 0,
+                           'max_seeding_time_enabled': True, 'max_seeding_time': 0,
+                           'max_inactive_seeding_time_enabled': True}
             categories = {'movies': {'savePath': '/data/downloads/complete/movies'}}
             settings = {'radarr': {'copyUsingHardlinks': False, 'recycleBin': '', 'custom': 42},
                         'sonarr': {'copyUsingHardlinks': True, 'recycleBin': '/data/custom-bin',
@@ -34,8 +37,8 @@ class MediaTests(unittest.TestCase):
                     calls.append(path)
                     if path.endswith('/preferences'): return copy.deepcopy(preferences)
                     if path.endswith('/setPreferences'):
-                        # A zero seed limit must never be enabled while Arr can
-                        # delete a completed torrent and its original files.
+                        # Arr cleanup must be disabled before qBittorrent
+                        # becomes responsible for source retention.
                         if any(cleanup.values()):
                             raise AssertionError('Cleanup must be disabled before seeding limits')
                         preferences.update(json.loads(body['json']))
@@ -51,11 +54,12 @@ class MediaTests(unittest.TestCase):
                 media.configure_storage(root)
                 media.configure_storage(root)
             self.assertTrue(preferences['auto_tmm_enabled'])
-            self.assertTrue(preferences['max_ratio_enabled'])
+            self.assertFalse(preferences['max_ratio_enabled'])
             self.assertEqual(preferences['max_ratio'], 0)
-            self.assertEqual(preferences['max_ratio_act'], 0)
+            self.assertEqual(preferences['max_ratio_act'], 3)
             self.assertTrue(preferences['max_seeding_time_enabled'])
-            self.assertEqual(preferences['max_seeding_time'], 0)
+            self.assertEqual(preferences['max_seeding_time'], 4320)
+            self.assertFalse(preferences['max_inactive_seeding_time_enabled'])
             self.assertEqual(preferences['unrelated'], 'preserved')
             self.assertEqual(settings['radarr']['recycleBin'], '/data/recycle-bin/movies')
             self.assertEqual(settings['radarr']['recycleBinCleanupDays'], 7)

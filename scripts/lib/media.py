@@ -112,8 +112,9 @@ def configure_storage(root, urls=None):
             if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
                 download['removeCompletedDownloads'] = False
                 client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
-    policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':True, 'max_ratio':0,
-              'max_ratio_act':0, 'max_seeding_time_enabled':True, 'max_seeding_time':0}
+    policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':False,
+              'max_ratio_act':3, 'max_seeding_time_enabled':True, 'max_seeding_time':4320,
+              'max_inactive_seeding_time_enabled':False}
     if any(preferences.get(key) != value for key, value in policy.items()):
         qb.call('/api/v2/app/setPreferences', {'json':json.dumps(policy)}, form=True)
     for category in ('movies', 'tv'):
@@ -130,7 +131,8 @@ def configure_storage(root, urls=None):
         if settings != before:
             client.call('/api/v3/config/mediamanagement', settings, 'PUT')
     print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
-          'and recycle bins. Existing torrents and custom recycle settings preserved.')
+          'recycle bins, and removal of torrents/download files after 72 hours of seeding. '
+          'Existing torrent states/overrides and custom recycle settings preserved.')
 
 
 def connect(c, root, email, urls=None):
@@ -170,16 +172,16 @@ def connect(c, root, email, urls=None):
                             authenticationMethod='forms', authenticationRequired='enabled')
             client.call(version+'/config/host', resource, 'PUT')
             done(name+'-auth')
-    configure_storage(root, urls)
     qb = Client(urls['qbittorrent'])
     qb.headers.update(Host='127.0.0.1:8081', Referer='http://127.0.0.1:8081/')
     qb.call('/api/v2/auth/login', {'username':'admin', 'password':values['QBITTORRENT_PASSWORD']}, form=True)
     categories = qb.call('/api/v2/torrents/categories')
-    # Creating a missing music category is safe; changing an existing path could
-    # relocate automatically managed torrents, so preserve operator settings.
-    if 'music' not in categories:
-        qb.call('/api/v2/torrents/createCategory', {'category':'music',
-                'savePath':'/data/downloads/complete/music'}, form=True)
+    # Set explicit paths before Arr tests, which can otherwise create categories
+    # with qBittorrent's generic default path. Preserve existing category paths.
+    for category in ('movies', 'tv', 'music'):
+        if category not in categories:
+            qb.call('/api/v2/torrents/createCategory', {'category':category,
+                    'savePath':'/data/downloads/complete/'+category}, form=True)
     for name, category in [('radarr', 'movies'), ('sonarr', 'tv'), ('lidarr', 'music')]:
         client = arr[name]
         version = '/api/v1' if name == 'lidarr' else '/api/v3'
@@ -210,6 +212,10 @@ def connect(c, root, email, urls=None):
                             'apiKey':values[name.upper()+'_API_KEY']})
             prowlarr.call('/api/v1/applications/test', schema)
             prowlarr.call('/api/v1/applications', schema)
+    # Fresh Arr connection tests reject automatic removal below 14 days. Validate
+    # and register clients before applying the owner's shorter retention policy.
+    # Existing clients are preserved on reruns; storage-only remains independent.
+    configure_storage(root, urls)
     import navidrome
     navidrome.connect(urls['navidrome'], values['NAVIDROME_PASSWORD'])
     jf = Client(urls['jellyfin'])

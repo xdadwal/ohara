@@ -54,7 +54,10 @@ docs/superpowers/plans/.
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
   A completed command or cached Available label is not evidence of a present file:
   verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
-  Preserve source torrents; never redownload or delete library files to fix metadata.
+  Preserve source torrents during metadata repair; never redownload or delete library
+  files to fix metadata. The selected storage policy seeds for 4320 minutes, then
+  qBittorrent removes torrents/download files; ratio/inactivity limits are disabled.
+  Review imports/hardlinks before applying it; resume stopped torrents deliberately.
   Disable managed Arr completed-download cleanup before applying qBittorrent
   seeding limits, because reaching a limit can immediately trigger source deletion.
 - Use `scripts/media-setup --quality-only` for the bounded HD-1080p policy on
