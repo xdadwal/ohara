@@ -220,3 +220,12 @@ References: [official installation](https://docs.immich.app/install/docker-compo
 [configuration file](https://docs.immich.app/install/config-file/),
 [reverse proxy](https://docs.immich.app/administration/reverse-proxy/),
 [release v3.3.5](https://github.com/immich-app/immich/releases/tag/v3.3.5).
+
+## Invite-only Google OAuth
+
+See [Google OAuth setup](immich-google-oauth.md). Registration is always disabled
+in the managed policy; administrators provision approved users by their Google
+email. Google credentials come only from the private .env and are rendered into
+a private read-only server configuration by scripts/immich oauth. Live Google
+login remains pending the real client ID/secret and browser acceptance. Password
+login is preserved, with no new authentication infrastructure or SMTP service.

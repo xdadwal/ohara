@@ -10,7 +10,8 @@ MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'}
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
 DNS_KEYS = {'ADGUARD_PASSWORD'}
 IMMICH_KEYS = {'IMMICH_DB_PASSWORD'}
-ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS
+IMMICH_OAUTH_KEYS = {'IMMICH_GOOGLE_CLIENT_ID', 'IMMICH_GOOGLE_CLIENT_SECRET'}
+ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS
 DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN'}
 
 
@@ -50,6 +51,9 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
             if key in WIDGET_KEYS:
                 if not re.fullmatch(r'[!-~]{20,512}', value):
                     raise ValueError(f'{key}: copy the actual application API key into the private file')
+            elif key in IMMICH_OAUTH_KEYS:
+                if not value:
+                    raise ValueError(f'{key}: supply the actual Google OAuth client value privately')
             elif key == 'HOMEPAGE_AUTH_ENABLED':
                 if value != 'true':
                     raise ValueError('HOMEPAGE_AUTH_ENABLED must be true')
@@ -72,6 +76,6 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
-    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS | IMMICH_KEYS)
+    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS)
     return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
             {k:v for k,v in values.items() if k in MEDIA_KEYS})

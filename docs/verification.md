@@ -315,3 +315,29 @@ videos and storage, hiding the user count. The prior live dashboard is privately
 backed up, other contents/permissions are preserved, and only Homepage restarted.
 Verified the exact field list through the authenticated services API and confirmed
 the native statistics_v2 response still succeeds. Git whitespace checks pass.
+
+### Invite-only Google OAuth preparation (2026-10-22)
+
+The operator requested Google accounts with invite-only membership. Reviewed the
+official Immich OAuth/user-management guidance, Google OIDC setup, and the pinned
+v3.3.5 authentication service: it links an existing account by normalized email
+and rejects a missing account when autoRegister is false. This is admin-created
+membership, not a new invitation-email or shared-authentication service.
+
+Added optional private Google client inputs, a server-only derived configuration
+and scripts/immich oauth. Managed policy enforces autoRegister=false,
+autoLaunch=false, password fallback and machine learning disabled. Activation
+recreates only Immich server and restores the previous configuration on failure;
+failed/prior configurations remain private. Google credentials never enter
+Compose interpolation environments or unrelated service inputs.
+
+149 Python tests and setup/CLI/static checks pass, including literal secret
+preservation, isolation, private-file permissions, registration/lockout policy
+and failed-activation rollback. The disposable Immich smoke passes owner login,
+photo round trip and effective disabled auto registration/password fallback.
+Both static Compose checks and whitespace validation pass. Restarted only the
+production Immich server to load the explicit disabled-registration baseline;
+the API continues to report password login enabled, Google OAuth disabled and ML
+disabled. Actual Google OAuth client inputs are absent, so activation and approved/
+uninvited Google account browser tests remain pending. No external account,
+client secret, users, passwords or API keys were generated or changed.

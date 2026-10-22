@@ -66,6 +66,8 @@ volumes:
             session = request('auth/login', {'email': 'smoke@example.invalid', 'password': 'DisposableOwnerOnly12345'})
             policy = request('system-config', token=session['accessToken'])
             assert policy['machineLearning']['enabled'] is False
+            assert policy['oauth']['autoRegister'] is False
+            assert policy['passwordLogin']['enabled'] is True
             # A tiny generated PNG fixture verifies original-file round trip.
             def chunk(kind, data):
                 return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))

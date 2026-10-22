@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['check', 'prepare', 'up', 'status', 'stop'])
+    parser.add_argument('command', choices=['check', 'prepare', 'up', 'status', 'stop', 'oauth'])
     parser.add_argument('--static', action='store_true', help='check Compose without private credentials, storage or Docker daemon')
     parser.add_argument('--allow-short-db-password', action='store_true',
                         help='explicit operator exception: accept a nonempty alphanumeric DB password shorter than 16 characters')
@@ -28,6 +28,8 @@ def main():
         immich.prepare(c, ROOT, allow_short=args.allow_short_db_password)
     elif args.command == 'up':
         immich.up(c, ROOT, allow_short=args.allow_short_db_password)
+    elif args.command == 'oauth':
+        immich.configure_oauth(c, ROOT, allow_short=args.allow_short_db_password)
     elif args.command == 'status':
         return immich.status(c, ROOT)
     else:

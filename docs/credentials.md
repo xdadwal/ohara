@@ -136,3 +136,12 @@ service credentials. Empty or non-alphanumeric values remain rejected.
 Optional HOMEPAGE_VAR_IMMICH_API_KEY is an Immich-issued key restricted to
 server.statistics, supplied privately after owner setup. It is forwarded only
 to Homepage for its native statistics widget. See homepage-widgets.md.
+
+## Optional Immich Google OAuth
+
+Supply IMMICH_GOOGLE_CLIENT_ID and IMMICH_GOOGLE_CLIENT_SECRET privately in .env
+only after creating a real Google Web application OAuth client. Other services
+ignore these inputs. scripts/immich oauth validates them and renders a private
+server-only configuration; it does not generate or rotate provider credentials.
+The Google secret is not injected into Compose environments or Homepage. See
+[Google OAuth setup](immich-google-oauth.md) for redirects and invite-only policy.

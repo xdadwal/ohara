@@ -19,7 +19,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). Backup destination and
   archive acceptance remain pending.
   Use scripts/immich and docs/immich.md; preserve its independent
-  database/cache and stable /data container path.
+  database/cache and stable /data container path. Google OAuth must remain
+  invite-only (autoRegister=false), with password fallback until verified. Use
+  scripts/immich oauth and docs/immich-google-oauth.md; actual Google client inputs
+  belong only in private .env, never in the versioned JSON or Homepage.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.
 - Use independent per-service credentials in the single private `.env`; a shared

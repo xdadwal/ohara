@@ -4,10 +4,12 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import urllib.request
 
 import config
 import credentials
+import immich_oauth
 import runtime
 
 IMAGE_KEYS = {'IMMICH_SERVER_IMAGE', 'IMMICH_CACHE_IMAGE', 'IMMICH_DATABASE_IMAGE'}
@@ -61,7 +63,7 @@ def password(root, *, allow_short=False):
 
 def compose(c, root, args, *, static=False, capture=False, timeout=60, allow_short=False):
     values = settings(c) | images(root) | {
-        'TZ': c['TZ'], 'IMMICH_CONFIG_PATH': str(root / 'configs/immich/immich.json'),
+        'TZ': c['TZ'], 'IMMICH_CONFIG_PATH': str(immich_oauth.configuration_path(root, static=static)),
         'COMPOSE_DISABLE_ENV_FILE': '1',
         # Static/status/stop operations never need the real credential.
         'IMMICH_DB_PASSWORD': '' if static else password(root, allow_short=allow_short),
@@ -114,6 +116,7 @@ def validate_model(model, c, root):
             if mount['target'] in ('/data', '/var/lib/postgresql/data') and mount.get('bind', {}).get('create_host_path', True):
                 raise ValueError('Immich must not auto-create storage paths')
     policy = json.loads((root / 'configs/immich/immich.json').read_text())
+    immich_oauth.validate_policy(policy)
     if policy.get('machineLearning', {}).get('enabled') is not False:
         raise ValueError('Immich machine learning must be disabled')
 
@@ -184,3 +187,20 @@ def status(c, root):
         good = False
     print('Immich: ' + ('containers healthy and local API reachable.' if good else 'not ready; inspect local service logs.'))
     return 0 if good else 1
+
+
+def configure_oauth(c, root, *, allow_short=False):
+    check(c, root, allow_short=allow_short)
+    target = root / 'local/immich/immich.json'
+    immich_oauth.configuration_path(root)  # Validate an existing private file before reading it.
+    previous = target.read_bytes() if target.exists() else None
+    immich_oauth.prepare(root, c)
+    args = ['up', '-d', '--no-deps', '--force-recreate', '--wait',
+            '--wait-timeout', '180', 'immich-server']
+    try:
+        compose(c, root, args, timeout=300, allow_short=allow_short)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired):
+        immich_oauth.restore(root, previous)
+        compose(c, root, args, timeout=300, allow_short=allow_short)
+        raise RuntimeError('Google OAuth activation failed; previous configuration restored') from None
+    print('Invite-only Google OAuth configured; verify existing-user login and uninvited-user rejection in a browser.')
