@@ -2,7 +2,9 @@
 
 Ohara provisions a small Linux homeserver. Read README.md, docs/stack.md and docs/operations.md
 before changing deployment behavior. The approved migration plan is under
-docs/superpowers/plans/.
+docs/superpowers/plans/. For future service additions, follow
+[docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
+integration, exact privileged commands and LAN-only owner onboarding where needed.
 
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
@@ -12,8 +14,9 @@ docs/superpowers/plans/.
   Navidrome's Now Playing widget uses a Subsonic token derived locally from the
   existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
   Immich is implemented as an optional separate Compose project with machine
-  learning disabled; production startup is pending credentials, backup destination
-  and acceptance. Use scripts/immich and docs/immich.md; preserve its independent
+  learning disabled; production runs with LAN-only HTTPS onboarding. Owner login,
+  public activation, backup destination and archive acceptance remain pending.
+  Use scripts/immich and docs/immich.md; preserve its independent
   database/cache and stable /data container path.
   Media services are explicitly approved; follow docs/media.md. Do not introduce
   additional infrastructure or assume indexer/source credentials.

@@ -238,3 +238,34 @@ The onboarding endpoint reports no owner account yet. Public activation and the
 live Homepage card remain pending owner login; sudo authentication remains
 unavailable in the agent session. Off-host backups/restoration and real photo,
 video and phone acceptance remain unverified.
+
+### LAN onboarding and Homepage/AdGuard integration (2026-10-22)
+
+With operator authorization, installed the separate ohara-immich.conf route in
+LAN-only onboarding mode using the existing wildcard certificate. The installer
+validated the real certificate chain/hostname/expiry and tested/reloaded Nginx;
+its exact live file is tracked under configs/nginx/deployed/. No other Nginx file
+or certificate was replaced. Trusted HTTPS works via loopback and the server's
+192.168.1.101 LAN address; HTTP redirects to HTTPS. A request from an untrusted
+Docker subnet was denied with 403 even with a forged LAN X-Forwarded-For header.
+
+Added only the Immich Photos section to live Homepage services.yaml, preserving
+all prior contents and file permissions with a private backup under local/.
+Restarted only Homepage. Verified its trusted HTTPS password login and the
+authenticated services API returning the Immich link. Added the exact AdGuard
+rewrite immich.xdadwal.in -> 192.168.1.101 through its authenticated API, verified
+all old rewrites remain, and verified UDP and TCP DNS answers. Updated its fresh
+seed and documented the existing-install change. No router/client DNS or public
+GoDaddy record was changed.
+
+Owner creation/login, unrestricted public access, actual archive/phone acceptance
+and off-host backup/restore remain pending. LAN reachability does not establish
+Internet reachability. No private credentials were recorded in repository files.
+
+Captured the service-addition workflow in docs/adding-services.md and linked it
+from AGENTS.md and docs/agent-setup.md, including complete integration, scoped
+credential exceptions, terminal-specific sudo authentication and LAN onboarding.
+
+Final checks for this phase: all 137 Python tests, setup, CLI and static checks
+pass. The focused disposable AdGuard smoke passes with the updated Immich seed;
+both main-stack and Immich static Compose checks pass.

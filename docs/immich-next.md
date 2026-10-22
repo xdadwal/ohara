@@ -1,15 +1,17 @@
-# Immich implementation and remaining deployment steps
+# Immich deployment status
 
-The independent Immich Compose project is now implemented. See
-[Immich operations](immich.md) for configuration, private startup, backups,
-restore testing, drive/machine migration and deliberate HTTPS activation.
+The independent Immich project is running on this Ohara host with PostgreSQL and
+Valkey; machine learning is disabled. Its approved paths are
+`/ohara/immich/library` and `/ohara/immich/postgres`. The operator supplied the
+DB password and explicitly accepted its shorter length through a per-command
+exception.
 
-Confirmed: same Ohara host; photo root `/ohara/immich/library`; PostgreSQL in a
-container with host storage `/ohara/immich/postgres`; no machine-learning service
-or AI jobs. The planned hostname remains `immich.xdadwal.in`.
+LAN-only HTTPS onboarding at `https://immich.xdadwal.in` is active with the
+existing wildcard certificate. A live Homepage card and an AdGuard rewrite to
+192.168.1.101 are installed. UDP/TCP DNS, trusted LAN HTTPS and rejection of
+untrusted/forged-forwarding sources were checked.
 
-Pending before production use: library size/growth, independent backup destination
-and retention, user-supplied database password, private owner setup, upload/video
-checks and an isolated backup restore. Public HTTPS and a Homepage link have been requested; activation is pending
-private inputs, owner readiness and host administrator access. No live deployment or public activation is implied by the
-repository implementation.
+Next: create the owner and verify login, then enable public access deliberately.
+Library size/growth, independent backup destination/retention, real photo/video
+and phone checks and an isolated restore remain pending. See
+[Immich operations](immich.md). Do not treat the archive as backup-ready yet.

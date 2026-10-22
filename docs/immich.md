@@ -7,7 +7,8 @@ matching the official release Compose dependencies. PostgreSQL and Valkey run in
 containers with no published ports. Only Immich publishes `127.0.0.1:2283`.
 The production instance was started privately on 2026-10-22 after the operator
 supplied the database password. All three containers are healthy; owner
-onboarding and public HTTPS activation remain pending.
+onboarding remains pending. LAN-only HTTPS and the live Homepage link are
+configured; public access remains restricted until the owner login is verified.
 
 The owner selected no AI features. There is no machine-learning container;
 `configs/immich/immich.json` sets `machineLearning.enabled=false`. Uploads,
@@ -158,9 +159,9 @@ A new machine with the same working hostname can keep the client-facing URL.
 ## HTTPS and Homepage activation
 
 The operator requested public HTTPS at `immich.xdadwal.in` and a Homepage link.
-Activation remains pending private inputs and verified owner onboarding. No public route,
-DNS change, certificate issuance, live Nginx baseline update or Homepage link is
-performed automatically. `scripts/tls` continues to manage only its established
+LAN-only HTTPS onboarding is active on the current host, with an AdGuard rewrite
+to 192.168.1.101 and a live Homepage card. Public access remains restricted until
+owner login is verified. No certificate issuance or public DNS change was needed. `scripts/tls` continues to manage only its established
 service inventory; it does not activate Immich.
 
 `configs/nginx/immich.template` supplies the reviewed opt-in HTTPS server block:
@@ -168,7 +169,18 @@ large request bodies, unbuffered uploads, forwarded headers, WebSockets and long
 streaming timeouts. Serve the root of `immich.xdadwal.in`, never a URL subpath.
 After private account and restore acceptance, verify DNS and a certificate that
 covers the hostname. Preview the rendered host-specific candidate with `scripts/immich-proxy`.
-After verifying the private owner login, apply with:
+To finish the host integration before creating an owner, use the LAN-only mode:
+
+```sh
+sudo scripts/immich-proxy --apply --onboarding-only
+```
+
+This mode permits only loopback and this host's verified 192.168.1.0/24 LAN on
+both HTTP and HTTPS. It rejects untrusted sources regardless of forwarded headers.
+Open `https://immich.xdadwal.in` from a LAN client using AdGuard to create the owner.
+It is the current live mode, tracked in `configs/nginx/deployed/ohara-immich.conf`.
+
+After verifying the owner login, enable public access with:
 
 ```sh
 sudo scripts/immich-proxy --apply --accounts-ready

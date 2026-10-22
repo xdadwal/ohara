@@ -113,4 +113,6 @@ The Photos section in the seed contains a plain link to
 network. On an existing dashboard, merge only this section after the optional
 Immich instance and HTTPS route are verified. Preserve the rest of services.yaml,
 including embedded widget credentials; do not print or replace the entire file.
-The requested live link remains pending Immich startup/activation.
+The current host has this live link, added selectively with a private backup;
+Homepage password login and the authenticated service-card response were verified.
+Immich currently serves LAN-only owner onboarding.

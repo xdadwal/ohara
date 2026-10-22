@@ -9,6 +9,11 @@ public routes and certificate paths, never private keys or application credentia
   Seerr/Jellyfin/OpenSpeedTest/Navidrome, IPv4/IPv6, localhost redirects and local TLS.
   Jellyfin is at tv.xdadwal.in; Navidrome is at music.xdadwal.in. The dedicated
   music HTTP redirect and HTTPS route suppress URL-bearing access/error logs.
+- `ohara-immich.conf`: separate photo route installed on 2026-10-22 for LAN-only
+  owner onboarding. Uses the existing wildcard certificate and loopback 2283;
+  permits loopback and 192.168.1.0/24, denies other sources on HTTP/HTTPS. Promote
+  with `scripts/immich-proxy --apply --accounts-ready` only after verified owner
+  login, then update this tracked baseline to match the deliberate live change.
 - `ohara-public-ip-test.conf`: HTTP-only reachability probe for 45.120.160.21.
   It returns a fixed message and exposes no application data.
 - `ohara-lan.conf`: separately approved on 2026-10-22; seven LAN-only administration

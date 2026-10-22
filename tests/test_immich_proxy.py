@@ -38,3 +38,19 @@ class ImmichProxyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Administrator access'):
                 proxy.main()
             run.assert_not_called()
+
+    def test_onboarding_restricts_both_http_and_https_by_source(self):
+        text = proxy.render(onboarding_only=True)
+        self.assertIn('geo $ohara_immich_onboarding_allowed', text)
+        self.assertIn('default 0;', text)
+        self.assertIn('192.168.1.0/24 1;', text)
+        self.assertIn('::1/128 1;', text)
+        self.assertEqual(text.count('if ($ohara_immich_onboarding_allowed = 0) { return 403; }'), 2)
+        self.assertNotIn('geo $ohara_immich_onboarding_allowed', proxy.render())
+
+    def test_onboarding_can_be_prepared_before_owner_signup(self):
+        with patch.object(sys, 'argv', ['immich-proxy', '--apply', '--onboarding-only']), \
+                patch.object(proxy.os, 'geteuid', return_value=1000), patch.object(proxy.runtime, 'run') as run:
+            with self.assertRaisesRegex(ValueError, 'Administrator access'):
+                proxy.main()
+            run.assert_not_called()

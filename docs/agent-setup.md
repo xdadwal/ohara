@@ -4,6 +4,11 @@ Use this workflow when the user asks you to prepare or deploy Ohara on the targe
 machine. Repository editing alone does not authorize live deployment. A shared
 authentication service is deferred; keep independent service credentials.
 
+For a new service addition, also follow [adding-services.md](adding-services.md).
+Prepare independent host/proxy/dashboard/DNS work before owner signup where
+possible; use LAN-only onboarding when the owner account is still unclaimed.
+Do not assume sudo authentication in another terminal transfers to this session.
+
 ## Inspect before asking
 
 Read AGENTS.md, docs/operations.md, .env.example, and any existing local

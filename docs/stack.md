@@ -19,7 +19,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | Prowlarr | Indexers and sync to Radarr/Sonarr/Lidarr | Private loopback 9696 |
 | qBittorrent | Downloads | Private loopback 8081 |
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
-| Immich (optional separate project) | Personal photos/videos; no ML | Loopback 2283; production activation pending |
+| Immich (optional separate project) | Personal photos/videos; no ML | Loopback 2283; LAN HTTPS onboarding |
 | AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003 |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
@@ -67,10 +67,10 @@ Compose stack. A future NAS/multiple-node layout, including an acquisition node
 for these services, is a discussed target and is not implemented here.
 
 Immich is implemented as the optional separate `ohara-immich` Compose project,
-operated with `scripts/immich`; production startup is pending. It includes its own
+operated with `scripts/immich`; production is running with LAN-only HTTPS onboarding. It includes its own
 PostgreSQL and Valkey containers, no machine-learning container, and a loopback-only
 web port 2283. Approved storage is `/ohara/immich/library` and
-`/ohara/immich/postgres`. Backup destination, library sizing and hostname access
-policy remain pending; see [Immich operations](immich.md). Pi-hole and Copyparty have been removed. Their old data
+`/ohara/immich/postgres`. Owner login and public activation, backup destination and library sizing
+remain pending; see [Immich operations](immich.md). Pi-hole and Copyparty have been removed. Their old data
 and live containers are not deleted by a repository change; see operations.md for
 cutover guidance. files.xdadwal.in is no longer an application endpoint.

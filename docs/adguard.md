@@ -58,11 +58,13 @@ dashboard. Review these privacy/provider choices there if desired.
 
 Initial DNS rewrites cover DOMAIN, HOMEPAGE_HOST, REQUESTS_HOST, SPEED_HOST,
 JELLYFIN_HOST and NAVIDROME_HOST, plus adguard, radarr, sonarr, prowlarr, qbittorrent,
-lidarr and bazarr subdomains of DOMAIN, all pointing to ADGUARD_BIND_IP. They do not
+lidarr, bazarr and immich subdomains of DOMAIN, all pointing to ADGUARD_BIND_IP. They do not
 import the host's loopback entries, retired Pi-hole/files names, or a wildcard. On this
 host those are xdadwal.in, ohara.xdadwal.in, seerr.xdadwal.in, speed.xdadwal.in,
 tv.xdadwal.in and music.xdadwal.in, plus the seven administration names documented
-in [LAN services](lan-services.md). The latter still require the separate LAN-only
+in [LAN services](lan-services.md), and immich.xdadwal.in for photo onboarding.
+The Immich rewrite was added to this existing host through the authenticated API,
+preserving all prior rules; UDP and TCP queries return 192.168.1.101. The latter still require the separate LAN-only
 Nginx configuration. Existing public services retain the same HTTPS names locally
 and publicly; administration routes remain LAN-only.
 
