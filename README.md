@@ -87,11 +87,13 @@ GoDaddy DNS-01 wildcard certificates and automated renewal are also supported by
 `scripts/tls --dns-provider godaddy`; see the private-token setup and existing
 certificate migration in [operations](docs/operations.md#godaddy-dns-validation-and-wildcard-renewal).
 
-## Optional remote SSH
+## Optional LAN DNS
 
 For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
 It starts independently with `scripts/adguard up`; router/client DNS cutover is
 a separate verified step. Existing applications and public DNS are preserved.
+
+## Optional remote SSH
 
 Use the host Tailscale client for private SSH access while public HTTPS and LAN
 traffic keep their existing routes. Run `scripts/tailscale --dry-run`, then
