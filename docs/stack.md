@@ -1,7 +1,8 @@
 # Current Ohara stack
 
 This is the implemented repository configuration, not a claim that a production
-server is deployed or publicly reachable. Eleven applications run in Docker Compose.
+server is deployed or publicly reachable. Eleven applications run in the main Docker Compose project,
+with optional AdGuard Home in the separate `ohara-dns` project.
 Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 
 | Component | Role | Configured access |
@@ -18,6 +19,7 @@ Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 | Prowlarr | Indexers and sync to Radarr/Sonarr/Lidarr | Private loopback 9696 |
 | qBittorrent | Downloads | Private loopback 8081 |
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
+| AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003 |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
 | bpytop (host) | CPU, memory, disk, network and process monitoring | Interactive terminal or SSH |
@@ -26,8 +28,10 @@ The portfolio profile sets HOMEPAGE_HOST=ohara.xdadwal.in and PORTFOLIO_PORT=801
 The separate FastAPI portfolio then serves the apex through Nginx; it is a host
 process from its own repository, not a Compose application. See replication.md.
 
-Only router TCP 80/443 is forwarded to Ohara. Application ports remain loopback-only;
-private administration uses SSH forwarding. There is no shared authentication service.
+Only router TCP 80/443 is forwarded to Ohara. Application web ports remain
+loopback-only; private administration uses SSH forwarding. Optional AdGuard DNS
+is the explicit LAN-only exception, never a router port forward.
+There is no shared authentication service.
 Credentials come from user-created .env.
 See credentials.md for empty templates and validation. Homepage includes native
 Jellyfin/Seerr widgets, Navidrome Now Playing, clock, Open-Meteo weather and

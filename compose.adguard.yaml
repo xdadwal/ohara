@@ -1,0 +1,31 @@
+# Optional DNS project, deliberately started separately from the media stack.
+name: ohara-dns
+services:
+  adguard:
+    image: ${ADGUARD_IMAGE}
+    user: "${RUN_UID}:${RUN_GID}"
+    restart: unless-stopped
+    cap_drop: [ALL]
+    # Required by capabilities attached to the official image's executable.
+    cap_add: [NET_BIND_SERVICE, NET_RAW]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${ADGUARD_BIND_IP}:53:1053/tcp"
+      - "${ADGUARD_BIND_IP}:53:1053/udp"
+      - "127.0.0.1:3003:3000/tcp"
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/adguard/conf
+        target: /opt/adguardhome/conf
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DATA_ROOT}/adguard/work
+        target: /opt/adguardhome/work
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

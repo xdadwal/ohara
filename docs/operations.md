@@ -37,6 +37,10 @@ loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 
 ## Optional remote SSH
 
+Optional LAN DNS/filtering is managed separately; follow [AdGuard Home](adguard.md)
+for configuration, direct UDP/TCP tests, DHCP cutover and rollback. It does not
+change host/router/client DNS automatically and must never be publicly forwarded.
+
 See [Tailscale](tailscale.md) for the separate host client installer, owner browser
 enrollment, ordinary OpenSSH, and SSH-only tailnet network policy. Setup/up never
 install or enroll it automatically. Public HTTPS remains on the existing network.

@@ -70,8 +70,12 @@ docs/superpowers/plans/.
   acceptance, subnet routing, exit nodes, Serve or Funnel. Review existing
   client roles before changing preferences; restrict tailnet network policy to
   the intended SSH users/devices and port. No public SSH port forward.
-- Public DNS records are managed at GoDaddy. No local DNS/filtering service is
-  included. Backend web ports bind to loopback; only host Nginx uses public 80/443.
+- Public DNS records are managed at GoDaddy. Optional AdGuard Home is explicitly
+  approved for LAN DNS/filtering in the separate compose.adguard.yaml project;
+  follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
+  IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
+  DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
+  Backend web ports bind to loopback; only host Nginx uses public 80/443.
   Do not modify router/client DNS or delete retired DNS data during repo changes.
 - `configs/nginx/deployed/` tracks the stable xdadwal.in host baseline, including
   localhost and public-IP routes. Keep it aligned with deliberate live changes;

@@ -48,6 +48,11 @@ password-hash salts and application-issued tokens remain application internals.
 
 ## Pi-hole removed (2026-10-16)
 
+Superseded in part on 2026-10-22: the user selected AdGuard Home for LAN filtering
+and split DNS. Pi-hole stays retired; AdGuard is a separately started optional
+Compose project with LAN-only DNS and a private dashboard. Public DNS remains at
+GoDaddy. Router/client cutover is verified separately. See [adguard.md](adguard.md).
+
 The user does not need LAN DNS/filtering. Public domain records remain at GoDaddy.
 Remove Pi-hole, its image, storage preparation, DNS-port checks, admin binding and
 credential requirement. Retired LAN_IP and PIHOLE_PASSWORD input fields are ignored
