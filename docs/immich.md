@@ -227,7 +227,16 @@ See [Google OAuth setup](immich-google-oauth.md). Registration is always disable
 in the managed policy; administrators provision approved users by their Google
 email. Google credentials come only from the private .env and are rendered into
 a private read-only server configuration by scripts/immich oauth. Live Google
-login is enabled with the supplied client credentials; browser acceptance with
-approved and uninvited accounts remains pending. Google is the only enabled
+login is enabled with the supplied client credentials, and the operator verified
+successful Google login. An uninvited-account rejection browser test remains a
+follow-up item. Google is the only enabled
 interactive login method; password login is disabled. The onboarding workflow is
 in that guide, with no extra authentication or SMTP service.
+
+## Accepted release scope
+
+On 2026-10-22 the operator verified OAuth login, accepted capacity for the current
+single-user deployment, and explicitly deferred independent backup/restore work
+until later. Those deferred tasks do not block this release; the backup and
+restore procedures above remain future operational guidance, not completed work.
+See immich-next.md for the current status and unrecorded follow-up checks.

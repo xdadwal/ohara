@@ -3,8 +3,9 @@
 The operator requested Google sign-in with administrator-controlled membership.
 Google sign-in is enabled on the current host using the operator-supplied Web
 client credentials, with password login disabled at the operator's request. Initial
-provider and web/mobile authorization checks pass; actual approved/uninvited-
-account browser acceptance remains pending.
+provider and web/mobile authorization checks pass. The operator confirmed
+successful Google login on 2026-10-22; uninvited-account rejection and mobile
+browser acceptance are not yet recorded as verified.
 Basic Google sign-in uses a free Cloud project; no additional server or shared
 authentication service is installed.
 
@@ -103,7 +104,8 @@ rejects a configuration with both login methods disabled.
 
 ## Acceptance
 
-After activation verify Google login/logout with an approved account, rejection
+The operator has verified successful Google login. Remaining follow-up checks:
+verify Google login/logout with an approved account, rejection
 of a Google account that has not been provisioned, unchanged account/library
 ownership, rejection of password login, mobile Google login and the Homepage widget.
 A healthy container or an authorization URL alone does not prove the Google

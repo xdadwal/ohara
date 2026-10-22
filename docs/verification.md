@@ -409,3 +409,17 @@ cover both encodings, rejection of unsafe binds and indistinguishable flags.
 All 152 Python tests, setup/CLI/static checks, the Immich static check and Git
 whitespace checks pass locally. No production services/configuration changed.
 Hosted CI must rerun for this commit before release approval.
+
+### Operator release decisions and green CI (2026-10-22)
+
+The operator confirmed successful OAuth login, accepted capacity for the current
+single-user deployment, and explicitly deferred backups/restore testing for
+later. Updated current status, agent instructions and PR scope to reflect those
+choices without claiming unperformed backup, restore or remaining acceptance
+checks. No live settings, quotas, authentication or storage were changed.
+
+Both hosted CI runs for 5c21a89 passed: pull_request run 39831104313 and push run
+39831093941. Each passed configuration, existing-stack containers and
+immich-containers. The 152 local tests and required checks had already passed.
+The previous Compose serialization CI blocker is resolved. This follow-up changes
+only documentation; whitespace validation passes. PR #21 remains unmerged.

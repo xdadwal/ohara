@@ -16,8 +16,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   Immich is implemented as an optional separate Compose project with machine
   learning disabled; owner onboarding is complete and public HTTPS is active.
   Homepage has its link and native statistics widget using the privately supplied
-  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). Backup destination and
-  archive acceptance remain pending.
+  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). The owner verified Google
+  login and accepted capacity for the current single-user release. Independent
+  backups/restore testing are explicitly deferred by the owner; do not treat
+  them as release blockers or claim they are implemented.
   Use scripts/immich and docs/immich.md; preserve its independent
   database/cache and stable /data container path. Google OAuth must remain
   invite-only (autoRegister=false), with Google-only login and password login
