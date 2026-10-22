@@ -6,9 +6,9 @@ start it. The release is v3.3.5, with immutable images in `versions.immich.env`
 matching the official release Compose dependencies. PostgreSQL and Valkey run in
 containers with no published ports. Only Immich publishes `127.0.0.1:2283`.
 The production instance was started privately on 2026-10-22 after the operator
-supplied the database password. All three containers are healthy; owner
-onboarding remains pending. LAN-only HTTPS and the live Homepage link are
-configured; public access remains restricted until the owner login is verified.
+supplied the database password. All three containers are healthy. The operator completed owner onboarding;
+the initialized/onboarded state was verified and public HTTPS is now active,
+with the live Homepage link and local AdGuard rewrite.
 
 The owner selected no AI features. There is no machine-learning container;
 `configs/immich/immich.json` sets `machineLearning.enabled=false`. Uploads,
@@ -159,9 +159,8 @@ A new machine with the same working hostname can keep the client-facing URL.
 ## HTTPS and Homepage activation
 
 The operator requested public HTTPS at `immich.xdadwal.in` and a Homepage link.
-LAN-only HTTPS onboarding is active on the current host, with an AdGuard rewrite
-to 192.168.1.101 and a live Homepage card. Public access remains restricted until
-owner login is verified. No certificate issuance or public DNS change was needed. `scripts/tls` continues to manage only its established
+Public HTTPS is active on the current host after the operator completed owner
+onboarding, with an AdGuard rewrite to 192.168.1.101 and a live Homepage card. No certificate issuance or public DNS change was needed. `scripts/tls` continues to manage only its established
 service inventory; it does not activate Immich.
 
 `configs/nginx/immich.template` supplies the reviewed opt-in HTTPS server block:
@@ -178,7 +177,8 @@ sudo scripts/immich-proxy --apply --onboarding-only
 This mode permits only loopback and this host's verified 192.168.1.0/24 LAN on
 both HTTP and HTTPS. It rejects untrusted sources regardless of forwarded headers.
 Open `https://immich.xdadwal.in` from a LAN client using AdGuard to create the owner.
-It is the current live mode, tracked in `configs/nginx/deployed/ohara-immich.conf`.
+This was the initial mode; the current live public route is tracked in
+`configs/nginx/deployed/ohara-immich.conf`.
 
 After verifying the owner login, enable public access with:
 

@@ -116,3 +116,20 @@ including embedded widget credentials; do not print or replace the entire file.
 The current host has this live link, added selectively with a private backup;
 Homepage password login and the authenticated service-card response were verified.
 Immich currently serves LAN-only owner onboarding.
+
+### Immich statistics widget
+
+The seed uses the native Immich widget version 2 with users, photos, videos and
+storage. Create an application-issued API key in Immich Account Settings > API
+Keys with only server.statistics permission, then place it privately in .env as
+HOMEPAGE_VAR_IMMICH_API_KEY. This optional key is allowlisted only to Homepage;
+it is never injected into Immich, database or media container environments. Never put the
+actual key in services.yaml or Git.
+
+After a valid key is supplied, merge only the widget block beneath the existing
+Immich card, preserving the rest of the live dashboard. Use the seed's HTTPS
+URL https://immich.{{HOMEPAGE_VAR_DOMAIN}}, version 2 and the environment-variable
+key placeholder. Homepage reaches the host Nginx route with trusted TLS; no
+shared Docker network, host ports or backend exposure are added. Recreate only
+Homepage to load the allowlisted key, then verify its authenticated widget API.
+The existing live card remains link-only until this actual key is supplied.

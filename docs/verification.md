@@ -269,3 +269,24 @@ credential exceptions, terminal-specific sudo authentication and LAN onboarding.
 Final checks for this phase: all 137 Python tests, setup, CLI and static checks
 pass. The focused disposable AdGuard smoke passes with the updated Immich seed;
 both main-stack and Immich static Compose checks pass.
+
+### Owner completion and public route (2026-10-22)
+
+The operator confirmed owner setup. The API now reports both isInitialized and
+isOnboarded true, with smart search, facial recognition and OCR still disabled.
+Applied scripts/immich-proxy --apply --accounts-ready: validated the existing
+wildcard certificate, privately backed up the LAN-only route, tested Nginx and
+reloaded. The tracked ohara-immich.conf matches the live public route; no other
+host routes, certificates or DNS records changed. HTTPS ping works through the
+public hostname from this host and from the Homepage container. A previously
+disallowed Docker subnet now also receives 200, verifying the LAN gate removal.
+The external web-fetch tool could not access the hostname, so independent
+Internet/browser reachability is not established by these local checks.
+
+Prepared the native Homepage Immich widget version 2 with users/photos/videos/
+storage, HTTPS transport through host Nginx, and the optional allowlisted
+HOMEPAGE_VAR_IMMICH_API_KEY. The live card remains link-only until the operator
+supplies an actual server.statistics API key privately. No API key was generated
+or invented. 138 Python tests pass, including optional-key routing/isolation;
+setup/CLI/static checks and both static Compose checks pass. Archive/phone/video
+acceptance and independent backup/restore remain pending.

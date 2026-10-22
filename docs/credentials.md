@@ -132,3 +132,7 @@ The operator explicitly accepted the existing shorter Immich DB password on this
 host. `scripts/immich prepare|check|up --allow-short-db-password` supports this
 per-command exception without changing normal validation defaults or unrelated
 service credentials. Empty or non-alphanumeric values remain rejected.
+
+Optional HOMEPAGE_VAR_IMMICH_API_KEY is an Immich-issued key restricted to
+server.statistics, supplied privately after owner setup. It is forwarded only
+to Homepage for its native statistics widget. See homepage-widgets.md.

@@ -26,6 +26,20 @@ class ImmichTests(unittest.TestCase):
             self.assertEqual(config.load(path)['IMMICH_LIBRARY_ROOT'], '/photos/immich')
             self.assertEqual(immich.password(Path(directory)), 'onlyForDisposableTests1234')
 
+    def test_widget_key_is_optional_and_only_returned_to_homepage(self):
+        import credential_fixtures
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '.env').write_text((ROOT / '.env.example').read_text())
+            credential_fixtures.write(root)
+            with (root / '.env').open('a') as stream:
+                stream.write('HOMEPAGE_VAR_IMMICH_API_KEY=DisposableWidgetKeyOnly12345\nIMMICH_DB_PASSWORD=TestOnly7\n')
+            config.load(root / '.env')
+            homepage, media = credentials.load(root)
+            self.assertEqual(homepage['HOMEPAGE_VAR_IMMICH_API_KEY'], 'DisposableWidgetKeyOnly12345')
+            self.assertNotIn('HOMEPAGE_VAR_IMMICH_API_KEY', media)
+            self.assertNotIn('IMMICH_DB_PASSWORD', homepage)
+
     def test_storage_rejects_traversal_overlap_and_existing_media(self):
         for update in [
             {'IMMICH_LIBRARY_ROOT': '/photos/../photos'},
