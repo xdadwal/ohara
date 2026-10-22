@@ -14,7 +14,9 @@ certificate; no shared authentication service or public DNS record is added.
 | https://lidarr.xdadwal.in | 127.0.0.1:8686 |
 | https://bazarr.xdadwal.in | 127.0.0.1:6767 |
 
-AdGuard DNS rewrites map these exact names to 192.168.1.101. Preserve existing
+Fresh AdGuard setup seeds these seven exact names under DOMAIN, pointing to
+ADGUARD_BIND_IP (192.168.1.101 here). Existing installations retain their settings;
+setup does not overwrite or automatically reconcile existing records. Preserve existing
 rewrites, especially records the operator added; do not replace the entire list or
 use a wildcard. Only clients querying AdGuard receive these local records. A
 rewrite is not a web route or access control; Nginx enforces the latter separately.

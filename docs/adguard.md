@@ -56,12 +56,15 @@ filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.
 
-Initial DNS rewrites cover only DOMAIN, HOMEPAGE_HOST, REQUESTS_HOST, SPEED_HOST,
-JELLYFIN_HOST and NAVIDROME_HOST, pointing to ADGUARD_BIND_IP. They do not import
-the host's loopback entries, retired Pi-hole/files names, or a wildcard. On this
+Initial DNS rewrites cover DOMAIN, HOMEPAGE_HOST, REQUESTS_HOST, SPEED_HOST,
+JELLYFIN_HOST and NAVIDROME_HOST, plus adguard, radarr, sonarr, prowlarr, qbittorrent,
+lidarr and bazarr subdomains of DOMAIN, all pointing to ADGUARD_BIND_IP. They do not
+import the host's loopback entries, retired Pi-hole/files names, or a wildcard. On this
 host those are xdadwal.in, ohara.xdadwal.in, seerr.xdadwal.in, speed.xdadwal.in,
-tv.xdadwal.in and music.xdadwal.in. Existing Nginx routes and certificates serve
-the same HTTPS names locally and publicly.
+tv.xdadwal.in and music.xdadwal.in, plus the seven administration names documented
+in [LAN services](lan-services.md). The latter still require the separate LAN-only
+Nginx configuration. Existing public services retain the same HTTPS names locally
+and publicly; administration routes remain LAN-only.
 
 ## Verify and switch clients
 
@@ -75,7 +78,7 @@ dig @192.168.1.101 example.org A
 ```
 
 Expect the local IPv4 for A over both transports, no public IPv6 answer for the
-rewritten name, and a successful external lookup. Verify all six rewrites, filter
+rewritten name, and a successful external lookup. Verify all configured rewrites, filter
 status, an allowed site and a blocked domain before cutover. Check trusted HTTPS
 for the services from that client. A query made on the server itself is not proof
 that another LAN device can reach it. Docker bridge/proxy source rewriting can
