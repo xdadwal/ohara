@@ -1,8 +1,9 @@
 # Invite-only Google sign-in
 
 The operator requested Google sign-in with administrator-controlled membership.
-Implementation is ready; live Google sign-in remains disabled until the real
-Google OAuth client credentials are supplied and browser acceptance succeeds.
+Google sign-in is enabled on the current host using the operator-supplied Web
+client credentials. Initial provider and web/mobile authorization checks pass;
+actual approved/uninvited-account browser acceptance remains pending.
 Basic Google sign-in uses a free Cloud project; no additional server or shared
 authentication service is installed.
 

@@ -341,3 +341,28 @@ the API continues to report password login enabled, Google OAuth disabled and ML
 disabled. Actual Google OAuth client inputs are absent, so activation and approved/
 uninvited Google account browser tests remain pending. No external account,
 client secret, users, passwords or API keys were generated or changed.
+
+### Live invite-only Google OAuth activation (2026-10-22)
+
+The operator filled the private Google Web client JSON. Verified regular/private
+file permissions, JSON structure, credential formats and declared redirect URIs
+without displaying values. A token request with an intentionally invalid test
+code returned invalid_grant rather than invalid_client; this is an initial check,
+not proof of a complete authorization-code exchange or Console redirect settings.
+Imported only the supplied client fields into the existing .env atomically,
+preserving all other inputs and a private backup. No credential was generated.
+
+Ran scripts/immich oauth with the existing database-password exception. Only the
+Immich server was recreated; PostgreSQL, Valkey and other services remained up.
+All three Immich containers are healthy. Verified private generated-file mode
+0600, Google enabled, autoRegister=false, autoLaunch=false, password fallback and
+machine learning disabled. Google OIDC discovery and both web/mobile authorize
+requests succeed with the expected client, HTTPS Google endpoint, limited scopes
+and canonical redirects; no client secret appears in the authorization URLs.
+The existing statistics API key still retrieves production server statistics.
+
+The implementation's 149-test/static/disposable checks passed in the preceding
+phase; no implementation code changed in this activation. Full approved-account
+Google login/logout, rejected uninvited-account login, account linking and mobile
+acceptance still need real owner/browser checks. No such checks are inferred from
+the successful initial provider or authorization URL responses.
