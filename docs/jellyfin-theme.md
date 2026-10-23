@@ -38,6 +38,8 @@ The full integration includes:
   A marked CSS import is prepended so existing overrides still apply.
 - The Jellyfin 12 login header logo is centered independently of its flex spacers
   and icon margin. This managed CSS adjustment is scoped to the login page.
+  The host's legacy multiline Google Fonts import was also repaired in Branding
+  so subsequent CSS rules can be parsed.
 - Private pre-change branding and display-preference snapshots under
   `local/jellyfin-theme-backups/`. Libraries/accounts/media files are preserved.
 

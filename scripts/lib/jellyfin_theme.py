@@ -117,15 +117,17 @@ def inject(html):
 
 def css(existing, *, remove=False):
     existing = re.sub(re.escape(START)+r'.*?'+re.escape(END)+r'\n?', '', existing or '', flags=re.S)
+    existing = re.sub(r'\n/\* OHARA LOGIN ALIGNMENT START \*/.*?/\* OHARA LOGIN ALIGNMENT END \*/\n?', '', existing, flags=re.S)
     if remove:
         return existing
     return (START+"\n@import url('/web/ui/abyss.css');\n"
-            "@import url('/web/ui/abyss-je.css');\n"
+            "@import url('/web/ui/abyss-je.css');\n"+END+'\n'+existing+
+            "\n/* OHARA LOGIN ALIGNMENT START */\n"
             "/* Center the Jellyfin 12 login logo independently of header spacers. */\n"
-            "body:has(#loginPage:not(.hide)) header.MuiAppBar-root .MuiToolbar-root a:has(img[src*=\"icon-transparent\"]) {\n"
-            "  position: absolute; left: 50%; transform: translateX(-50%);\n}\n"
+            "body:has(#loginPage:not(.hide)) header.MuiAppBar-root .MuiToolbar-root > .MuiStack-root:has(a img[src*=\"icon-transparent\"]) {\n"
+            "  position: absolute !important; left: 50% !important; transform: translateX(-50%) !important;\n}\n"
             "body:has(#loginPage:not(.hide)) header.MuiAppBar-root .MuiButton-startIcon:has(img[src*=\"icon-transparent\"]) {\n"
-            "  margin: 0;\n}\n"+END+'\n'+existing)
+            "  margin: 0 !important;\n}\n/* OHARA LOGIN ALIGNMENT END */\n")
 
 
 def client(root):
