@@ -10,7 +10,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
   the separate portfolio service serves the apex; no Docker socket. Media widgets
-  read application-issued API keys supplied in .env. See docs/homepage-widgets.md.
+  read application-issued API keys supplied in .env. Selected queue/torrent/DNS
+  widgets use narrow runtime aliases for existing Arr keys and qBittorrent/AdGuard
+  credentials; no other account passwords are forwarded. See docs/homepage-widgets.md.
   Navidrome's Now Playing widget uses a Subsonic token derived locally from the
   existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
   Immich is implemented as an optional separate Compose project with machine

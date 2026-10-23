@@ -86,9 +86,10 @@ and group/world-readable credential files are rejected without echoing values.
 
 Use `scripts/check`, `scripts/up` and other project commands rather than direct
 `docker compose`: scripts disable Compose dotenv loading and pass only Homepage's
-allowlisted credentials through the child environment. Media passwords/API keys
-are consumed by host setup/API clients and are not injected into Homepage or
-unrelated containers. `scripts/check --static` renders empty secret placeholders
+allowlisted credentials through the child environment. Selected widget API keys and the qBittorrent/AdGuard login values are forwarded
+only to Homepage under explicit aliases. Other media account passwords remain
+with host setup/API clients and are not injected into Homepage or unrelated
+containers. `scripts/check --static` renders empty secret placeholders
 and deliberately skips credential validation. Never publish resolved Compose
 output, container environment inspection or `.env` contents.
 
@@ -145,3 +146,9 @@ ignore these inputs. scripts/immich oauth validates them and renders a private
 server-only configuration; it does not generate or rotate provider credentials.
 The Google secret is not injected into Compose environments or Homepage. See
 [Google OAuth setup](immich-google-oauth.md) for redirects and invite-only policy.
+
+Selected admin widgets reuse existing RADARR_API_KEY, SONARR_API_KEY, LIDARR_API_KEY,
+QBITTORRENT_PASSWORD and optional ADGUARD_PASSWORD through Homepage-only runtime
+aliases. Do not duplicate these values under HOMEPAGE_VAR names in `.env`. Other
+account passwords remain excluded; Navidrome still uses its derived token only.
+See [widget setup](homepage-widgets.md).

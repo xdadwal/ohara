@@ -149,8 +149,8 @@ def homepage(c,root):
     if card is not None and ('widget' in card or 'widgets' in card):
         print('Existing Maintainerr Homepage card/widget preserved.');return
     if card is None:
-        target=next((g['Media administration'] for g in data if 'Media administration' in g),None)
-        if target is None:target=[];data.append({'Media administration':target})
+        target=next((g['Media operations'] for g in data if 'Media operations' in g),None)
+        if target is None:target=[];data.append({'Media operations':target})
         card={'icon':'maintainerr.png','href':'https://maintainerr.'+c['DOMAIN'],'description':'Media maintenance (local network)'}
         target.append({'Maintainerr':card})
     card['widget']={'type':'maintainerr','url':'http://maintainerr:6246','fields':['itemsHandled','reclaimable']}

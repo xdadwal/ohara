@@ -123,6 +123,11 @@ class UnifiedCredentialsTests(unittest.TestCase):
                 env = run.call_args.kwargs['env']
                 self.assertEqual(env['HOMEPAGE_AUTH_PASSWORD'], hp['HOMEPAGE_AUTH_PASSWORD'])
                 self.assertFalse(set(env) & set(media))
+                for name in ('RADARR','SONARR','LIDARR'):
+                    self.assertEqual(env['HOMEPAGE_VAR_'+name+'_API_KEY'],media[name+'_API_KEY'])
+                self.assertEqual(env['HOMEPAGE_VAR_QBITTORRENT_PASSWORD'],media['QBITTORRENT_PASSWORD'])
+                self.assertNotIn(media['NAVIDROME_PASSWORD'],env.values())
+                self.assertNotIn(media['RADARR_PASSWORD'],env.values())
                 self.assertEqual(env['HOMEPAGE_VAR_NAVIDROME_TOKEN'],
                                  credentials.navidrome_widget_environment(media)['HOMEPAGE_VAR_NAVIDROME_TOKEN'])
                 self.assertNotIn(media['NAVIDROME_PASSWORD'], env.values())

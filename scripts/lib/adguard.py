@@ -83,6 +83,8 @@ def check(c, root):
     if set(model['services']) != {'adguard'}:
         raise ValueError('Unexpected service in optional DNS project')
     service = model['services']['adguard']
+    if set(service.get('networks',{})) != {'default','media'} or model['networks']['media'].get('name') != 'ohara_default' or model['networks']['media'].get('external') is not True:
+        raise ValueError('AdGuard widget requires only its private network and the existing media network')
     ports = {(p['host_ip'], int(p['published']), int(p['target']), p.get('protocol', 'tcp')) for p in service['ports']}
     if ports != {(c['ADGUARD_BIND_IP'], 53, 1053, 'tcp'), (c['ADGUARD_BIND_IP'], 53, 1053, 'udp'),
                  ('127.0.0.1', 3003, 3000, 'tcp')}:

@@ -46,7 +46,9 @@ and Docker bindings. Generic fresh-host setup does not install this baseline.
 
 The Homepage template uses DOMAIN for the local links. Existing dashboards need a
 selective merge into DATA_ROOT/homepage/services.yaml; preserve custom cards and
-widget credentials. A plain link needs no API key and does not bypass app logins.
+widget credentials. A plain link needs no API key and does not bypass app logins. Selected native
+widgets use private internal Docker URLs and narrowly forwarded credentials; see
+[Homepage widgets](homepage-widgets.md).
 
 Verify from another LAN device using AdGuard: each name resolves to 192.168.1.101,
 HTTPS has a trusted certificate, and the native service login works. Do not disable

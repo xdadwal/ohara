@@ -12,7 +12,20 @@ DNS_KEYS = {'ADGUARD_PASSWORD'}
 IMMICH_KEYS = {'IMMICH_DB_PASSWORD'}
 IMMICH_OAUTH_KEYS = {'IMMICH_GOOGLE_CLIENT_ID', 'IMMICH_GOOGLE_CLIENT_SECRET'}
 ALL_KEYS = HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | DNS_KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS
-DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN'}
+DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN', 'HOMEPAGE_VAR_RADARR_API_KEY',
+    'HOMEPAGE_VAR_SONARR_API_KEY', 'HOMEPAGE_VAR_LIDARR_API_KEY',
+    'HOMEPAGE_VAR_QBITTORRENT_PASSWORD', 'HOMEPAGE_VAR_ADGUARD_PASSWORD'}
+
+
+def admin_widget_environment(root, media):
+    """Forward only explicitly selected widget credentials under Homepage aliases."""
+    import config
+    values={f'HOMEPAGE_VAR_{name}_API_KEY':media[name+'_API_KEY'] for name in ('RADARR','SONARR','LIDARR')}
+    values['HOMEPAGE_VAR_QBITTORRENT_PASSWORD']=media['QBITTORRENT_PASSWORD']
+    dns=read(root/'.env',set(),DNS_KEYS,config.KEYS | (ALL_KEYS-DNS_KEYS))
+    if 'ADGUARD_PASSWORD' in dns:
+        values['HOMEPAGE_VAR_ADGUARD_PASSWORD']=dns['ADGUARD_PASSWORD']
+    return values
 
 
 def navidrome_widget_environment(media):
