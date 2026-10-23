@@ -1,0 +1,106 @@
+# Maintainerr
+
+Maintainerr 3.31.0 is an optional media-maintenance service for Jellyfin, Seerr,
+Radarr and Sonarr. It runs as the independent `ohara-maintainerr` Compose project
+on the existing `ohara_default` network. The eleven main applications and optional
+Immich/AdGuard projects retain their lifecycles. The official release image is
+pinned by registry index digest in `versions.maintainerr.env`.
+
+## Setup and access
+
+Start the existing main stack first, then:
+
+```sh
+scripts/maintainerr prepare
+scripts/maintainerr up
+scripts/maintainerr connect
+scripts/maintainerr homepage
+scripts/maintainerr dns
+sudo scripts/lan-proxy --apply
+scripts/maintainerr status
+```
+
+The proxy command applies the reviewed **existing xdadwal.in host** baseline,
+backing up the previous file, validating Nginx and reloading with rollback on
+failure. It is not a generic installer for other domains/certificates/subnets.
+For another host, adapt and verify the proxy and certificate before activation.
+The expected URL here is **https://maintainerr.xdadwal.in**, restricted to the
+verified 192.168.1.0/24 LAN and loopback on HTTP and HTTPS. Public access is denied;
+no public DNS change or extra router port forward is needed. AdGuard adds one
+exact local rewrite; it does not change router/client DNS or other rewrites.
+
+Maintainerr has **no built-in authentication**. Its UI/API expose stored connection
+keys to anyone who can reach them. Treat LAN access as administrator access; this
+is why the backend binds only 127.0.0.1:6246 and Nginx restricts its source subnet.
+Its application-generated internal key is not login protection. No owner/signup
+or new password is required. Remote access can use the existing ordinary SSH
+forwarding workflow; do not expose this hostname publicly without separately
+approved authentication. Shared authentication remains deferred.
+
+The Homepage command merges only an absent Maintainerr card, preserves other
+cards/widgets, and saves a private pre-change snapshot. If needed, reload only
+Homepage through the normal main-stack lifecycle. Verify its authenticated
+`/api/services` response rather than relying on the seed file alone.
+
+## Connections and rules
+
+`connect` uses only existing private `.env` keys:
+HOMEPAGE_VAR_JELLYFIN_API_KEY, HOMEPAGE_VAR_SEERR_API_KEY, RADARR_API_KEY and
+SONARR_API_KEY. They are read literally by a host API client, never passed through
+Compose/container environment or committed. Maintainerr stores connection keys in
+its private SQLite state. Docker URLs are `http://jellyfin:8096`,
+`http://seerr:5055`, `http://radarr:7878` and `http://sonarr:8989`.
+Exactly one active Jellyfin administrator is inferred; otherwise select one
+manually in Maintainerr. A different existing media server or primary connection
+is rejected. Existing Arr instances, names, tags, rules and collections are
+preserved. All four connection tests run before saving. Private connection
+snapshots are saved under `local/maintainerr-backups/`; on partial failure, review
+the UI and rerun. No destructive rollback or account reset is attempted.
+
+**No cleanup rules or collections are created or executed by setup.** In the UI,
+review Settings and the connected libraries, then choose Rules/Collections,
+exclusions, a grace period and exact actions deliberately. Connecting API keys
+allows Maintainerr to perform actions later selected in its UI, including deletion
+through Jellyfin/Arr APIs. The absence of a media bind mount does not prevent API
+deletion. Owner retention policy is separate from initial integration.
+Do not change the existing qBittorrent seeding/removal policy for Maintainerr.
+No download-client password or external metadata/source key is assumed.
+
+## Storage, updates and recovery
+
+Dedicated state is `DATA_ROOT/maintainerr` (here `/ohara/maintainerr`), mounted as
+`/opt/data` with RUN_UID:RUN_GID. Prepare creates/checks only that directory;
+symlinks are rejected and existing ownership/content are preserved. There is no
+media-library bind mount, Docker socket, privileged container or extra database
+service. Telemetry is disabled explicitly. Check the actual host filesystem and
+free space before preparation; this host uses its existing root filesystem.
+
+```sh
+scripts/maintainerr check --static
+scripts/maintainerr check
+scripts/maintainerr stop
+```
+
+To update, review the upstream release/migrations, change the digest pin, back up
+state, then run `scripts/maintainerr up`. Image updates do not change other stacks.
+For a consistent backup, stop Maintainerr and copy its entire private state
+outside the machine before restarting. The SQLite database (`maintainerr.sqlite`)
+and connection snapshots contain plaintext service keys; keep them private and
+encrypt off-host backups. Restore only with Maintainerr stopped, preserving
+ownership and using a compatible application version. Independent backups and
+restore tests are not established by startup or connection checks.
+
+To roll back this addition, stop its separate project and remove only its Nginx
+route, Homepage card and exact DNS rewrite after review. Retain state. No command
+here deletes media, databases, Docker volumes or the network shared by the main
+stack.
+
+Validation distinguishes static/model/unit checks, disposable container/proxy/DNS
+tests, actual backend/integration checks, trusted HTTPS and owner/client access.
+No successful connection test proves that a cleanup rule is correct; deletion
+behavior is intentionally untested against production media.
+
+Sources: [installation](https://docs.maintainerr.info/installation/),
+[configuration](https://docs.maintainerr.info/configuration/),
+[security](https://docs.maintainerr.info/security/),
+[reverse proxy](https://docs.maintainerr.info/reverseproxy/).

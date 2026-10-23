@@ -144,3 +144,8 @@ Ask only for missing account/device/SSH user choices; the owner completes browse
 login privately. No generated credentials or new .env values are needed. Install
 with scripts/tailscale only on an authorized host; verify remote key login and
 SSH-only network grants independently of public service checks.
+
+Optional Maintainerr is approved for media administration: follow
+[maintainerr.md](maintainerr.md) after main media startup. Complete the independent
+service, Homepage and AdGuard integration and LAN-only proxy. No native account
+onboarding exists; no cleanup rules are seeded without an owner retention policy.

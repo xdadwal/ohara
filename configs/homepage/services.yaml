@@ -77,3 +77,7 @@
         icon: bazarr.png
         href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Subtitles (local network)
+    - Maintainerr:
+        icon: maintainerr.png
+        href: "https://maintainerr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Media maintenance (local network)

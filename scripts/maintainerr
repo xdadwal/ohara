@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Operate optional LAN-only Maintainerr without creating cleanup rules."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import maintainerr
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('command',choices=['check','prepare','up','stop','status','connect','homepage','dns'])
+    p.add_argument('--static',action='store_true',help='check Compose without requiring prepared storage')
+    a=p.parse_args()
+    if a.static and a.command!='check':p.error('--static is only for check')
+    c=config.load(ROOT/'.env')
+    if a.command=='check':maintainerr.check(c,ROOT,static=a.static)
+    elif a.command=='prepare':maintainerr.prepare(c,ROOT)
+    elif a.command=='up':
+        maintainerr.check(c,ROOT)
+        maintainerr.compose(c,ROOT,['up','-d','--wait','--wait-timeout','180'],timeout=600)
+        print('Maintainerr started on loopback port 6246; no cleanup rules created.')
+    elif a.command=='stop':maintainerr.compose(c,ROOT,['stop'])
+    elif a.command=='status':
+        maintainerr.client().call('/api/health/ready')
+        print('Maintainerr database readiness passed. Access remains LAN-only.')
+    else:getattr(maintainerr,a.command)(c,ROOT)
+
+if __name__=='__main__':
+    try:main()
+    except (ValueError,OSError,RuntimeError,subprocess.TimeoutExpired) as error:
+        print('Ohara Maintainerr: '+str(error),file=sys.stderr);sys.exit(1)

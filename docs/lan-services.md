@@ -1,7 +1,7 @@
 # LAN-only service administration
 
-The operator approved local HTTPS access to the seven administration services on
-2026-10-22. These routes use existing host Nginx and the existing wildcard
+The operator approved local HTTPS administration on 2026-10-22; Maintainerr
+was added on 2026-10-23. These routes use existing host Nginx and the existing wildcard
 certificate; no shared authentication service or public DNS record is added.
 
 | URL | Loopback backend |
@@ -13,8 +13,9 @@ certificate; no shared authentication service or public DNS record is added.
 | https://qbittorrent.xdadwal.in | 127.0.0.1:8081 |
 | https://lidarr.xdadwal.in | 127.0.0.1:8686 |
 | https://bazarr.xdadwal.in | 127.0.0.1:6767 |
+| https://maintainerr.xdadwal.in | 127.0.0.1:6246 |
 
-Fresh AdGuard setup seeds these seven exact names under DOMAIN, pointing to
+Fresh AdGuard setup seeds these eight exact names under DOMAIN, pointing to
 ADGUARD_BIND_IP (192.168.1.101 here). Existing installations retain their settings;
 setup does not overwrite or automatically reconcile existing records. Preserve existing
 rewrites, especially records the operator added; do not replace the entire list or
@@ -57,7 +58,7 @@ if someone supplies a matching Host/SNI or forged forwarding headers. This does
 not require publishing their names in public DNS or forwarding additional ports.
 
 Disposable check: `python3 tests/smoke_lan_proxy.py` runs both actual baseline
-files against fixture backends/certificates, checks all seven routes, HTTP-to-HTTPS
+files against fixture backends/certificates, checks all eight routes, HTTP-to-HTTPS
 redirects, rejected sources and spoofed headers, plus all six existing public
 routes. It does not certify a real LAN client's routing or public reachability.
 
@@ -65,3 +66,7 @@ For rollback, restore the previous LAN file (or move the newly introduced file
 outside `/etc/nginx/conf.d`), then `sudo nginx -t` and reload Nginx. Keep Homepage
 cards/DNS rewrites aligned manually. SSH tunnels to loopback backends remain
 available. Never expose backend ports or DNS directly to the Internet.
+
+Maintainerr has no native login; its entire UI/API is administrator access. The
+LAN source restriction is required on every path, including database downloads.
+See [maintainerr.md](maintainerr.md).

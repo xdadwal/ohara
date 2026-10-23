@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT/'scripts/lib'))
 import runtime
 
 IMAGE = 'nginx@sha256:ed84151ed2d47ef93c0939eb9b9754c6990db6092cd2081e11988a47a83d47ea'
-NAMES = ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr')
+NAMES = ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'maintainerr')
 
 
 def main():
@@ -68,7 +68,7 @@ def main():
                     assert status(hostname, '127.0.0.2', tls, True) == '403', hostname+' forged header bypass'
             for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in'):
                 assert status(hostname, '127.0.0.2', True) == '200', 'Existing public route changed: '+hostname
-            print('PASS: host Nginx baselines parse; seven admin proxies/HTTPS redirects, disallowed sources and forged headers rejected on HTTP/HTTPS, six public routes preserved.')
+            print('PASS: host Nginx baselines parse; eight admin proxies/HTTPS redirects, disallowed sources and forged headers rejected on HTTP/HTTPS, six public routes preserved.')
         finally:
             runtime.run(docker+['rm', '-f', name])
 
