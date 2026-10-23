@@ -13,15 +13,6 @@
           enableUser: false
           enableMediaControl: false
           fields: [movies, series, episodes]
-    - Seerr:
-        icon: jellyseerr.png
-        href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
-        description: Discover and request movies and shows
-        widget:
-          type: seerr
-          url: http://seerr:5055
-          key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
-          fields: [pending, processing, issues]
     - Navidrome:
         icon: navidrome.png
         href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
@@ -52,7 +43,16 @@
         icon: openspeedtest.png
         href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
         description: Test your connection to Ohara
-- Administration:
+- Media administration:
+    - Seerr:
+        icon: jellyseerr.png
+        href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
+        description: Discover and request movies and shows
+        widget:
+          type: seerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
+          fields: [pending, processing, issues]
     - Radarr:
         icon: radarr.png
         href: "https://radarr.{{HOMEPAGE_VAR_DOMAIN}}"

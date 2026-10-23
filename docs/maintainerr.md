@@ -37,7 +37,8 @@ or new password is required. Remote access can use the existing ordinary SSH
 forwarding workflow; do not expose this hostname publicly without separately
 approved authentication. Shared authentication remains deferred.
 
-The Homepage command merges only an absent Maintainerr card, preserves other
+The Homepage command adds an absent Maintainerr card to **Media administration**
+(alongside Seerr and the Arr services), preserves other
 cards/widgets, and saves a private pre-change snapshot. If needed, reload only
 Homepage through the normal main-stack lifecycle. Verify its authenticated
 `/api/services` response rather than relying on the seed file alone.
