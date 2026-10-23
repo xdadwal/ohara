@@ -1,0 +1,14 @@
+# Enabled by scripts/jellyfin-theme; normal lifecycle commands retain the overlay.
+services:
+  jellyfin:
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/jellyfin-theme/index.html
+        target: /jellyfin/jellyfin-web/index.html
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${DATA_ROOT}/jellyfin-theme/ui
+        target: /jellyfin/jellyfin-web/ui
+        read_only: true
+        bind: {create_host_path: false}

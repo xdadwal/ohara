@@ -1,5 +1,8 @@
 # Media requests, downloads, and playback
 
+For the approved Abyss web theme, persistent Spotlight overlay and rollback,
+see [Jellyfin theme operations](jellyfin-theme.md).
+
 Ohara includes the complete local stack:
 
 | Application | Internal connection | Private host port | Role |

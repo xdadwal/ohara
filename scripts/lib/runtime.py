@@ -57,7 +57,9 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(allowed))]+prefix[2:]
     command = prefix + [
         'compose', '--project-directory', str(root), '--env-file', '/dev/null',
-        '-f', str(root / 'compose.yaml')] + args
+        '-f', str(root / 'compose.yaml')]
+    import jellyfin_theme
+    command += jellyfin_theme.override(c, root) + args
     return run(command, capture=capture, timeout=timeout, env=env)
 
 

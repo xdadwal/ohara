@@ -36,6 +36,8 @@ initialize accounts/connections and add your chosen indexers. Music flows from L
 and providers explicitly in Bazarr; Seerr requests remain movies and series only.
 
 See [the current stack overview](docs/stack.md) for access, storage and pending work.
+The optional [Abyss Jellyfin theme](docs/jellyfin-theme.md) includes persistent
+CSS and Spotlight without changing the official image or media storage.
 
 ## Fresh-host quick start
 

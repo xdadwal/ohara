@@ -61,6 +61,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   NAVIDROME_HOST defaults to music.xdadwal.in; verify target DNS before activation. Ask for Bazarr
   subtitle languages/providers and any provider credentials; never assume them.
   Preserve existing Bazarr configuration and manually verify its connections.
+  Jellyfin's approved optional Abyss theme includes a persistent read-only web
+  overlay and Spotlight; use scripts/jellyfin-theme and docs/jellyfin-theme.md.
+  Preserve existing branding and user preferences. Refresh the generated index
+  after changing its image pin; do not patch a running container's web files.
   Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
   LAN-only administration subdomains for these and the other internal services
   are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.
