@@ -104,3 +104,14 @@ Sources: [installation](https://docs.maintainerr.info/installation/),
 [configuration](https://docs.maintainerr.info/configuration/),
 [security](https://docs.maintainerr.info/security/),
 [reverse proxy](https://docs.maintainerr.info/reverseproxy/).
+
+## Current host verification (2026-10-23)
+
+The host route is deployed and matches the tracked Nginx baseline. Trusted HTTPS
+returns 200 through loopback and the host LAN address; HTTP redirects to HTTPS.
+A Docker-network client outside the permitted LAN receives 403 on HTTP and HTTPS,
+including with forged forwarding headers. Existing six public routes retain their
+expected responses. The four stored service connections, authenticated Homepage
+card and exact AdGuard UDP/TCP rewrite are verified. There are zero rules and
+collections. Access from a separate physical LAN device and independent
+backup/restore are not established by these checks.
