@@ -431,3 +431,11 @@ preserved on reruns: update its Jellyfin external URL to https://tv.xdadwal.in
 through Settings, while keeping the internal Docker URL unchanged. Update saved
 server URLs in Jellyfin clients. No private credential values or live DNS/Nginx
 settings are changed by this repository edit.
+
+## Optional Maintainerr
+
+Use [maintainerr.md](maintainerr.md) and `scripts/maintainerr --help` for the
+independent media-maintenance project, private storage, service connections,
+Homepage/DNS integration and LAN-only Nginx route. Main-stack `up` does not start
+it. No login is built in and initial setup creates no cleanup rules. Review
+retention/actions in the UI before allowing automated removal.

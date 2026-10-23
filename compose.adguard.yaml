@@ -5,6 +5,7 @@ services:
     image: ${ADGUARD_IMAGE}
     user: "${RUN_UID}:${RUN_GID}"
     restart: unless-stopped
+    networks: [default, media]
     cap_drop: [ALL]
     # Required by capabilities attached to the official image's executable.
     cap_add: [NET_BIND_SERVICE, NET_RAW]
@@ -29,3 +30,7 @@ services:
       options:
         max-size: 10m
         max-file: "3"
+networks:
+  media:
+    external: true
+    name: ohara_default

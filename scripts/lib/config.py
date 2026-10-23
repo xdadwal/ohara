@@ -48,7 +48,7 @@ def load(path):
         raise ValueError('PORTFOLIO_PORT must be 0 (disabled) or a valid TCP port')
     if int(values['PORTFOLIO_PORT']) and (int(values['PORTFOLIO_PORT']) < 1024 or values['HOMEPAGE_HOST'] == values['DOMAIN']):
         raise ValueError('Portfolio requires a nonprivileged port and a separate HOMEPAGE_HOST')
-    if int(values['PORTFOLIO_PORT']) in {2283, 3000, 3002, 3003, 3923, 4533, 5055, 6767, 7878, 8081, 8096, 8686, 8888, 8989, 9696}:
+    if int(values['PORTFOLIO_PORT']) in {2283, 3000, 3002, 3003, 3923, 4533, 5055, 6246, 6767, 7878, 8081, 8096, 8686, 8888, 8989, 9696}:
         raise ValueError('PORTFOLIO_PORT must not expose an existing application or private admin port')
     if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (values['HOMEPAGE_HOST'] != values['DOMAIN'] and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])):
         raise ValueError('HOMEPAGE_HOST must be DOMAIN or a subdomain')

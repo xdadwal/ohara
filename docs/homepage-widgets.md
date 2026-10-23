@@ -1,14 +1,16 @@
 # Homepage widgets
 
-Fresh installations seed Jellyfin, Seerr, clock, weather and resource widgets.
+Fresh installations seed media, queue, torrent and DNS widgets, plus clock,
+weather and resource widgets. Missing optional services/credentials can leave
+those optional widgets disconnected until their setup is completed.
 OpenSpeedTest is a link-only card opening an on-demand browser-to-Ohara test. No new services are added.
 Existing files under DATA_ROOT/homepage are deliberately preserved by setup.
 
 AdGuard and media administration cards use LAN-only HTTPS subdomains under
 HOMEPAGE_VAR_DOMAIN (supplied from DOMAIN). On this host, install the reviewed
 [LAN Nginx routes](lan-services.md) and local DNS rewrites before using them.
-Backends remain on loopback; SSH forwarding is still an alternative. The cards
-pass no administration credentials to Homepage.
+Backends remain on loopback; SSH forwarding is still an alternative. Selected administration cards now have native widgets using the narrowly
+allowlisted credentials below. Other administration links remain link-only.
 
 ## Connect media widgets
 
@@ -136,3 +138,40 @@ The current host has this widget live. The operator supplied the API key private
 only Homepage was recreated. Its authenticated native statistics proxy succeeds,
 existing dashboard groups remain, and browser-facing service/statistics responses
 were checked for absence of the actual key.
+
+## Queue, torrent and DNS widgets
+
+The dashboard splits the former tall media-admin group into two four-card groups:
+**Requests & acquisition** (Seerr, Radarr, Sonarr, Lidarr) and **Media operations**
+(qBittorrent, Maintainerr, Prowlarr, Bazarr). Other cards and their settings remain.
+Fresh installs use the same grouping in the Homepage seed. Existing installations
+need a selective merge with a private backup, preserving full cards/widgets.
+
+Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
+`download` and `upload`, without expanded per-torrent progress rows. These native
+count blocks represent unfinished/completed torrents, including paused or queued
+ones; they are not strict counts of torrents currently transferring bytes. Rates
+are live sums. AdGuard shows only `blocked` and `latency`. Maintainerr retains
+handled items/reclaimable storage; the other enabled widgets are unchanged.
+
+Lifecycle commands map the existing RADARR_API_KEY, SONARR_API_KEY, LIDARR_API_KEY,
+QBITTORRENT_PASSWORD and optional ADGUARD_PASSWORD into explicit Homepage-only
+HOMEPAGE_VAR aliases. No duplicate secret inputs are required and `.env` is never
+sourced or passed to containers. Homepage receives only these selected values,
+not other media account passwords. Navidrome still receives only its derived token.
+Missing optional AdGuard credentials do not block main-stack operations. Recreate
+only Homepage to load the selected environment after updating Compose:
+
+```sh
+scripts/check
+scripts/up
+```
+
+AdGuard retains its independent DNS network and additionally joins the existing
+`ohara_default` network so Homepage reaches `http://adguard:3000` internally.
+Start the main stack before starting AdGuard on a fresh host. The dashboard still
+binds only host loopback 3003; DNS binds the verified LAN address with its existing
+allowlist. Credentials, router/client DNS, filters and published ports are unchanged.
+When applying this to an existing DNS container, connect its additional network
+without restarting DNS; its Compose definition retains that connection on recreation.
+Verify authenticated widget proxy responses, credential redaction and UDP/TCP DNS.

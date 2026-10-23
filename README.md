@@ -24,6 +24,7 @@ media settings on another machine, or to migrate private state safely.
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 | Immich (optional separate project) | Personal photos/videos; machine learning disabled | immich.xdadwal.in; owner setup complete |
+| Maintainerr (optional separate project) | Media maintenance; LAN-only administration | maintainerr.xdadwal.in; loopback 6246 |
 | AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
@@ -38,6 +39,8 @@ and providers explicitly in Bazarr; Seerr requests remain movies and series only
 See [the current stack overview](docs/stack.md) for access, storage and pending work.
 The optional [Abyss Jellyfin theme](docs/jellyfin-theme.md) includes persistent
 CSS and Spotlight without changing the official image or media storage.
+Optional [Maintainerr](docs/maintainerr.md) connects the existing media services
+for owner-selected maintenance rules; initial integration creates no cleanup rules.
 
 ## Fresh-host quick start
 

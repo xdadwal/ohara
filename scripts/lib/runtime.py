@@ -47,6 +47,7 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         homepage, media = credential_files.load(root)
         env.update(homepage)
         env.update(credential_files.navidrome_widget_environment(media))
+        env.update(credential_files.admin_widget_environment(root,media))
     env.update(config.images(root / 'versions.env'))
     env['COMPOSE_DISABLE_ENV_FILE'] = '1'
     prefix = docker if docker is not None else docker_prefix()

@@ -1,0 +1,25 @@
+name: ohara-maintainerr
+services:
+  maintainerr:
+    image: ${MAINTAINERR_IMAGE:?Run scripts/maintainerr check}
+    user: "${RUN_UID}:${RUN_GID}"
+    init: true
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      TELEMETRY: "off"
+    ports: ["127.0.0.1:6246:6246"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/maintainerr
+        target: /opt/data
+        bind: {create_host_path: false}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  default:
+    external: true
+    name: ohara_default

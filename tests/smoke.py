@@ -86,7 +86,8 @@ def main():
                 diagnostic = compose(['logs', '--no-color', '--tail', '25', 'homepage'], capture=True)
                 homepage_values, media_values = credential_files.load(root)
                 for value in [*homepage_values.values(),
-                              *credential_files.navidrome_widget_environment(media_values).values()]:
+                              *credential_files.navidrome_widget_environment(media_values).values(),
+                              *credential_files.admin_widget_environment(root,media_values).values()]:
                     if len(value) > 10:
                         diagnostic = diagnostic.replace(value, '<redacted>')
                 print(diagnostic, flush=True)
@@ -158,8 +159,9 @@ def main():
             ports['jellyfin'] = port('jellyfin',8096)
             code, body = request(ports['jellyfin'],'localhost','/web/index.html')
             assert code==200 and body.count(b'data-abyss-spotlight')==1, 'Theme did not persist on recreation'
-            private_widget_values = list(widget_keys.values()) + list(
-                credential_files.navidrome_widget_environment(media_secrets).values())
+            private_widget_values = (list(widget_keys.values()) +
+                list(credential_files.navidrome_widget_environment(media_secrets).values()) +
+                list(credential_files.admin_widget_environment(root,media_secrets).values()))
             compose(['up', '-d', '--force-recreate', 'homepage'])
             for name, category in [('radarr','movies'), ('sonarr','tv'), ('lidarr','music')]:
                 if name != 'lidarr':
@@ -252,8 +254,11 @@ def main():
             for service, endpoint, field in [('Jellyfin','CountV2','MovieCount'),
                                               ('Seerr','request/count','pending'),
                                               ('Seerr','issue/count','open'),
-                                              ('Navidrome','getNowPlaying','subsonic-response')]:
-                query = urllib.parse.urlencode({'group':'Media', 'service':service, 'index':0, 'endpoint':endpoint})
+                                              ('Navidrome','getNowPlaying','subsonic-response'),
+                                              ('Radarr','queue/status','totalCount'),
+                                              ('Sonarr','queue','totalRecords'),
+                                              ('Lidarr','queue/status','totalCount')]:
+                query = urllib.parse.urlencode({'group':'Requests & acquisition' if service in ('Seerr','Radarr','Sonarr','Lidarr') else 'Media', 'service':service, 'index':0, 'endpoint':endpoint})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/services/proxy?'+query, hdr={'Cookie':session})
                 assert code == 200 and field in json.loads(result), f'{service}: native widget API failed'
                 assert not any(value.encode() in result for value in private_widget_values), 'Widget API exposed credentials'

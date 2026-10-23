@@ -76,3 +76,10 @@ web port 2283. Approved storage is `/ohara/immich/library` and
 `/ohara/immich/postgres`. Backup destination, library sizing and archive acceptance remain pending; see [Immich operations](immich.md). Pi-hole and Copyparty have been removed. Their old data
 and live containers are not deleted by a repository change; see operations.md for
 cutover guidance. files.xdadwal.in is no longer an application endpoint.
+
+Maintainerr is an optional separate `ohara-maintainerr` Compose project for media
+maintenance, connected to Jellyfin/Seerr/Radarr/Sonarr on the main Docker network.
+Its backend is loopback-only 6246; `maintainerr.xdadwal.in` uses the LAN-only admin
+proxy, Homepage card and exact AdGuard rewrite. It has no built-in login.
+Setup creates no cleanup rules or collections; retention/deletion policy is an
+owner choice. See [Maintainerr operations](maintainerr.md).

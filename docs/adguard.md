@@ -118,3 +118,9 @@ and [configuration reference](https://adguard-dns.io/kb/adguard-home/configurati
 The disposable DNS smoke test additionally needs `dig` (distribution package
 `dnsutils`) and `python3-bcrypt` available to its Python interpreter. Run it alone
 with `python3 tests/smoke_adguard.py`, or as part of `tests/smoke.sh`.
+
+Homepage DNS statistics use the existing media network: AdGuard additionally joins
+`ohara_default`, retaining its separate DNS network and all port bindings. On a
+fresh host, start the main stack first so that shared network exists. Only the
+selected dashboard credentials reach Homepage; AdGuard receives no media/Homepage
+credentials in its environment. See [Homepage widgets](homepage-widgets.md).

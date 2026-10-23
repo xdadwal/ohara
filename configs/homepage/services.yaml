@@ -13,15 +13,6 @@
           enableUser: false
           enableMediaControl: false
           fields: [movies, series, episodes]
-    - Seerr:
-        icon: jellyseerr.png
-        href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
-        description: Discover and request movies and shows
-        widget:
-          type: seerr
-          url: http://seerr:5055
-          key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
-          fields: [pending, processing, issues]
     - Navidrome:
         icon: navidrome.png
         href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
@@ -32,6 +23,78 @@
           user: admin
           token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
           salt: ohara-homepage
+- Requests & acquisition:
+    - Seerr:
+        icon: jellyseerr.png
+        href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
+        description: Discover and request movies and shows
+        widget:
+          type: seerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_API_KEY}}"
+          fields: [pending, processing, issues]
+    - Radarr:
+        icon: radarr.png
+        href: "https://radarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Movies (local network)
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: '{{HOMEPAGE_VAR_RADARR_API_KEY}}'
+          fields:
+          - queued
+    - Sonarr:
+        icon: sonarr.png
+        href: "https://sonarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: TV shows (local network)
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: '{{HOMEPAGE_VAR_SONARR_API_KEY}}'
+          fields:
+          - queued
+    - Lidarr:
+        icon: lidarr.png
+        href: "https://lidarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Music acquisition (local network)
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: '{{HOMEPAGE_VAR_LIDARR_API_KEY}}'
+          fields:
+          - queued
+- Media operations:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Downloads (local network)
+        widget:
+          type: qbittorrent
+          url: http://qbittorrent:8081
+          username: admin
+          password: '{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}'
+          fields:
+          - leech
+          - seed
+          - download
+          - upload
+          enableLeechProgress: false
+    - Maintainerr:
+        icon: maintainerr.png
+        href: "https://maintainerr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Media maintenance (local network)
+        widget:
+          type: maintainerr
+          url: http://maintainerr:6246
+          fields: [itemsHandled, reclaimable]
+    - Prowlarr:
+        icon: prowlarr.png
+        href: "https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Indexers (local network)
+    - Bazarr:
+        icon: bazarr.png
+        href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Subtitles (local network)
 - Photos:
     - Immich:
         icon: immich.png
@@ -48,32 +111,15 @@
         icon: adguard-home.png
         href: "https://adguard.{{HOMEPAGE_VAR_DOMAIN}}"
         description: DNS administration (local network)
+        widget:
+          type: adguard
+          url: http://adguard:3000
+          username: admin
+          password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
+          fields:
+          - blocked
+          - latency
     - OpenSpeedTest:
         icon: openspeedtest.png
         href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
         description: Test your connection to Ohara
-- Administration:
-    - Radarr:
-        icon: radarr.png
-        href: "https://radarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Movies (local network)
-    - Sonarr:
-        icon: sonarr.png
-        href: "https://sonarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: TV shows (local network)
-    - Prowlarr:
-        icon: prowlarr.png
-        href: "https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Indexers (local network)
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Downloads (local network)
-    - Lidarr:
-        icon: lidarr.png
-        href: "https://lidarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Music acquisition (local network)
-    - Bazarr:
-        icon: bazarr.png
-        href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Subtitles (local network)
