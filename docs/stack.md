@@ -5,6 +5,9 @@ server is deployed or publicly reachable. Eleven applications run in the main Do
 with optional AdGuard Home in the separate `ohara-dns` project.
 Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
 
+Jellyfin optionally uses the pinned Abyss web theme and Spotlight through a
+persistent read-only overlay; see [theme operations](jellyfin-theme.md).
+
 | Component | Role | Configured access |
 |---|---|---|
 | Homepage | Password-protected dashboard | HOMEPAGE_HOST (default xdadwal.in); loopback 3002 |

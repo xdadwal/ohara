@@ -9,6 +9,8 @@ for command in setup check up status tls media-setup tailscale adguard immich; d
   (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
 done
 (cd /; "$TASK_TMP/scripts/lan-proxy" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/jellyfin-theme" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/jellyfin-enhanced" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/immich-proxy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/migrate-credentials" --help >/dev/null)
 if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi

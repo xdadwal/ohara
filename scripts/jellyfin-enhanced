@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Configure the installed Enhanced plugin using the reviewed QoL profile."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import jellyfin_enhanced
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command',choices=['setup','check','restore'])
+    parser.add_argument('--backup',help='restore only: private backup directory or its timestamp name')
+    args=parser.parse_args()
+    if (args.command=='restore') != bool(args.backup):
+        parser.error('--backup is required only with restore')
+    c=config.load(ROOT/'.env')
+    if args.command=='restore':
+        jellyfin_enhanced.restore(ROOT,args.backup)
+        return
+    if args.command=='setup':
+        backup,count=jellyfin_enhanced.setup(c,ROOT)
+        print('Enhanced QoL configured for '+str(count)+' accounts; unrelated preferences preserved.')
+        print('Private pre-change backup: '+str(backup))
+    jellyfin_enhanced.check(ROOT)
+
+
+if __name__=='__main__':
+    try:main()
+    except (ValueError,OSError,RuntimeError,subprocess.TimeoutExpired) as error:
+        print('Ohara Enhanced: '+str(error),file=sys.stderr)
+        sys.exit(1)

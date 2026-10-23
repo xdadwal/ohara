@@ -22,6 +22,7 @@ import host
 import credential_fixtures
 import credentials as credential_files
 import media
+import jellyfin_theme
 import proxy
 import runtime
 
@@ -51,6 +52,7 @@ def main():
         root = Path(directory).resolve()
         shutil.copytree(ROOT / 'configs', root / 'configs')
         shutil.copy(ROOT / 'compose.yaml', root / 'compose.yaml')
+        shutil.copy(ROOT / 'compose.jellyfin-theme.yaml', root / 'compose.jellyfin-theme.yaml')
         shutil.copy(ROOT / 'versions.env', root / 'versions.env')
         c = config.load(ROOT / '.env.example')
         c['HOMEPAGE_HOST'] = 'ohara.' + c['DOMAIN']
@@ -131,6 +133,31 @@ def main():
                 for key, value in widget_keys.items():
                     stream.write(key+'='+value+'\n')
             credential_files.load(root)
+            # Official-image theme integration must survive container recreation
+            # and preserve API accounts/libraries without image filesystem edits.
+            print('Checking persistent Abyss theme overlay...', flush=True)
+            jellyfin_theme.prepare(c, root, enabled=True)
+            compose(['up','-d','--no-deps','--force-recreate','--wait','--wait-timeout','120','jellyfin'])
+            ports['jellyfin'] = port('jellyfin',8096)
+            urls['jellyfin'] = f'http://127.0.0.1:{ports["jellyfin"]}'
+            jf = media.Client(urls['jellyfin'])
+            jf.headers['Authorization'] = ('MediaBrowser Client="Ohara", Device="Test", '
+                                           'DeviceId="widget-smoke", Version="1", Token="'+account['AccessToken']+'"')
+            jellyfin_theme.apply(jf,root)
+            branding = jf.call('/Branding/Configuration')
+            assert '/web/ui/abyss.css' in branding['CustomCss']
+            assert len(jf.call('/Library/VirtualFolders')) == 2
+            for path, marker in [('/web/index.html',b'data-abyss-spotlight'),
+                                 ('/web/ui/abyss.css',b'--abyss-'),
+                                 ('/web/ui/abyss-je.css',b'jellyfin-enhanced-panel'),
+                                 ('/web/ui/spotlight-loader.js',b'abyss-spotlight'),
+                                 ('/web/ui/spotlight.html',b'spotlight.css')]:
+                code, body = request(ports['jellyfin'],'localhost',path)
+                assert code==200 and marker in body, 'Persistent theme asset missing: '+path
+            compose(['up','-d','--no-deps','--force-recreate','--wait','--wait-timeout','120','jellyfin'])
+            ports['jellyfin'] = port('jellyfin',8096)
+            code, body = request(ports['jellyfin'],'localhost','/web/index.html')
+            assert code==200 and body.count(b'data-abyss-spotlight')==1, 'Theme did not persist on recreation'
             private_widget_values = list(widget_keys.values()) + list(
                 credential_files.navidrome_widget_environment(media_secrets).values())
             compose(['up', '-d', '--force-recreate', 'homepage'])

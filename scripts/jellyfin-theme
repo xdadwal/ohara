@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Install the pinned Abyss CSS and Spotlight overlay for the official image."""
+import argparse
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts/lib'))
+import config
+import jellyfin_theme as theme
+import runtime
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['prepare', 'install', 'check', 'remove'])
+    args = parser.parse_args()
+    c = config.load(ROOT/'.env')
+    if args.command == 'prepare':
+        theme.prepare(c, ROOT)
+        print('Pinned Abyss files prepared. No server branding/preferences changed.')
+    elif args.command == 'check':
+        active = bool(theme.override(c, ROOT))
+        print('Abyss overlay '+('enabled and validated' if active else 'not enabled'))
+    else:
+        api = theme.client(ROOT)
+        if args.command == 'install':
+            was_enabled = bool((theme.state(c) or {}).get('enabled'))
+            theme.prepare(c, ROOT, enabled=True)
+            try:
+                runtime.compose(c, ROOT, ['up','-d','--no-deps','--force-recreate','--wait','--wait-timeout','120','jellyfin'], timeout=240)
+                backup = theme.apply(api, ROOT)
+            except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired):
+                if not was_enabled:
+                    manifest = theme.state(c)
+                    manifest['enabled'] = False
+                    theme.write(Path(c['DATA_ROOT'])/'jellyfin-theme/manifest.json', (json.dumps(manifest,indent=2)+'\n').encode(), c)
+                    runtime.compose(c, ROOT, ['up','-d','--no-deps','--force-recreate','--wait','--wait-timeout','120','jellyfin'], timeout=240)
+                raise
+            print('Abyss CSS, Spotlight and Dark themes installed; home-section order preserved.')
+        else:
+            backup = theme.apply(api, ROOT, remove=True)
+            manifest = theme.state(c)
+            if manifest:
+                manifest['enabled'] = False
+                theme.write(Path(c['DATA_ROOT'])/'jellyfin-theme/manifest.json', (json.dumps(manifest,indent=2)+'\n').encode(), c)
+            runtime.compose(c, ROOT, ['up','-d','--no-deps','--force-recreate','--wait','--wait-timeout','120','jellyfin'], timeout=240)
+            print('Managed CSS and Spotlight removed; files retained and Dark preferences preserved.')
+        print('Private branding/preferences backup: '+str(backup))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print('Ohara theme: '+str(error), file=sys.stderr)
+        sys.exit(1)

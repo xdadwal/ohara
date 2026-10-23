@@ -16,6 +16,8 @@ class StackTests(unittest.TestCase):
         c = config.load(ROOT / '.env.example')
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            c['DATA_ROOT'] = str(root/'data')
+            c['MEDIA_ROOT'] = str(root/'media')
             for name in ['compose.yaml', 'versions.env']:
                 shutil.copy(ROOT / name, root / name)
             runtime.check(c, root, static=True)
