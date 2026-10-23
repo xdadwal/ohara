@@ -62,6 +62,9 @@ class EnhancedTests(unittest.TestCase):
         self.assertTrue(result['AutoSkipIntro'])
         self.assertEqual(result['OtherChoice'],'keep')
         self.assertNotIn('IsAdmin',result)
+        self.assertTrue(result['RatingTagsEnabled'])
+        for scope in ('Movies','Series','Seasons','Episodes','ContinueWatching','NextUp'):
+            self.assertTrue(result['RatingTagsOn'+scope])
 
     def test_conflicting_operator_mapping_is_preserved(self):
         original='https://tv.example.com|https://custom.example.com'

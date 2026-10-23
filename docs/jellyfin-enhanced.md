@@ -25,7 +25,7 @@ stores necessary integration keys in its existing private server configuration;
 
 - Watch progress, file sizes, quality badges, long-press playback speed and the
   manual Remove from Continue Watching control, with remaining-time progress. Only
-  these six personal fields change for current users; other saved choices stay.
+  these thirteen personal fields change for current users; other saved choices stay.
 - Native Home tabs for Recommendations and Requests; Bookmarks and Calendar are
   disabled, matching the owner's latest dashboard settings. Existing Plugin Pages or
   Custom Tabs navigation is retained rather than enabling conflicting native tabs.
@@ -109,6 +109,26 @@ The checked-in profile records reviewed non-secret choices changed since the ini
 Enhanced setup. Integration URLs are derived from the target configuration and keys
 come from private `.env`; instance JSON, API keys, user IDs, per-user navigation
 history, bookmarks and cached state are not exported. Existing users keep personal
-overrides outside the six selected fields. New users receive plugin server defaults.
+overrides outside the thirteen selected fields. New users receive plugin server defaults.
 Run the setup command explicitly after plugin installation; ordinary `scripts/up`
 does not reapply preferences or enable request automation.
+
+## Rating tags for existing accounts
+
+Server defaults are starting values, not a forced policy. Enhanced saves personal
+preferences on first use; changing the admin default later leaves those values
+intact. The setup profile therefore selectively sets RatingTagsEnabled and its six
+movie/series/season/episode/Continue Watching/Next Up scope switches for current
+accounts as well as server defaults. The thirteen managed fields include the
+previous six QoL choices; all other personal preferences are preserved. Clients
+must refresh to reload their saved settings. Users can subsequently customize them.
+
+In the UI, personal UI Settings controls rating tags. The administrator's Overview
+→ Quick Actions → Overwrite everyone's personal settings is a broader reset that
+also replaces unrelated preferences; it is not used by this setup. Server defaults
+alone and clearing tag caches do not fix a saved personal false value.
+
+Badges require community/critic rating metadata. A movie or season without ratings
+can have no badge even with every scope enabled. MDBList fetching is independent
+and remains disabled without an owner-supplied key. These are Enhanced web overlays;
+experimental Native Poster Tags are separate and are not enabled by this fix.
