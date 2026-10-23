@@ -28,6 +28,8 @@ Open https://tv.xdadwal.in and hard-refresh the browser after installation.
 The full integration includes:
 
 - Abyss CSS served from the existing Jellyfin origin at `/web/ui/abyss.css`.
+- The pinned Enhanced compatibility stylesheet follows the core import; see
+  [Enhanced QoL setup](jellyfin-enhanced.md) for the installed plugin integration.
 - Spotlight files served from `/web/ui/`, loaded through exactly one marked
   script in the web entry page.
 - Dark client/dashboard base themes for existing users, preserving every other

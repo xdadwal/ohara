@@ -2,6 +2,8 @@
 
 For the approved Abyss web theme, persistent Spotlight overlay and rollback,
 see [Jellyfin theme operations](jellyfin-theme.md).
+For the installed Enhanced plugin's QoL profile and Seerr/Arr integration, see
+[Enhanced setup](jellyfin-enhanced.md).
 
 Ohara includes the complete local stack:
 

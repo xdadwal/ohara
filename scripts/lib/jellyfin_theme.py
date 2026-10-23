@@ -12,7 +12,7 @@ import config
 import credentials
 import media
 
-FILES = ('abyss.css', 'spotlight.html', 'spotlight.css', 'spotlight-loader.js')
+FILES = ('abyss.css', 'abyss-je.css', 'spotlight.html', 'spotlight.css', 'spotlight-loader.js')
 START = '/* OHARA ABYSS START */'
 END = '/* OHARA ABYSS END */'
 TAG = '<script src="ui/spotlight-loader.js" data-abyss-spotlight></script>'
@@ -119,7 +119,8 @@ def css(existing, *, remove=False):
     existing = re.sub(re.escape(START)+r'.*?'+re.escape(END)+r'\n?', '', existing or '', flags=re.S)
     if remove:
         return existing
-    return START+"\n@import url('/web/ui/abyss.css');\n"+END+'\n'+existing
+    return (START+"\n@import url('/web/ui/abyss.css');\n"
+            "@import url('/web/ui/abyss-je.css');\n"+END+'\n'+existing)
 
 
 def client(root):

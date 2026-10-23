@@ -149,6 +149,7 @@ def main():
             assert len(jf.call('/Library/VirtualFolders')) == 2
             for path, marker in [('/web/index.html',b'data-abyss-spotlight'),
                                  ('/web/ui/abyss.css',b'--abyss-'),
+                                 ('/web/ui/abyss-je.css',b'jellyfin-enhanced-panel'),
                                  ('/web/ui/spotlight-loader.js',b'abyss-spotlight'),
                                  ('/web/ui/spotlight.html',b'spotlight.css')]:
                 code, body = request(ports['jellyfin'],'localhost',path)
