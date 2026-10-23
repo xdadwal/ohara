@@ -150,3 +150,15 @@ A recent overlay run reported 10 applied, zero errors, and a downloaded member
 poster was visually verified to contain the leaving-soon countdown. The missing
 hourly overlay schedule was added. Collection membership, deletion actions and
 retention settings were preserved; no collection handling was triggered.
+
+### Collections home tile
+
+Jellyfin's My Media → Collections tile is a separate `CollectionFolder` image from
+an individual `BoxSet` collection cover. If the collection itself has artwork but
+the home tile is blank, refresh the **Collections library's metadata/images** with
+missing images only; do not replace all images or recurse into its members.
+After the first collection cover was available, a non-recursive default image/
+metadata refresh generated the native home tile. All three current users' Views
+responses now contain its Primary image and its image endpoint returns 200.
+Refresh clients to load the new image tag. This repair does not change Maintainerr
+rules, collection membership, deletion schedules or individual media artwork.
