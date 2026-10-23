@@ -79,14 +79,6 @@
           - download
           - upload
           enableLeechProgress: false
-    - Prowlarr:
-        icon: prowlarr.png
-        href: "https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Indexers (local network)
-    - Bazarr:
-        icon: bazarr.png
-        href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Subtitles (local network)
     - Maintainerr:
         icon: maintainerr.png
         href: "https://maintainerr.{{HOMEPAGE_VAR_DOMAIN}}"
@@ -95,6 +87,14 @@
           type: maintainerr
           url: http://maintainerr:6246
           fields: [itemsHandled, reclaimable]
+    - Prowlarr:
+        icon: prowlarr.png
+        href: "https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Indexers (local network)
+    - Bazarr:
+        icon: bazarr.png
+        href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Subtitles (local network)
 - Photos:
     - Immich:
         icon: immich.png

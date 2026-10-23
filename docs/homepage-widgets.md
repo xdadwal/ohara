@@ -143,7 +143,7 @@ were checked for absence of the actual key.
 
 The dashboard splits the former tall media-admin group into two four-card groups:
 **Requests & acquisition** (Seerr, Radarr, Sonarr, Lidarr) and **Media operations**
-(qBittorrent, Prowlarr, Bazarr, Maintainerr). Other cards and their settings remain.
+(qBittorrent, Maintainerr, Prowlarr, Bazarr). Other cards and their settings remain.
 Fresh installs use the same grouping in the Homepage seed. Existing installations
 need a selective merge with a private backup, preserving full cards/widgets.
 

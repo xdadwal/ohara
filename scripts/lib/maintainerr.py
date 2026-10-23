@@ -152,7 +152,8 @@ def homepage(c,root):
         target=next((g['Media operations'] for g in data if 'Media operations' in g),None)
         if target is None:target=[];data.append({'Media operations':target})
         card={'icon':'maintainerr.png','href':'https://maintainerr.'+c['DOMAIN'],'description':'Media maintenance (local network)'}
-        target.append({'Maintainerr':card})
+        index=next((i+1 for i,row in enumerate(target) if 'qBittorrent' in row),0)
+        target.insert(index,{'Maintainerr':card})
     card['widget']={'type':'maintainerr','url':'http://maintainerr:6246','fields':['itemsHandled','reclaimable']}
     backup=root/'local/maintainerr-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')
     backup.mkdir(mode=0o700,parents=True)
