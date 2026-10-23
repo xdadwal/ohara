@@ -43,7 +43,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.
   Continue independent checks while waiting; do not guess required answers.
-- `compose.yaml`, `.env.example`, and `versions.env` define deployment;
+- Main deployment uses `compose.yaml`, `.env.example`, and `versions.env`. Each
+  independent optional `compose.SERVICE.yaml` uses `versions.SERVICE.env`; overrides
+  such as the Jellyfin theme inherit their parent project's pin. All projects
+  share the one private `.env` for operator inputs;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
 - Commands resolve their own repository path. Use `scripts/setup --help`,
   `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.

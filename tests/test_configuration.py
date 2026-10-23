@@ -53,8 +53,8 @@ class ConfigurationTests(unittest.TestCase):
 
     def test_all_images_include_immutable_lidarr_and_bazarr_pins(self):
         images = config.images(ROOT / 'versions.env')
-        self.assertEqual(len(images), 12)
-        self.assertIn('ADGUARD_IMAGE', images)
+        self.assertEqual(len(images), 11)
+        self.assertNotIn('ADGUARD_IMAGE', images)
         self.assertIn('LIDARR_IMAGE', images)
         self.assertIn('BAZARR_IMAGE', images)
 

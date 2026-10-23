@@ -3,6 +3,7 @@ import base64
 import ipaddress
 import json
 import os
+import re
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -11,6 +12,16 @@ import config
 import credentials
 import host
 import runtime
+
+
+IMAGE_KEYS = {'ADGUARD_IMAGE'}
+
+
+def images(root):
+    values = config.parse(root/'versions.adguard.env', IMAGE_KEYS)
+    if not re.fullmatch(r'adguard/adguardhome:v[0-9.]+@sha256:[a-f0-9]{64}',values['ADGUARD_IMAGE']):
+        raise ValueError('AdGuard requires an official stable image pinned by digest')
+    return values
 
 
 def settings(c):
@@ -64,9 +75,9 @@ def password(root):
 def compose(c, root, args, *, capture=False, timeout=60):
     # DNS never needs or receives media/Homepage credentials, even in its environment.
     env = {k:v for k,v in os.environ.items() if not k.startswith('COMPOSE_') and
-           k not in config.KEYS | config.IMAGES | credentials.ALL_KEYS | credentials.DERIVED_WIDGET_KEYS}
+           k not in config.KEYS | config.IMAGES | IMAGE_KEYS | credentials.ALL_KEYS | credentials.DERIVED_WIDGET_KEYS}
     values = {k:c[k] for k in ('DATA_ROOT', 'RUN_UID', 'RUN_GID', 'ADGUARD_BIND_IP')}
-    values['ADGUARD_IMAGE'] = config.images(root/'versions.env')['ADGUARD_IMAGE']
+    values.update(images(root))
     values['COMPOSE_DISABLE_ENV_FILE'] = '1'
     env.update(values)
     prefix = runtime.docker_prefix()

@@ -287,9 +287,13 @@ live data. Do not expose restored services publicly while testing. Have a fallba
 network/DNS path available during recovery. Only an actual restore demonstrates
 backup usefulness; a successful archive command alone does not.
 
-Upgrade through a PR changing reviewed `versions.env` digests. Check upstream
+Upgrade through a PR changing the matching project's reviewed image digests:
+`versions.env` for the main stack, or `versions.adguard.env`,
+`versions.immich.env` and `versions.maintainerr.env` for their optional projects.
+Check upstream
 release/migration notes and manifests, take a consistent backup, then restart
-with `scripts/up` in a maintenance window. Verify local and external behavior.
+with `scripts/up` for the main stack, or the respective optional service's `up`
+command, in a maintenance window. Verify local and external behavior.
 Rollback may require restoring the previous data snapshot as well as configuration
 and image references if an application upgraded its database schema. Do not promise
 that an old image can read a migrated database.

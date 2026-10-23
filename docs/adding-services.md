@@ -24,7 +24,10 @@ For an authorized live addition, track these together:
 
 - An independently operable service lifecycle, using a separate Compose project
   where its database, storage or upgrade lifecycle warrants it. Pin official
-  release-matched images and retain required dependencies.
+  release-matched images and retain required dependencies. Pair each independent
+  `compose.SERVICE.yaml` project with `versions.SERVICE.env`; main-stack pins stay
+  in `versions.env`. Overrides inherit their parent project's pins rather than
+  creating a separate version source.
 - Dedicated persistent storage with validation of the actual mounted filesystem,
   space and ownership. Keep database/originals separate from unrelated services;
   never recursively change existing ownership or remove data.
