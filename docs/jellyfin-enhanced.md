@@ -24,9 +24,10 @@ stores necessary integration keys in its existing private server configuration;
 ## Configured features
 
 - Watch progress, file sizes, quality badges, long-press playback speed and the
-  manual Remove from Continue Watching control. Only these five personal fields
-  change for current users; subtitles, shortcuts, auto-skip and other choices stay.
-- Native Home tabs for Bookmarks, Calendar and Requests. Existing Plugin Pages or
+  manual Remove from Continue Watching control, with remaining-time progress. Only
+  these six personal fields change for current users; other saved choices stay.
+- Native Home tabs for Recommendations and Requests; Bookmarks and Calendar are
+  disabled, matching the owner's latest dashboard settings. Existing Plugin Pages or
   Custom Tabs navigation is retained rather than enabling conflicting native tabs.
 - Server-side Seerr at `http://seerr:5055`, Sonarr at `http://sonarr:8989` and
   Radarr at `http://radarr:7878`, with HTTPS browser mappings under DOMAIN.
@@ -37,7 +38,9 @@ stores necessary integration keys in its existing private server configuration;
   the existing Nginx restrictions on these admin services.
 - Seerr issue reporting/indicators and debounced recently-added availability sync.
   Existing account linkage/permissions/quotas remain Seerr's responsibility;
-  setup checks linkage but does not import accounts or grant permissions.
+  setup checks linkage without issuing an import call or modifying permissions.
+  The owner-enabled automatic Seerr user-import setting is retained in the profile;
+  subsequent plugin activity can import users according to Seerr policy.
 - Calendar library-access filtering and request-owned download filtering; download
   history is restricted to administrators.
 - The pinned Abyss Enhanced stylesheet is served locally as `/web/ui/abyss-je.css`
@@ -45,16 +48,26 @@ stores necessary integration keys in its existing private server configuration;
   stylesheet for Enhanced 11.3; it uses shared panel selectors, so review its look
   in the installed 12.13 client. Theme selectors and existing branding are retained.
 
-Automatic requests, watchlist sync, tag/metadata synchronization, analytics,
-subtitle language/providers, Intro Skipper policies and unrelated plugin settings
-are not changed. Features requiring extra external keys, such as TMDB/Elsewhere,
+The latest owner-selected server defaults also enable intro/outro auto-skip,
+unwatched-only random selection, awards, rating/genre tags, hiding tags on hover,
+Letterboxd links, advanced Seerr controls, Recommendations and series-overview
+spoiler stripping. Player ratings are disabled. Rating source order is
+Letterboxd/TMDB/Rotten Tomatoes/IMDb; this does not enable MDBList fetching or
+supply a missing key.
+
+Automatic next-season requests and the requirement that all episodes be watched
+are enabled, matching the live owner settings. Movie auto-requests, watchlist sync,
+tag/metadata synchronization, analytics, subtitle language/providers, Intro
+Skipper analysis policies and unrelated settings are preserved. Enhanced auto-skip
+needs detected media segments; it does not generate timestamps or start analysis.
+Features requiring extra external keys, such as TMDB/Elsewhere,
 MDBList and DoesTheDogDie, remain governed by existing inputs; none are invented.
 
 ## Verify and use
 
 Hard-refresh https://tv.xdadwal.in after saving. Press **?** outside a text field
 to open the Enhanced panel, or use the avatar menu in the Modern layout. Selected
-personal QoL settings can be changed there; opening Bookmarks, Calendar and
+personal QoL settings can be changed there; opening Recommendations and
 Requests verifies the actual client experience. No media requests or downloads
 are submitted by setup/testing.
 
@@ -89,3 +102,13 @@ backups private and include them with application-state backups.
 References: [upstream setup](https://n00bcodr.github.io/Jellyfin-Enhanced/getting-started/),
 [API](https://n00bcodr.github.io/Jellyfin-Enhanced/advanced/api/) and
 [*arr settings](https://n00bcodr.github.io/Jellyfin-Enhanced/arr/arr-settings/).
+
+## Sync scope
+
+The checked-in profile records reviewed non-secret choices changed since the initial
+Enhanced setup. Integration URLs are derived from the target configuration and keys
+come from private `.env`; instance JSON, API keys, user IDs, per-user navigation
+history, bookmarks and cached state are not exported. Existing users keep personal
+overrides outside the six selected fields. New users receive plugin server defaults.
+Run the setup command explicitly after plugin installation; ordinary `scripts/up`
+does not reapply preferences or enable request automation.

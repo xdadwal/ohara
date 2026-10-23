@@ -121,6 +121,14 @@ The discussed NAS/multiple-node topology is future work. These services currentl
 run in this Compose stack; their intended future home is the acquisition node.
 Do not add node orchestration, shared authentication or local DNS infrastructure.
 
+For the approved optional Jellyfin theme/plugin workflow, follow
+[jellyfin-theme.md](jellyfin-theme.md) and [jellyfin-enhanced.md](jellyfin-enhanced.md)
+after media account setup. Install the reviewed Enhanced plugin, then explicitly
+run `scripts/jellyfin-theme install` and `scripts/jellyfin-enhanced setup`.
+The synced profile includes automatic next-season requests and Seerr user import;
+review these on a new target. Preserve other user preferences and configure
+Intro Skipper detection separately; setup does not launch library analysis.
+
 On existing installations, use `scripts/media-setup --storage-only` to apply the
 storage policy without logging into or initializing Jellyfin/Seerr owners. Run
 host setup first to prepare recycle directories. See media.md for deletion

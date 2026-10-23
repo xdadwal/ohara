@@ -67,8 +67,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   after changing its image pin; do not patch a running container's web files.
   The owner-installed Enhanced plugin is configured with scripts/jellyfin-enhanced
   and docs/jellyfin-enhanced.md; preserve its private integrations and unrelated
-  personal preferences. Do not enable automatic requests or import/grant users
-  as a side effect of QoL setup. Existing Intro Skipper policies are preserved.
+  personal preferences. The owner-approved synced profile includes automatic
+  next-season requests (all watched required) and Seerr automatic user import.
+  Do not add other request automation or directly import/grant users during setup.
+  Existing Intro Skipper analysis policies are preserved.
   Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
   LAN-only administration subdomains for these and the other internal services
   are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.

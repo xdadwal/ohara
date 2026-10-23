@@ -35,6 +35,14 @@ scripts. Ohara provisions the media/dashboard stack and Nginx; the separate
    scripts/media-setup --owner-email YOUR_REAL_EMAIL
    ```
 
+   For the selected Jellyfin appearance and Enhanced defaults, follow
+   [Abyss setup](jellyfin-theme.md) and [Enhanced setup](jellyfin-enhanced.md).
+   Install the reviewed Enhanced plugin version, fill the existing private API
+   keys, then run `scripts/jellyfin-theme install` and
+   `scripts/jellyfin-enhanced setup`. The Enhanced profile includes owner-selected
+   automatic next-season requests and Seerr user import; review those before
+   applying it to another server. Intro Skipper analysis is a separate UI task.
+
    Then explicitly apply the selected indexers and renaming settings:
 
    ```sh

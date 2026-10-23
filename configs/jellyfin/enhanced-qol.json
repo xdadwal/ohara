@@ -6,9 +6,9 @@
     "QualityTagsEnabled": true,
     "LongPress2xEnabled": true,
     "RemoveContinueWatchingEnabled": true,
-    "BookmarksEnabled": true,
+    "BookmarksEnabled": false,
     "BookmarksUseNativeTab": true,
-    "CalendarPageEnabled": true,
+    "CalendarPageEnabled": false,
     "CalendarUseNativeTab": true,
     "CalendarFilterByLibraryAccess": true,
     "DownloadsPageEnabled": true,
@@ -19,13 +19,32 @@
     "JellyseerrEnabled": true,
     "JellyseerrShowReportButton": true,
     "JellyseerrShowIssueIndicator": true,
-    "TriggerSeerrScanOnItemAdded": true
+    "TriggerSeerrScanOnItemAdded": true,
+    "AutoSkipIntro": true,
+    "AutoSkipOutro": true,
+    "RandomUnwatchedOnly": true,
+    "ShowAwards": true,
+    "RatingTagsEnabled": true,
+    "TagsHideOnHover": true,
+    "ShowRatingInPlayer": false,
+    "GenreTagsEnabled": true,
+    "JellyseerrShowAdvanced": true,
+    "LetterboxdEnabled": true,
+    "AutoSeasonRequestEnabled": true,
+    "AutoSeasonRequestRequireAllWatched": true,
+    "JellyseerrAutoImportUsers": true,
+    "RecommendationsPageEnabled": true,
+    "RecommendationsUseNativeTab": true,
+    "SpoilerStripSeriesOverview": true,
+    "WatchProgressDefaultMode": "remaining",
+    "MdblistRatingsSources": "letterboxd,tmdb,tomatoes,imdb"
   },
   "personal": {
     "ShowWatchProgress": true,
     "ShowFileSizes": true,
     "QualityTagsEnabled": true,
     "LongPress2xEnabled": true,
-    "RemoveContinueWatchingEnabled": true
+    "RemoveContinueWatchingEnabled": true,
+    "WatchProgressMode": "remaining"
   }
 }

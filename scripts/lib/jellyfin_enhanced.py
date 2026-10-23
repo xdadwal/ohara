@@ -48,7 +48,13 @@ def build(previous, profile, c, values):
         raise ValueError('Installed Enhanced schema lacks profile fields: '+', '.join(sorted(missing)))
     updated = copy.deepcopy(previous)
     for key,value in profile['server'].items():
-        if not isinstance(value, bool):
+        if key == 'WatchProgressDefaultMode':
+            if value not in ('percentage', 'remaining', 'elapsed'):
+                raise ValueError('Unexpected watch-progress mode in Enhanced profile')
+        elif key == 'MdblistRatingsSources':
+            if not isinstance(value,str) or not set(value.split(',')) <= {'letterboxd','tmdb','tomatoes','imdb'}:
+                raise ValueError('Unexpected rating sources in Enhanced profile')
+        elif not isinstance(value, bool):
             raise ValueError('Enhanced QoL profile accepts only Boolean server settings')
         if key.endswith('UseNativeTab'):
             prefix = key.removesuffix('UseNativeTab')

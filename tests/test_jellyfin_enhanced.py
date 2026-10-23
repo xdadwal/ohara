@@ -67,6 +67,15 @@ class EnhancedTests(unittest.TestCase):
         original='https://tv.example.com|https://custom.example.com'
         self.assertEqual(enhanced.mapping(original,'https://tv.example.com','https://seerr.example.com'),original)
 
+    def test_reviewed_scalar_settings_reject_unexpected_values(self):
+        for key,value in [('WatchProgressDefaultMode','unknown'),('MdblistRatingsSources','https://example.com'),('JellyseerrApiKey','private-input')]:
+            profile=self.profile()
+            profile['server'][key]=value
+            before=self.settings()
+            before.setdefault(key,False)
+            with self.subTest(key=key),self.assertRaises(ValueError):
+                enhanced.build(before,profile,config.load(ROOT/'.env.example'),self.values())
+
     def test_concurrent_admin_change_is_not_rolled_back_or_overwritten(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'configs/jellyfin').mkdir(parents=True)
