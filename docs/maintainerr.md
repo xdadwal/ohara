@@ -14,6 +14,7 @@ Start the existing main stack first, then:
 scripts/maintainerr prepare
 scripts/maintainerr up
 scripts/maintainerr connect
+scripts/maintainerr artwork
 scripts/maintainerr homepage
 scripts/maintainerr dns
 sudo scripts/lan-proxy --apply
@@ -113,6 +114,39 @@ returns 200 through loopback and the host LAN address; HTTP redirects to HTTPS.
 A Docker-network client outside the permitted LAN receives 403 on HTTP and HTTPS,
 including with forged forwarding headers. Existing six public routes retain their
 expected responses. The four stored service connections, authenticated Homepage
-card and exact AdGuard UDP/TCP rewrite are verified. There are zero rules and
-collections. Access from a separate physical LAN device and independent
+card and exact AdGuard UDP/TCP rewrite are verified. The initial integration contained no rules or collections; the owner has since
+created maintenance collections. Access from a separate physical LAN device and independent
 backup/restore are not established by these checks.
+
+## Collection covers and overlays
+
+Run `scripts/maintainerr artwork` after connecting the media server. This explicitly
+turns on global overlays and sets an hourly artwork schedule only when no schedule
+exists. Existing styles, default templates and custom schedules remain intact.
+It never invokes the collection handler, changes retention/actions or creates rules.
+Each collection still needs its own overlay switch and eligible file-deletion
+policy; metadata-only or Do Nothing actions do not get leaving-soon countdowns.
+
+In the UI, use **Overlays → Settings → Enable overlays**, configure the schedule,
+and use **Run Now** for an immediate artwork pass. Templates are under
+**Overlays → Existing Templates**; choose a poster default and, for episodes, a
+separate title-card default. A collection with no template override inherits the
+matching default. Refresh Jellyfin clients after processing if they cache old art.
+Overlays are drawn into member movie/show/episode artwork; they are not a default
+cover design for the collection itself. Original artwork is preserved under
+`/opt/data/overlays/originals` for supported restoration.
+
+For a persistent collection cover, edit its rule group and use the poster picker
+once the collection exists. JPEG/PNG/WebP uploads must be at most 500 KB. Maintainerr
+stores the poster and pushes it to Jellyfin immediately and on collection recreation.
+Do not assume it generates an automatic collage: the upstream Jellyfin adapter
+expects a locked collection for native fallback artwork, while later metadata
+updates can leave it unlocked. Changing metadata locks can affect descendants;
+this setup does not force those locks. Custom poster upload avoids that behavior.
+
+The owner's existing collection was repaired with a member's original poster
+through Maintainerr's supported poster upload; Jellyfin confirmed a Primary image.
+A recent overlay run reported 10 applied, zero errors, and a downloaded member
+poster was visually verified to contain the leaving-soon countdown. The missing
+hourly overlay schedule was added. Collection membership, deletion actions and
+retention settings were preserved; no collection handling was triggered.

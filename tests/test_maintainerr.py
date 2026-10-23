@@ -49,6 +49,25 @@ class MaintainerrTests(unittest.TestCase):
             writes=[p for p,b in calls if b is not None and '/test' not in p]
             self.assertEqual(writes,[])
 
+    def test_artwork_sets_missing_schedule_without_touching_collection_actions(self):
+        for schedule in (None,'0 15 * * * *'):
+            with self.subTest(schedule=schedule),tempfile.TemporaryDirectory() as d:
+                state={'enabled':False,'cronSchedule':schedule,'posterFrame':{'useFrame':True}}
+                calls=[]
+                class API:
+                    def call(self,path,body=None,method=None):
+                        calls.append((path,body,method))
+                        if body is not None:state.update(body)
+                        return copy.deepcopy(state)
+                with patch.object(m,'client',return_value=API()):
+                    m.artwork({},Path(d))
+                    m.artwork({},Path(d))
+                self.assertEqual(state['cronSchedule'],schedule or '0 0 * * * *')
+                self.assertTrue(state['posterFrame']['useFrame'])
+                self.assertTrue(state['enabled'])
+                self.assertEqual(sum(body is not None for _,body,_ in calls),1)
+                self.assertTrue(all(path=='/api/overlays/settings' for path,_,_ in calls))
+
     def test_failed_preflight_does_not_save_connections(self):
         class API:
             def __init__(self):self.writes=[]

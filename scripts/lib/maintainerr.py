@@ -74,6 +74,23 @@ def client():
     return media.Client('http://127.0.0.1:6246')
 
 
+def artwork(c,root):
+    """Enable the artwork worker without running collection cleanup or changing templates."""
+    api=client()
+    before=api.call('/api/overlays/settings')
+    patch={'enabled':True,'cronSchedule':before.get('cronSchedule') or '0 0 * * * *'}
+    if any(before.get(k)!=v for k,v in patch.items()):
+        backup=root/'local/maintainerr-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-artwork')
+        for p in (root/'local',backup.parent,backup):
+            host.ensure_directory(p,os.getuid(),os.getgid(),0o700)
+        config.create_file(backup/'overlay-settings.json',json.dumps(before,indent=2)+'\n')
+        api.call('/api/overlays/settings',patch,method='PUT')
+    after=api.call('/api/overlays/settings')
+    if any(after.get(k)!=v for k,v in patch.items()):
+        raise ValueError('Maintainerr artwork settings did not persist')
+    print('Overlay worker enabled; existing schedule retained or hourly schedule set. Collection actions/templates unchanged.')
+
+
 def ok(result,label):
     if not isinstance(result,dict) or result.get('code')!=1:
         raise ValueError('Maintainerr '+label+' failed; inspect its local UI')

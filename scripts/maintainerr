@@ -11,7 +11,7 @@ import maintainerr
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=['check','prepare','up','stop','status','connect','homepage','dns'])
+    p.add_argument('command',choices=['check','prepare','up','stop','status','connect','homepage','dns','artwork'])
     p.add_argument('--static',action='store_true',help='check Compose without requiring prepared storage')
     a=p.parse_args()
     if a.static and a.command!='check':p.error('--static is only for check')
