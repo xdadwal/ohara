@@ -145,11 +145,15 @@ def homepage(c,root):
     path=Path(c['DATA_ROOT'])/'homepage/services.yaml'
     jellyfin_theme.safe(path)
     before=path.read_text();data=yaml.safe_load(before)
-    if any('Maintainerr' in entry for group in data for entries in group.values() for entry in entries):
-        print('Existing Maintainerr Homepage card preserved.');return
-    target=next((g['Media administration'] for g in data if 'Media administration' in g),None)
-    if target is None:target=[];data.append({'Media administration':target})
-    target.append({'Maintainerr':{'icon':'maintainerr.png','href':'https://maintainerr.'+c['DOMAIN'],'description':'Media maintenance (local network)'}})
+    card=next((entry['Maintainerr'] for group in data for entries in group.values() for entry in entries if 'Maintainerr' in entry),None)
+    if card is not None and ('widget' in card or 'widgets' in card):
+        print('Existing Maintainerr Homepage card/widget preserved.');return
+    if card is None:
+        target=next((g['Media administration'] for g in data if 'Media administration' in g),None)
+        if target is None:target=[];data.append({'Media administration':target})
+        card={'icon':'maintainerr.png','href':'https://maintainerr.'+c['DOMAIN'],'description':'Media maintenance (local network)'}
+        target.append({'Maintainerr':card})
+    card['widget']={'type':'maintainerr','url':'http://maintainerr:6246','fields':['itemsHandled','reclaimable']}
     backup=root/'local/maintainerr-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')
     backup.mkdir(mode=0o700,parents=True)
     config.create_file(backup/'services.yaml',before)

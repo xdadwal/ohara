@@ -81,3 +81,7 @@
         icon: maintainerr.png
         href: "https://maintainerr.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Media maintenance (local network)
+        widget:
+          type: maintainerr
+          url: http://maintainerr:6246
+          fields: [itemsHandled, reclaimable]

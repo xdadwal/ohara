@@ -39,8 +39,10 @@ forwarding workflow; do not expose this hostname publicly without separately
 approved authentication. Shared authentication remains deferred.
 
 The Homepage command adds an absent Maintainerr card to **Media administration**
-(alongside Seerr and the Arr services), preserves other
-cards/widgets, and saves a private pre-change snapshot. If needed, reload only
+(alongside Seerr and the Arr services) and fills in a missing native widget. It
+shows handled items and reclaimable storage through `http://maintainerr:6246`,
+with no API key. Existing card properties and configured widgets are preserved;
+changes save a private pre-change snapshot. If needed, reload only
 Homepage through the normal main-stack lifecycle. Verify its authenticated
 `/api/services` response rather than relying on the seed file alone.
 
