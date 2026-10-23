@@ -120,7 +120,12 @@ def css(existing, *, remove=False):
     if remove:
         return existing
     return (START+"\n@import url('/web/ui/abyss.css');\n"
-            "@import url('/web/ui/abyss-je.css');\n"+END+'\n'+existing)
+            "@import url('/web/ui/abyss-je.css');\n"
+            "/* Center the Jellyfin 12 login logo independently of header spacers. */\n"
+            "body:has(#loginPage:not(.hide)) header.MuiAppBar-root .MuiToolbar-root a:has(img[src*=\"icon-transparent\"]) {\n"
+            "  position: absolute; left: 50%; transform: translateX(-50%);\n}\n"
+            "body:has(#loginPage:not(.hide)) header.MuiAppBar-root .MuiButton-startIcon:has(img[src*=\"icon-transparent\"]) {\n"
+            "  margin: 0;\n}\n"+END+'\n'+existing)
 
 
 def client(root):

@@ -36,6 +36,8 @@ The full integration includes:
   preference, including the home-section order and playback settings.
 - Existing Custom CSS, logo styling, login disclaimer and splash setting kept.
   A marked CSS import is prepended so existing overrides still apply.
+- The Jellyfin 12 login header logo is centered independently of its flex spacers
+  and icon margin. This managed CSS adjustment is scoped to the login page.
 - Private pre-change branding and display-preference snapshots under
   `local/jellyfin-theme-backups/`. Libraries/accounts/media files are preserved.
 
