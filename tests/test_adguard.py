@@ -14,6 +14,18 @@ import credentials
 
 
 class AdguardTests(unittest.TestCase):
+    def test_optional_image_file_is_independent_and_digest_pinned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            original=(ROOT/'versions.adguard.env').read_text()
+            (root/'versions.adguard.env').write_text(original)
+            # No main or other optional version file is needed by DNS commands.
+            self.assertEqual(adguard.images(root),adguard.images(ROOT))
+            (root/'versions.env').write_text('INVALID=unrelated-main-value\n')
+            self.assertEqual(adguard.images(root),adguard.images(ROOT))
+            (root/'versions.adguard.env').write_text('ADGUARD_IMAGE=adguard/adguardhome:latest\n')
+            with self.assertRaises(ValueError):adguard.images(root)
+
     def settings(self):
         c = config.load(ROOT/'.env.example')
         c.update(ADGUARD_BIND_IP='192.168.1.101', ADGUARD_NETWORK='192.168.1.0/24')
@@ -52,7 +64,7 @@ class AdguardTests(unittest.TestCase):
             text = (ROOT/'.env.example').read_text()+'\nADGUARD_BIND_IP=192.168.1.101\nADGUARD_NETWORK=192.168.1.0/24\nADGUARD_PASSWORD=fixture-password-12345\n'
             (root/'.env').write_text(text)
             (root/'.env').chmod(0o600)
-            (root/'versions.env').write_text((ROOT/'versions.env').read_text())
+            (root/'versions.adguard.env').write_text((ROOT/'versions.adguard.env').read_text())
             c = config.load(root/'.env')
             self.assertNotIn('ADGUARD_PASSWORD', c)
             self.assertEqual(adguard.password(root), 'fixture-password-12345')

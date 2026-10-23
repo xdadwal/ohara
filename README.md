@@ -42,6 +42,23 @@ CSS and Spotlight without changing the official image or media storage.
 Optional [Maintainerr](docs/maintainerr.md) connects the existing media services
 for owner-selected maintenance rules; initial integration creates no cleanup rules.
 
+## Compose and image-pin convention
+
+Each independent Compose project has a matching committed version file. All
+operator settings and credentials still use the single private `.env`.
+
+| Compose file | Image pins | Lifecycle |
+|---|---|---|
+| `compose.yaml` | `versions.env` | Main application stack |
+| `compose.adguard.yaml` | `versions.adguard.env` | Optional LAN DNS |
+| `compose.immich.yaml` | `versions.immich.env` | Optional photos/database/cache |
+| `compose.maintainerr.yaml` | `versions.maintainerr.env` | Optional media maintenance |
+| `compose.jellyfin-theme.yaml` | Inherits main Jellyfin pin | Override of the main project |
+
+Use the corresponding repository scripts; they validate and pass only the pins
+for their project. Separate lifecycles can share networks without sharing version
+files. Host services such as Nginx/Certbot/Tailscale use their own package lifecycle.
+
 ## Fresh-host quick start
 
 Bootstrap target: **Ubuntu 24.04 LTS or Debian 13**, systemd, amd64/arm64. Reserve
