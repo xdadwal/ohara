@@ -73,6 +73,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   next-season requests (all watched required) and Seerr automatic user import.
   Do not add other request automation or directly import/grant users during setup.
   Existing Intro Skipper analysis policies are preserved.
+  Optional LetterboxdSync uses scripts/jellyfin-letterboxd and
+  docs/jellyfin-letterboxd.md; preserve all accounts and repositories, verify the
+  reviewed artifact, and never restart with playback loaded. External account
+  linking stays in its HTTPS UI; do not enable imports/requests or assume tokens.
   Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
   LAN-only administration subdomains for these and the other internal services
   are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.

@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Install/check the reviewed LetterboxdSync plugin; account linking stays in its UI."""
+import argparse
+from pathlib import Path
+import subprocess
+import zipfile
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import jellyfin_letterboxd as letterboxd
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command',choices=['install','check'])
+    parser.add_argument('--restart',action='store_true',help='install only: restart Jellyfin if no playback sessions exist')
+    args=parser.parse_args()
+    if args.restart and args.command!='install':parser.error('--restart is only for install')
+    c=config.load(ROOT/'.env')
+    if args.command=='install':
+        letterboxd.install(c,ROOT)
+        if not args.restart:return
+        letterboxd.restart(c,ROOT)
+    letterboxd.check(ROOT)
+
+
+if __name__=='__main__':
+    try:main()
+    except (ValueError,OSError,RuntimeError,subprocess.TimeoutExpired,zipfile.BadZipFile) as error:
+        print('Ohara LetterboxdSync: '+str(error),file=sys.stderr);sys.exit(1)
