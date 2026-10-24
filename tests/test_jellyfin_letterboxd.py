@@ -38,6 +38,15 @@ class LetterboxdTests(unittest.TestCase):
         with patch.object(lb.theme,'client',return_value=API()),self.assertRaises(ValueError):lb.install({},ROOT)
         self.assertTrue(all(body is None for _,body in calls))
 
+    def test_active_install_does_not_require_another_restart(self):
+        p=lb.profile(ROOT)
+        class API:
+            def call(self,path):
+                if path=='/System/Info/Public':return {'Version':p['tested_jellyfin_version']}
+                return [{'Id':p['id'],'Version':p['version'],'Status':'Active'}]
+        with patch.object(lb.theme,'client',return_value=API()),patch.object(lb,'verify_installed'):
+            self.assertFalse(lb.install({},ROOT))
+
     def test_existing_binary_drift_is_rejected_without_overwriting(self):
         with tempfile.TemporaryDirectory() as d:
             p={'name':'LetterboxdSync','version':'2.2.0.0','dll_sha256':hashlib.sha256(b'reviewed').hexdigest()}

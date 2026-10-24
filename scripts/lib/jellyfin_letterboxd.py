@@ -49,7 +49,7 @@ def install(c,root):
             raise ValueError('Existing LetterboxdSync version/state differs; preserve and review')
         verify_installed(c,p)
         print('Existing reviewed LetterboxdSync installation preserved.')
-        return
+        return existing['Status']=='Restart'
     # Fetch the exact public asset before changing repository configuration.
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open(p['source_url'],timeout=60) as response:
@@ -72,6 +72,7 @@ def install(c,root):
     # Verify the installed binary before allowing a restart to load it.
     verify_installed(c,p)
     print('LetterboxdSync '+p['version']+' installed and verified; Jellyfin restart required.')
+    return True
 
 
 def restart(c,root):

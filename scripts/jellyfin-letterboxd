@@ -19,9 +19,10 @@ def main():
     if args.restart and args.command!='install':parser.error('--restart is only for install')
     c=config.load(ROOT/'.env')
     if args.command=='install':
-        letterboxd.install(c,ROOT)
-        if not args.restart:return
-        letterboxd.restart(c,ROOT)
+        pending=letterboxd.install(c,ROOT)
+        if pending:
+            if not args.restart:return
+            letterboxd.restart(c,ROOT)
     letterboxd.check(ROOT)
 
 
