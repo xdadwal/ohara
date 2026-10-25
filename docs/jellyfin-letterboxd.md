@@ -46,11 +46,11 @@ The direct admin configuration page is:
    or add another user's credentials to the repository. The application exchanges
    credentials with Letterboxd for a refresh token; its current authentication
    implementation clears the password after successful authentication.
-3. Choose the date-filter/lookback before enabling the account: upstream defaults
-   can sync the full watched history. Enable only the desired outgoing diary sync
-   and save. Each Jellyfin user links their own account.
-4. Verify one deliberate watch in Letterboxd after the owner enables syncing.
-   A loaded plugin or readable settings page is not proof of external sync.
+3. Leave **Enable** and **Enable real-time sync** disabled for this release.
+   See the duplicate-entry incident below before enabling any outgoing sync.
+   Each Jellyfin user links their own account.
+4. A loaded plugin or readable settings page is not proof of correct external
+   sync. Do not use a real account to test duplicate handling.
 
 Accounts start empty. Seerr integration is left unconfigured; watchlist auto-
 request and incoming diary import are not enabled by setup. No external account
@@ -62,6 +62,40 @@ Its optional non-admin sidebar integration requires that separate plugin; it is
 not installed by this task and the read-only web image is not patched for it.
 
 ## Operation and recovery
+
+### Duplicate-entry incident (2026-10-25)
+
+The owner reported duplicate diary entries and old watched movies being added
+again after linking their account. Both outgoing account switches were disabled
+through Jellyfin's configuration API, preserving account tokens and other options;
+readback confirmed them disabled and all three tasks idle. The original settings
+were saved privately under `local/jellyfin-letterboxd-backups/*-pause-sync/`.
+No Letterboxd entries or Jellyfin watch history were deleted or changed.
+
+Source review of upstream v2.2.0 found:
+
+- The daily played-media task queries the full watched movie library on every
+  run unless the account date filter is enabled. It was disabled on this account.
+- The shared movie logger unconditionally posts a diary entry and relies on an
+  assumed server-side duplicate response. There is no persistent per-watch sync
+  checkpoint or existing-entry check. Missing last-played dates become today.
+- Real-time sync reacts to playback completion and manual watched toggles. It
+  uses the same logger without applying the account date filter.
+
+Logs contained repeated success messages for two movie/date pairs. These messages
+alone do not prove new remote entries: the logger also reports success for the
+API's presumed already-present response. The owner's duplicate report and the
+missing guards mean successful installation must not be treated as safe sync.
+
+Keep outgoing sync paused until a reviewed implementation checks existing remote
+entries and handles repeated/concurrent submissions safely. A lookback filter
+alone does not fix duplicates. Do not restore the pre-pause snapshot wholesale,
+because it re-enables outgoing sync. Any remote cleanup requires a reviewed list
+of entries and explicit owner approval; preserve originals and legitimate rewatches.
+
+Reviewed source: [scheduled sync](https://github.com/Gizmo091/jellyfin-plugin-letterboxd-sync/blob/v2.2.0/LetterboxdSync/LetterboxdSyncTask.cs),
+[shared logger](https://github.com/Gizmo091/jellyfin-plugin-letterboxd-sync/blob/v2.2.0/LetterboxdSync/LetterboxdMovieSync.cs),
+[real-time events](https://github.com/Gizmo091/jellyfin-plugin-letterboxd-sync/blob/v2.2.0/LetterboxdSync/RealtimeSyncService.cs).
 
 The plugin offers real-time playback sync plus three scheduled tasks: outgoing
 played-media sync, Letterboxd diary import and watchlist sync. These only act on

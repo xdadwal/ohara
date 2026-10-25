@@ -89,4 +89,5 @@ def check(root):
         raise ValueError('Reviewed LetterboxdSync is not active; check pending restart/version')
     settings=api.call('/Plugins/'+plugin['Id']+'/Configuration')
     print('LetterboxdSync '+plugin['Version']+' active; configuration API readable; configured accounts: '+str(len(settings.get('Accounts',[]))))
-    print('Connect Letterboxd privately in Dashboard > Plugins > LetterboxdSync. No sync is triggered by this check.')
+    print('Outgoing sync in this release can resubmit old watches and duplicate diary entries; keep account Enable and real-time sync disabled. See docs/jellyfin-letterboxd.md.')
+    print('No sync is triggered by this check.')
