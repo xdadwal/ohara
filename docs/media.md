@@ -103,6 +103,67 @@ Radarr, Sonarr and Lidarr; it is not a search provider itself. Do not treat heal
 containers or successful API connections as proof of working acquisition.
 Only fetch content you have permission to access.
 
+## Indexer failures and recovery
+
+### October 27, 2026 incident
+
+Radarr reported The Pirate Bay unavailable for more than six hours; Sonarr
+reported all search/RSS indexers unavailable. Containers and HTTP health checks
+were passing. Prowlarr logs contained intermittent DNS lookup failures
+(`SocketException` / `Resource temporarily unavailable`) and subsequent responses
+saying an indexer was temporarily disabled due to recent failures. These backoff
+responses used HTTP 429; they did not by themselves prove upstream rate limiting.
+The underlying cause of the intermittent DNS failures remains unresolved.
+
+During investigation, every configured indexer passed its built-in test in
+Prowlarr and the connected Radarr/Sonarr instances. Successful tests cleared their
+recorded failure state. A read-only Radarr release search returned 87 results,
+and Seerr's Radarr/Sonarr connection tests passed. No configuration change,
+container restart, new indexer, or download was required. This established
+recovery at that time, not a permanent DNS fix or end-to-end fulfillment.
+
+### When it happens again
+
+1. Run `scripts/status`, then inspect System → Status and recent warning/error
+   logs in Prowlarr and the affected Arr app through private administration.
+   Record timestamps and affected indexers before testing. Healthy containers
+   establish neither indexer availability nor request fulfillment. Keep raw
+   logs private: URLs and responses can contain credentials.
+2. Identify the failing layer: Seerr → Radarr/Sonarr, Arr → Prowlarr, or
+   Prowlarr → upstream indexer. Read the response body as well as the HTTP status.
+   A Prowlarr 429 saying an indexer is disabled until a time indicates backoff;
+   inspect the preceding error to find what triggered it.
+3. If logs show DNS errors, check resolution on the host and inside the running
+   Prowlarr container, plus its actual resolver configuration. A successful
+   lookup now does not explain earlier failures. If errors recur, capture
+   timestamped resolver failures and compare host/container behavior before
+   proposing a networking change. Do not change host/router/client DNS, disable
+   IPv6, add a VPN/proxy, or restart the stack based only on generic error advice.
+4. Once connectivity is working, run each existing indexer's built-in Test in
+   Prowlarr, then Test in Radarr/Sonarr. Successful tests can clear failure state;
+   verify System → Status afterward. If tests still fail, address the specific
+   DNS, authentication, upstream, category, or rate-limit error. Respect backoff
+   rather than repeatedly hammering Test or Search.
+5. For missing synced indexers, inspect Prowlarr's application connection test,
+   sync level, tags, supported categories, and sync errors before syncing.
+   LimeTorrents returning no movie-category results on this host is a known
+   limitation; do not force TV categories into Radarr or replace selected
+   indexers merely to make a test green. Preserve intentional per-app settings
+   rather than switching to Full Sync without reviewing its effects.
+6. Verify Seerr's existing Radarr/Sonarr connection tests and perform an
+   interactive release search for an existing title without grabbing a release.
+   Inspect pending requests and download queues before retrying anything; avoid
+   duplicate requests or downloads. A successful search proves search recovery,
+   not download, import, Jellyfin availability, or playback. Verify those stages
+   separately for an owner-approved title when fulfillment needs acceptance.
+
+Do not clear databases, reset accounts, rotate credentials, delete torrents/media,
+or rerun first-run media setup to clear an indexer warning. The expected warning
+about the approved 72-hour qBittorrent removal policy is separate from indexer
+failure; preserve that policy and verify imports as described below.
+
+See [Prowlarr application sync and category behavior](https://wiki.servarr.com/en/prowlarr/quick-start-guide#apps).
+
 ## Storage and connections
 
 Radarr, Sonarr, Lidarr and qBittorrent share **one `/data` bind mount**, preserving
