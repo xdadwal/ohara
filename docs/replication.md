@@ -111,3 +111,9 @@ For optional Maintainerr, follow [maintainerr.md](maintainerr.md) after the main
 media stack is ready. Preserve its independent private state, use target-specific
 LAN proxy/DNS settings, and connect existing application keys from private `.env`.
 No deletion/retention rules are seeded by this repository.
+
+For optional outgoing Letterboxd diary sync, follow
+[jellyfin-letterboxd.md](jellyfin-letterboxd.md) and the reviewed artifact profile.
+Install the exact plugin with the helper, restart only when playback is idle,
+and let each owner link their external account privately in the plugin UI. Do
+not seed external tokens, bulk backfills, incoming diary imports or Seerr requests.

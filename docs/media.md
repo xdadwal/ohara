@@ -381,3 +381,8 @@ References: [Seerr services](https://docs.seerr.dev/using-seerr/settings/service
 Storage API references: [qBittorrent Web API](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-%28qBittorrent-5.0%29),
 [Radarr manual import controller](https://github.com/Radarr/Radarr/blob/develop/src/Radarr.Api.V3/ManualImport/ManualImportController.cs),
 [Seerr settings and scan jobs](https://github.com/seerr-team/seerr/blob/develop/server/routes/settings/index.ts).
+
+For optional outgoing Letterboxd diary sync, use
+[scripts/jellyfin-letterboxd and its guide](jellyfin-letterboxd.md). Account linking
+is private in the plugin UI; installation does not enable backfills or Seerr
+automation. Restart only when playback permits.

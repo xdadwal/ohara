@@ -1,0 +1,11 @@
+{
+  "name": "LetterboxdSync",
+  "id": "b1fb3d98-3336-4b87-a5c9-8a948bd87233",
+  "version": "2.2.0.0",
+  "tested_jellyfin_version": "12.2.0",
+  "manifest_url": "https://raw.githubusercontent.com/Gizmo091/jellyfin-plugin-letterboxd-sync/master/manifest.json",
+  "source_url": "https://github.com/Gizmo091/jellyfin-plugin-letterboxd-sync/releases/download/v2.2.0/jellyfin-plugin-letterboxd-sync-v2.2.0.zip",
+  "zip_sha256": "c3d692d2baad3fe77b7ad3e621e199370ca41d6d0aa2f8d081d2f10c426ee089",
+  "dll_sha256": "0c8359ac9e97f47625b8879325df3931357adf681b39c059532e53657aaa30a8",
+  "source_commit": "23f960eec1c1529a67c458d1b0543fa9dca13e5e"
+}
