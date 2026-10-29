@@ -115,8 +115,8 @@ def main():
             qb.call('/api/v2/auth/login', {'username':'admin',
                     'password':media_secrets['QBITTORRENT_PASSWORD']}, form=True)
             preferences = qb.call('/api/v2/app/preferences')
-            assert preferences['max_seeding_time_enabled'] and preferences['max_seeding_time'] == 4320
-            assert preferences['max_ratio_act'] == 3, 'qBittorrent must delete download files after seeding'
+            assert preferences['max_seeding_time_enabled'] and preferences['max_seeding_time'] == 240
+            assert preferences['max_ratio_act'] == 0, 'qBittorrent must stop after seeding without deleting files'
             assert not preferences['max_ratio_enabled'] and not preferences['max_inactive_seeding_time_enabled']
             seerr_api = media.Client(urls['seerr'])
             seerr_api.call('/api/v1/auth/jellyfin', {'username':'admin', 'password':media_secrets['JELLYFIN_PASSWORD']})
