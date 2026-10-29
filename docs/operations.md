@@ -35,6 +35,12 @@ existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
 loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 
+## Host media pool
+
+The current host has an owner-approved mergerfs pool at `/ohara/mnt`, combining
+the existing media directory and the Crucial USB SSD. Services still use their
+original media paths. See [pool configuration and recovery](storage-pool.md).
+
 ## Optional LAN DNS
 
 Optional LAN DNS/filtering is managed separately; follow [AdGuard Home](adguard.md)
