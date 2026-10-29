@@ -113,7 +113,7 @@ Sources checked 2026-10-16:
 
 ## Immich link
 
-The Photos section in the seed contains a plain link to
+The Images & Videos section in the seed contains a plain link to
 `https://immich.{{HOMEPAGE_VAR_DOMAIN}}`. It needs no API key or shared Docker
 network. On an existing dashboard, merge only this section after the optional
 Immich instance and HTTPS route are verified. Preserve the rest of services.yaml,
@@ -144,11 +144,17 @@ were checked for absence of the actual key.
 
 ## Queue, torrent and DNS widgets
 
-The dashboard splits the former tall media-admin group into two four-card groups:
-**Requests & acquisition** (Seerr, Radarr, Sonarr, Lidarr) and **Media operations**
-(qBittorrent, Maintainerr, Prowlarr, Bazarr). Other cards and their settings remain.
-Fresh installs use the same grouping in the Homepage seed. Existing installations
-need a selective merge with a private backup, preserving full cards/widgets.
+The dashboard uses four groups selected by the owner:
+
+- **Arr:** Seerr, Radarr, Sonarr, Lidarr, qBittorrent, Maintainerr, Prowlarr and Bazarr.
+- **Networking:** AdGuard Home and OpenSpeedTest.
+- **Images & Videos:** Immich.
+- **Media:** Jellyfin and Navidrome.
+
+The acquisition helpers qBittorrent and Maintainerr stay with Arr. Full service
+cards, links and widget settings are preserved when regrouping the live dashboard.
+Fresh installs use the same grouping in the seed. Existing installations need a
+selective merge with a private backup, preserving operator edits.
 
 Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
 `download` and `upload`, without expanded per-torrent progress rows. These native

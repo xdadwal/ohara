@@ -258,7 +258,7 @@ def main():
                                               ('Radarr','queue/status','totalCount'),
                                               ('Sonarr','queue','totalRecords'),
                                               ('Lidarr','queue/status','totalCount')]:
-                query = urllib.parse.urlencode({'group':'Requests & acquisition' if service in ('Seerr','Radarr','Sonarr','Lidarr') else 'Media', 'service':service, 'index':0, 'endpoint':endpoint})
+                query = urllib.parse.urlencode({'group':'Arr' if service in ('Seerr','Radarr','Sonarr','Lidarr') else 'Media', 'service':service, 'index':0, 'endpoint':endpoint})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/services/proxy?'+query, hdr={'Cookie':session})
                 assert code == 200 and field in json.loads(result), f'{service}: native widget API failed'
                 assert not any(value.encode() in result for value in private_widget_values), 'Widget API exposed credentials'
