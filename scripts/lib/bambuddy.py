@@ -157,10 +157,10 @@ def homepage(c, root):
     if any('Bambuddy' in entry for group in data for rows in group.values() for entry in rows):
         print('Existing Bambuddy Homepage card preserved')
         return
-    group = next((g['Utility'] for g in data if 'Utility' in g), None)
+    group = next((g['3D Print'] for g in data if '3D Print' in g), None)
     if group is None:
         group = []
-        data.append({'Utility': group})
+        data.append({'3D Print': group})
     group.append({'Bambuddy': {'icon': 'mdi-printer-3d', 'href': 'https://bambuddy.'+c['DOMAIN'],
                               'description': 'Bambu Lab A1 mini'}})
     backup = root/'local/bambuddy-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')

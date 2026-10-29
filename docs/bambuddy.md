@@ -90,7 +90,7 @@ It does not require or alter MFA. Native authentication must stay enabled while
 the route is public. Roll back to LAN-only mode with `--onboarding-only`, without
 removing accounts/data or changing other admin routes.
 
-Homepage adds one Utility card without forwarding credentials, preserving
+Homepage adds one 3D Print card without forwarding credentials, preserving
 existing cards/widgets. DNS adds only the exact AdGuard rewrite to the verified
 LAN address, rejecting conflicts and preserving other records. Keep that rewrite
 for same-name LAN access; do not change router/client DNS. Fresh seeds include

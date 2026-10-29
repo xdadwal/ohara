@@ -58,7 +58,7 @@ class BambuddyTests(unittest.TestCase):
             once=path.read_text();b.homepage({'DATA_ROOT':str(root/'data'),'DOMAIN':'example.com'},root)
             self.assertEqual(path.read_text(),once)
             data=yaml.safe_load(once);self.assertEqual(data[0]['Utility'][0],original[0]['Utility'][0])
-            self.assertEqual(data[0]['Utility'][1]['Bambuddy']['href'],'https://bambuddy.example.com')
+            self.assertEqual(data[1]['3D Print'][0]['Bambuddy']['href'],'https://bambuddy.example.com')
 
     def test_conflicting_dns_is_preserved_without_writes(self):
         writes=[]
