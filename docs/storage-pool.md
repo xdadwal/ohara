@@ -72,6 +72,36 @@ pool. Do not replace this with a mere check that the branch directory exists.
 Use systemd to start the pool; manual `mount /ohara/mnt` bypasses systemd's dependency
 management. Do not unplug a mounted disk during writes.
 
+## Reboot and runtime reconnect behavior
+
+On boot, the UUID-based fstab entries mount both external disks. The generated
+pool unit requires both disk mounts, and Docker activation pulls in the enabled
+media unit, which waits for the pool before starting its eight consumers. With a
+missing disk, `nofail` lets the host boot while pool-dependent services remain
+unavailable. Startup ordering is configured and inspected, but a full host reboot
+has not been tested.
+
+Runtime USB reconnect is not an automatic retry mechanism. No udev reconnect
+rule or automount unit was installed. When systemd stops the pool mount, the media
+unit's `BindsTo=` dependency stops its consumers. A hardware disconnect can also
+leave stale mounts or I/O errors rather than an immediately clean stop; no
+physical unplug test has established recovery behavior for these USB adapters.
+Avoid disconnecting a mounted drive during writes.
+
+After both drives are reconnected, when the pool is inactive, restore it with:
+
+```sh
+sudo systemctl start ohara-mnt.mount
+sudo systemctl start ohara-media.service
+scripts/status
+```
+
+The first command starts both required disk mounts. If a mount still appears
+active but returns I/O errors, inspect mount/unit state and logs first; merely
+starting an already-active unit will not repair it. Stop consumers before any
+mount repair, and do not force/lazy-unmount storage while applications use it.
+Reconnection does not by itself restart a failed media unit.
+
 ## Verification and recovery
 
 Live verification covered branch visibility, ordinary-user write/read/fsync,
