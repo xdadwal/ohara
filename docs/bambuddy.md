@@ -74,7 +74,10 @@ Fresh seeds contain both integrations. Do not modify router/client DNS.
    Reserve its address on the router deliberately; setup does not alter DHCP.
 4. Verify a read-only printer connection/status and camera where the A1 mini and
    firmware support it. Bridge networking intentionally omits SSDP discovery; no
-   virtual-printer/proxy listeners or server-side slicer sidecars are enabled.
+   virtual-printer/proxy listeners or server-side slicer sidecars are enabled. The
+   connection diagnostic automatically warns about bridge mode; this does not
+   mean an established manual-IP connection is broken. Host mode is not needed
+   merely to clear that warning.
 5. Before relying on archiving, verify the printer has a microSD card and confirm
    the current upstream file-on-card workflow for A1-family prints. Missing
    printer-side files can leave thumbnails/filament metadata unavailable. Owner
@@ -116,8 +119,9 @@ HTTP redirect, disallowed/forged-source rejection, exact DNS over UDP/TCP, and t
 authenticated Homepage Utility card all passed. The live LAN baseline matches
 the repository. The native status API subsequently reported owner setup completed
 and authentication enabled; this is not a separate owner-login test. There are
-no configured printer records yet. Adding the A1 mini and verifying its real
-connection/camera remain owner UI steps. Homepage integration uses `python3-yaml`, included by host
+an A1 mini configured, and the owner confirmed it is connected in the UI.
+This verifies the manual-IP connection with bridge networking; camera, physical
+printing and a separate owner-login test are not claimed. Homepage integration uses `python3-yaml`, included by host
 setup; CI installs the explicit PyYAML dependency into its selected Python.
 
 References: [release](https://github.com/maziggy/bambuddy/releases/tag/v1.2.5.7),
