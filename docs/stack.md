@@ -23,7 +23,7 @@ persistent read-only overlay; see [theme operations](jellyfin-theme.md).
 | qBittorrent | Downloads | Private loopback 8081 |
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
 | Immich (optional separate project) | Personal photos/videos; no ML | immich.xdadwal.in; loopback 2283 |
-| Bambuddy (optional separate project) | A1 mini management; LAN-only owner onboarding | bambuddy.xdadwal.in; loopback 8008 |
+| Bambuddy (optional separate project) | A1 mini management; native password login | bambuddy.xdadwal.in; loopback 8008 |
 | AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003 |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
@@ -87,6 +87,6 @@ owner choice. See [Maintainerr operations](maintainerr.md).
 
 Bambuddy is an optional independent Compose project for the owner's Bambu Lab
 A1 mini. Use `scripts/bambuddy` and [Bambuddy setup](bambuddy.md); printer access
-codes are entered only in the private HTTPS UI. Its server, LAN-only HTTPS, Homepage and exact local DNS rewrite are live;
+codes are entered only in the private HTTPS UI. Its server, public HTTPS, Homepage and exact local DNS rewrite are live;
 native authentication is enabled; owner-login and actual printer readiness
 remain separate UI verification steps.

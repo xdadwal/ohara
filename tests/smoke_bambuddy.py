@@ -56,12 +56,27 @@ def main():
             assert db.exists() and db.stat().st_size > 0
             marker = base/'data/disposable-preservation-marker'
             marker.write_text('keep')
+            gateway = bambuddy.proxy_gateway(docker, project=project)
+            model['services']['bambuddy']['environment'].update(TRUSTED_PROXY_IPS=gateway, FORWARDED_ALLOW_IPS=gateway)
+            fixture.write_text(json.dumps(model))
             call('up', '-d', '--force-recreate', '--wait', '--wait-timeout', '180', timeout=240)
             endpoint = call('port', 'bambuddy', '8000', capture=True).strip()
             api = media.Client('http://'+endpoint)
             assert marker.read_text() == 'keep' and db.exists()
             assert api.call('/api/v1/auth/status')['requires_setup']
-            print('PASS: pinned Bambuddy non-root readiness, SQLite/state preservation after recreation, no printers/accounts/jobs created')
+            identifier = call('ps', '-q', 'bambuddy', capture=True).strip()
+            probe = """from starlette.requests import Request
+from backend.app.api.routes.auth import _get_client_ip
+import os
+trusted=os.environ['TRUSTED_PROXY_IPS']
+def check(peer, forwarded):
+ r=Request({'type':'http','client':(peer,1234),'headers':[(b'x-forwarded-for',forwarded.encode())]})
+ return _get_client_ip(r)
+assert check(trusted,'198.51.100.7')=='198.51.100.7'
+assert check('203.0.113.8','198.51.100.7')=='203.0.113.8'
+"""
+            runtime.run(docker+['exec',identifier,'python','-c',probe])
+            print('PASS: pinned Bambuddy non-root readiness, state recreation, exact gateway proxy trust/spoof rejection; no printers/accounts/jobs created')
         finally:
             call('down', '--timeout', '30', timeout=90)
 

@@ -14,6 +14,8 @@ services:
       LOG_DIR: /app/logs
       DEBUG: "false"
       LOG_LEVEL: INFO
+      TRUSTED_PROXY_IPS: ${BAMBUDDY_PROXY_IP:-127.0.0.1}
+      FORWARDED_ALLOW_IPS: ${BAMBUDDY_PROXY_IP:-127.0.0.1}
     ports: ["127.0.0.1:8008:8000"]
     volumes:
       - type: bind

@@ -98,7 +98,7 @@
     - Bambuddy:
         icon: mdi-printer-3d
         href: "https://bambuddy.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Bambu Lab A1 mini (local network)
+        description: Bambu Lab A1 mini
 - Networking:
     - AdGuard Home:
         icon: adguard-home.png

@@ -16,7 +16,7 @@ import credentials
 class BambuddyTests(unittest.TestCase):
     def test_optional_compose_has_no_host_access_or_ambient_credentials(self):
         c = config.load(ROOT/'.env.example')
-        with patch.dict(os.environ, {'COMPOSE_FILE':'/wrong', 'JELLYFIN_PASSWORD':'ambient-secret'}), patch.object(b, 'require_storage'), patch.object(b.runtime, 'docker_prefix', return_value=['docker']), patch.object(b.runtime, 'run') as run:
+        with patch.dict(os.environ, {'COMPOSE_FILE':'/wrong', 'JELLYFIN_PASSWORD':'ambient-secret'}), patch.object(b, 'require_storage'), patch.object(b, 'proxy_gateway', return_value='172.21.0.1'), patch.object(b.runtime, 'docker_prefix', return_value=['docker']), patch.object(b.runtime, 'run') as run:
             b.compose(c, ROOT, ['up', '-d'])
         self.assertFalse(set(run.call_args.kwargs['env']) & credentials.ALL_KEYS)
         self.assertNotIn('COMPOSE_FILE', run.call_args.kwargs['env'])
@@ -70,3 +70,26 @@ class BambuddyTests(unittest.TestCase):
         with patch.object(b.adguard,'settings',return_value=('192.168.1.101','192.168.1.0/24')),patch.object(b.adguard,'password',return_value='private-fixture'),patch.object(b.media,'Client',return_value=API()),self.assertRaises(ValueError):
             b.dns({'DOMAIN':'example.com'},ROOT)
         self.assertFalse(writes)
+
+
+class ProxyGatewayTests(unittest.TestCase):
+    def row(self):
+        return {'Driver':'bridge','Labels':{'com.docker.compose.project':'ohara-bambuddy','com.docker.compose.network':'default'},'IPAM':{'Config':[{'Gateway':'172.21.0.1'}]}}
+
+    def test_existing_owned_gateway_is_used_without_modification(self):
+        with patch.object(b.runtime,'run',return_value=json.dumps([self.row()])) as run:
+            self.assertEqual(b.proxy_gateway(['docker']),'172.21.0.1')
+        self.assertEqual(run.call_count,1)
+
+    def test_wrong_network_owner_and_public_gateway_are_rejected(self):
+        for kind in ['owner','address']:
+            row=self.row()
+            if kind=='owner':row['Labels']['com.docker.compose.project']='unrelated'
+            else:row['IPAM']['Config'][0]['Gateway']='8.8.8.8'
+            with patch.object(b.runtime,'run',return_value=json.dumps([row])),self.assertRaises(ValueError):
+                b.proxy_gateway(['docker'])
+
+    def test_missing_bridge_is_created_with_compose_ownership_labels(self):
+        with patch.object(b.runtime,'run',side_effect=[RuntimeError('missing'),None,json.dumps([self.row()])]) as run:
+            self.assertEqual(b.proxy_gateway(['docker']),'172.21.0.1')
+        self.assertIn('com.docker.compose.project=ohara-bambuddy',run.call_args_list[1].args[0])

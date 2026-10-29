@@ -24,7 +24,7 @@ media settings on another machine, or to migrate private state safely.
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 | Immich (optional separate project) | Personal photos/videos; machine learning disabled | immich.xdadwal.in; owner setup complete |
-| Bambuddy (optional separate project) | Bambu Lab A1 mini management | LAN-only bambuddy.xdadwal.in; loopback 8008 |
+| Bambuddy (optional separate project) | Bambu Lab A1 mini management | Public HTTPS bambuddy.xdadwal.in; native login; loopback 8008 |
 | Maintainerr (optional separate project) | Media maintenance; LAN-only administration | maintainerr.xdadwal.in; loopback 6246 |
 | AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
 

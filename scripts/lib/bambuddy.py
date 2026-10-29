@@ -2,6 +2,7 @@
 import base64
 import datetime
 import json
+import ipaddress
 import os
 from pathlib import Path
 import re
@@ -53,6 +54,34 @@ def require_storage(c, *, directories=True):
                 raise ValueError('Run scripts/bambuddy prepare; review existing storage ownership manually')
 
 
+def proxy_gateway(docker, *, project='ohara-bambuddy'):
+    """Trust only the host gateway of this app's own Compose bridge."""
+    name = project+'_default'
+    try:
+        rows = json.loads(runtime.run(docker+['network', 'inspect', name], capture=True))
+    except RuntimeError:
+        runtime.run(docker+['network', 'create', '--label', 'com.docker.compose.project='+project,
+                            '--label', 'com.docker.compose.network=default', name])
+        rows = json.loads(runtime.run(docker+['network', 'inspect', name], capture=True))
+    if (len(rows) != 1 or rows[0].get('Driver') != 'bridge'
+            or rows[0].get('Labels', {}).get('com.docker.compose.project') != project
+            or rows[0].get('Labels', {}).get('com.docker.compose.network') != 'default'):
+        raise ValueError('Bambuddy network is not its owned Compose bridge')
+    addresses = []
+    for subnet in rows[0].get('IPAM', {}).get('Config', []):
+        try:
+            address = ipaddress.ip_address(subnet.get('Gateway', ''))
+        except ValueError:
+            continue
+        if address.version == 4:
+            if not any(address in ipaddress.ip_network(n) for n in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')):
+                raise ValueError('Bambuddy requires a private IPv4 Docker gateway')
+            addresses.append(str(address))
+    if len(addresses) != 1:
+        raise ValueError('Bambuddy requires one verified IPv4 proxy gateway')
+    return addresses[0]
+
+
 def compose(c, root, args, *, capture=False, timeout=60):
     if any(a in {'up', 'start', 'restart', 'create', 'run'} for a in args):
         require_storage(c)
@@ -62,8 +91,9 @@ def compose(c, root, args, *, capture=False, timeout=60):
     values.update(images(root))
     env = {k: v for k, v in os.environ.items() if k in
            {'PATH', 'HOME', 'USER', 'XDG_RUNTIME_DIR', 'DOCKER_CONFIG', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'SSH_AUTH_SOCK'}}
-    env.update(values)
     prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
+    values['BAMBUDDY_PROXY_IP'] = (proxy_gateway(prefix) if any(a in {'up', 'start', 'restart', 'create', 'run'} for a in args) else '127.0.0.1')
+    env.update(values)
     if prefix[:2] == ['sudo', '-n']:
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
     return runtime.run(prefix+['compose', '--project-directory', str(root), '--env-file', '/dev/null',
@@ -82,7 +112,9 @@ def check(c, root, *, static=False):
             or s.get('privileged') or s.get('network_mode') == 'host'
             or ports != {('127.0.0.1', 8008, 8000)}
             or mounts != {(str(base/'data'), '/app/data', False), (str(base/'logs'), '/app/logs', False)}
-            or set(s.get('environment', {})) != {'TZ', 'HOST', 'PORT', 'DATA_DIR', 'LOG_DIR', 'DEBUG', 'LOG_LEVEL'}
+            or set(s.get('environment', {})) != {'TZ', 'HOST', 'PORT', 'DATA_DIR', 'LOG_DIR', 'DEBUG', 'LOG_LEVEL', 'TRUSTED_PROXY_IPS', 'FORWARDED_ALLOW_IPS'}
+            or s.get('environment', {}).get('TRUSTED_PROXY_IPS') != '127.0.0.1'
+            or s.get('environment', {}).get('FORWARDED_ALLOW_IPS') != '127.0.0.1'
             or s.get('cap_drop') != ['ALL'] or s.get('cap_add') != ['NET_BIND_SERVICE']
             or 'no-new-privileges:true' not in s.get('security_opt', [])):
         raise ValueError('Bambuddy must keep dedicated state, non-root execution and only its loopback web port')
@@ -130,7 +162,7 @@ def homepage(c, root):
         group = []
         data.append({'Utility': group})
     group.append({'Bambuddy': {'icon': 'mdi-printer-3d', 'href': 'https://bambuddy.'+c['DOMAIN'],
-                              'description': 'Bambu Lab A1 mini (local network)'}})
+                              'description': 'Bambu Lab A1 mini'}})
     backup = root/'local/bambuddy-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')
     backup.mkdir(parents=True, mode=0o700)
     config.create_file(backup/'services.yaml', before)
