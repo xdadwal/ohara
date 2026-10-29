@@ -114,8 +114,10 @@ The owner confirmed the A1 mini is already in LAN-only mode. The live Nginx
 route was backed up, validated and applied. Trusted HTTPS and WebSocket upgrade,
 HTTP redirect, disallowed/forged-source rejection, exact DNS over UDP/TCP, and the
 authenticated Homepage Utility card all passed. The live LAN baseline matches
-the repository. Native owner setup and A1 mini connection remain pending until
-individually verified. Homepage integration uses `python3-yaml`, included by host
+the repository. The native status API subsequently reported owner setup completed
+and authentication enabled; this is not a separate owner-login test. There are
+no configured printer records yet. Adding the A1 mini and verifying its real
+connection/camera remain owner UI steps. Homepage integration uses `python3-yaml`, included by host
 setup; CI installs the explicit PyYAML dependency into its selected Python.
 
 References: [release](https://github.com/maziggy/bambuddy/releases/tag/v1.2.5.7),

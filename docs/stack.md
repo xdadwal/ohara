@@ -88,4 +88,5 @@ owner choice. See [Maintainerr operations](maintainerr.md).
 Bambuddy is an optional independent Compose project for the owner's Bambu Lab
 A1 mini. Use `scripts/bambuddy` and [Bambuddy setup](bambuddy.md); printer access
 codes are entered only in the private HTTPS UI. Its server, LAN-only HTTPS, Homepage and exact local DNS rewrite are live;
-native owner setup and actual printer readiness remain pending UI verification.
+native authentication is enabled; owner-login and actual printer readiness
+remain separate UI verification steps.
