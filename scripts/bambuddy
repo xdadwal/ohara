@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Operate optional Bambuddy; owner/printer setup stays in the LAN-only HTTPS UI."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts/lib'))
+import config
+import bambuddy
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('command', choices=['check', 'prepare', 'up', 'stop', 'status', 'homepage', 'dns'])
+    p.add_argument('--static', action='store_true', help='check without mounted/prepared storage')
+    a = p.parse_args()
+    if a.static and a.command != 'check':
+        p.error('--static is only for check')
+    c = config.load(ROOT/'.env')
+    if a.command == 'check':
+        bambuddy.check(c, ROOT, static=a.static)
+    elif a.command == 'prepare':
+        bambuddy.prepare(c, ROOT)
+    elif a.command == 'up':
+        bambuddy.check(c, ROOT)
+        bambuddy.compose(c, ROOT, ['up', '-d', '--wait', '--wait-timeout', '180'], timeout=600)
+        bambuddy.status()
+    elif a.command == 'stop':
+        bambuddy.compose(c, ROOT, ['stop'])
+    elif a.command == 'status':
+        bambuddy.status()
+    else:
+        getattr(bambuddy, a.command)(c, ROOT)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print('Ohara Bambuddy: '+str(error), file=sys.stderr)
+        sys.exit(1)

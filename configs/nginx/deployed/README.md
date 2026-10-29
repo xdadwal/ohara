@@ -1,9 +1,11 @@
 # Stable xdadwal.in Nginx baseline
 
-These non-secret files match `/etc/nginx/conf.d/` on the xdadwal.in server after
+These non-secret files track `/etc/nginx/conf.d/` on the xdadwal.in server after
 the authorized music/subtitles deployment on 2026-10-17. The Jellyfin hostname
 cutover to `tv.xdadwal.in` and Navidrome activation have been applied. They contain
 public routes and certificate paths, never private keys or application credentials.
+The Bambuddy LAN route is a tested candidate pending the operator's privileged
+apply step; other LAN routes retain their existing configuration.
 
 - `ohara.conf`: wildcard HTTPS, portfolio apex, Homepage at ohara.xdadwal.in,
   Seerr/Jellyfin/OpenSpeedTest/Navidrome, IPv4/IPv6, localhost redirects and local TLS.
@@ -16,7 +18,7 @@ public routes and certificate paths, never private keys or application credentia
   The previous LAN-only route is backed up privately under /var/backups/ohara.
 - `ohara-public-ip-test.conf`: HTTP-only reachability probe for 45.120.160.21.
   It returns a fixed message and exposes no application data.
-- `ohara-lan.conf`: separately approved on 2026-10-22; seven LAN-only administration
+- `ohara-lan.conf`: separately approved on 2026-10-22; nine LAN-only administration
   HTTPS routes with source-address restrictions and loopback backends. Apply with
   `sudo scripts/lan-proxy --apply` after review; see [LAN services](../../../docs/lan-services.md).
 

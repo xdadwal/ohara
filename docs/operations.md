@@ -446,3 +446,10 @@ independent media-maintenance project, private storage, service connections,
 Homepage/DNS integration and LAN-only Nginx route. Main-stack `up` does not start
 it. No login is built in and initial setup creates no cleanup rules. Review
 retention/actions in the UI before allowing automated removal.
+
+## Optional Bambuddy
+
+Bambuddy runs independently for the owner's A1 mini. Follow [Bambuddy setup and
+onboarding](bambuddy.md). Keep its HTTP backend loopback-only and its entire HTTPS
+route LAN-only; no printer-control or discovery ports are published. Owner setup
+and printer credentials stay in the HTTPS UI.

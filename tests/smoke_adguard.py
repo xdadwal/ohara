@@ -89,7 +89,7 @@ def main():
 
                 for key in ('DOMAIN', 'HOMEPAGE_HOST', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST'):
                     assert query(c[key]) == c['ADGUARD_BIND_IP'], f'{protocol}: rewrite failed'
-                for service in ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'maintainerr'):
+                for service in ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'maintainerr', 'bambuddy'):
                     assert query(service+'.'+c['DOMAIN']) == c['ADGUARD_BIND_IP'], f'{protocol}: internal rewrite failed'
                 assert query(c['JELLYFIN_HOST'], 'AAAA') == '', 'Rewritten name leaked IPv6'
                 assert query('blocked.example.test') == '0.0.0.0', 'Controlled filter failed'
