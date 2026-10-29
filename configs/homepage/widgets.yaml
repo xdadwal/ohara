@@ -10,6 +10,7 @@
 - resources:
     label: Resources
     cpu: true
+    cputemp: true
     memory: true
     uptime: true
     disk: /media-storage

@@ -75,6 +75,25 @@ filesystem capacity and used space, not just media file sizes. The internal bran
 shares capacity with the operating system. With `MEDIA_POOL_MOUNT` set, Homepage
 also joins the pool-dependent startup unit; no Docker socket is exposed.
 
+## Temperature readings
+
+The Resources widget enables `cputemp: true`. On the current host, Homepage's
+existing systeminformation dependency reads the CPU sensors without any extra
+bind mount, device access, capabilities or Docker socket. The authenticated
+`/api/widgets/resources?type=cputemp` response returned real CPU/core values
+(52 degrees Celsius at verification). Availability is hardware-dependent; do not
+substitute a fabricated reading when a new host has no supported sensors.
+
+The host also exposes an NVMe temperature sensor. Individual drive temperatures
+are not supplied by the native Resources disk-capacity widget. USB drive sensors
+need SMART passthrough checks and a separate monitoring integration before they
+can be displayed. Read-only diagnostics using Debian smartmontools 7.4-3 returned 34 degrees Celsius
+for the Samsung NVMe and 44 for the WD HDD. The Crucial USB query was slow and
+terminated without a usable reading; passthrough support is unverified. Do not
+periodically retry this adapter until its behavior is understood. The diagnostics
+used a privately unpacked Debian package, not an installed monitoring daemon.
+No persistent drive collector is installed by this change.
+
 ## Existing installations
 
 Back up DATA_ROOT/homepage/services.yaml and widgets.yaml. Merge the selected
