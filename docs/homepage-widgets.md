@@ -172,9 +172,10 @@ The dashboard uses five groups selected by the owner:
 - **Images & Videos:** Immich.
 
 Maintainerr stays with Arr; qBittorrent has its own Utility section.
-All five groups use wide row grids on a full-width page, with Media first. Arr
-uses four cards across, Media and Networking two each, and the single-card
-Utility and Images & Videos sections one each. Smaller displays wrap responsively. Full service
+All five groups use column layouts, with Media first and up to five group
+columns on larger displays. Smaller displays wrap responsively. The wide-grid
+experiment was reverted at the owner's request; native CPU temperature remains
+enabled. Full service
 cards, links and widget settings are preserved when regrouping the live dashboard.
 Fresh installs use the same grouping in the seed. Existing installations need a
 selective merge with a private backup, preserving operator edits.

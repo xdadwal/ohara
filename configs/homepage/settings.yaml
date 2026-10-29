@@ -7,18 +7,13 @@ headerStyle: clean
 hideVersion: true
 layout:
   Media:
-    style: row
-    columns: 2
+    style: column
   Arr:
-    style: row
-    columns: 4
+    style: column
   Utility:
-    style: row
-    columns: 1
+    style: column
   Networking:
-    style: row
-    columns: 2
+    style: column
   Images & Videos:
-    style: row
-    columns: 1
-fullWidth: true
+    style: column
+maxGroupColumns: 5
