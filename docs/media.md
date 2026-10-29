@@ -158,9 +158,8 @@ recovery at that time, not a permanent DNS fix or end-to-end fulfillment.
    separately for an owner-approved title when fulfillment needs acceptance.
 
 Do not clear databases, reset accounts, rotate credentials, delete torrents/media,
-or rerun first-run media setup to clear an indexer warning. The expected warning
-about the approved 72-hour qBittorrent removal policy is separate from indexer
-failure; preserve that policy and verify imports as described below.
+or rerun first-run media setup to clear an indexer warning. A cached warning about the former qBittorrent automatic-removal policy is
+separate from indexer failure; the current policy stops torrents and retains files.
 
 See [Prowlarr application sync and category behavior](https://wiki.servarr.com/en/prowlarr/quick-start-guide#apps).
 
@@ -222,29 +221,25 @@ Custom recycle paths/retention are preserved. Recycle bins are outside Jellyfin'
 library and are a recovery window, not a backup; explicit permanent deletion and
 files removed outside Radarr/Sonarr can bypass them.
 
-The selected qBittorrent policy seeds completed downloads for **72 hours (4320
-minutes)**, then **removes the torrent and its downloaded files** using qBittorrent's
-built-in seeding limit. Ratio and inactive-seeding limits are disabled so they do
-not trigger earlier removal. This is cumulative seeding time, not elapsed time
-since completion: queued/stopped time does not count. No cron job or cleanup
-service is needed. The policy is global, including music and uncategorized torrents.
-Existing per-torrent share-limit overrides require separate review.
+The selected qBittorrent policy seeds completed downloads for **4 cumulative
+hours (240 minutes)**, then **stops the torrent and preserves its downloaded
+files**. Ratio and inactive-seeding limits are disabled. Queued/stopped time and
+machine downtime do not count toward seeding time. The policy is global,
+including music and uncategorized torrents. Existing per-torrent share-limit
+overrides require separate review; none were present at the policy change.
 
-Hard-linked library files survive removal of the download entry. Disk space is
-freed only after the last hard link is removed; deleting a title in Jellyfin alone
-can leave its source taking space until qBittorrent reaches the seeding limit.
-Downloads that have not been imported are also deleted when the limit is reached;
-verify imports and library hardlinks before enabling this policy on restored data.
-The managed Radarr/Sonarr download clients keep completed-download removal disabled;
-qBittorrent owns the timed deletion of source torrents/files.
+Hardlinked download/library files already share physical storage. Stopping seeding
+does not reclaim space; source links remain until separately removed. No automatic
+file deletion or periodic cleanup job is configured. Verify library imports and
+hardlinks before any future source cleanup. Managed Arr completed-download removal
+stays disabled so it cannot delete downloads when the new stop limit is reached.
 
-Radarr/Sonarr connection validation can warn that qBittorrent removes completed
-sources (Radarr requires at least 14 days to accept automatic removal). Fresh setup
-validates/registers the download clients before applying the selected shorter
-retention policy. Later manual connection tests can still show this warning;
-verify imports well before cleanup. When adding a missing client to an existing
-installation, temporarily choose Stop in qBittorrent, test/save the client, then
-reapply `scripts/media-setup --storage-only` to restore this policy.
+This replaces the previous 72-hour automatic torrent/file removal policy. During
+migration, the helper switches the action to Stop before shortening the limit,
+avoiding immediate deletion under the previous action. Torrent-list cleanup is a
+separate operator action: confirmed missing-file entries may be removed with
+`deleteFiles=false` after privately preserving their metadata. Do not treat queued,
+stalled, stopped or slow torrents as broken without checking their content.
 
 After updating an existing installation, run host setup to prepare the new
 directories, then `scripts/media-setup --storage-only`. This skips owner/account
@@ -252,7 +247,8 @@ initialization and preserves credentials, torrents, naming formats and other
 preferences. The command does not resume stopped torrents: after reviewing their
 files/imports and share-limit overrides, select the completed torrents to resume
 in qBittorrent. Leave missing-files torrents for separate recovery. Torrents already
-at the 72-hour limit may be removed as soon as qBittorrent evaluates their limits.
+above the four-hour limit may stop as soon as qBittorrent evaluates their limits;
+files are preserved.
 Existing category paths that differ from the expected paths require
 manual review because changing them could relocate active torrents. Existing
 manually managed torrents are not moved by this command. To migrate one, verify

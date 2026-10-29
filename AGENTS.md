@@ -82,13 +82,16 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.
   A future NAS/multiple-node topology is discussed, not implemented; these services
   run in the current Compose stack, with a future acquisition node intended.
+- This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
+  Preserve its branch directories, guarded media startup unit and container paths.
+  Do not move/copy data between the pool and its own branches.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
   A completed command or cached Available label is not evidence of a present file:
   verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
   Preserve source torrents during metadata repair; never redownload or delete library
-  files to fix metadata. The selected storage policy seeds for 4320 minutes, then
-  qBittorrent removes torrents/download files; ratio/inactivity limits are disabled.
+  files to fix metadata. The selected storage policy seeds for 240 cumulative minutes, then
+  qBittorrent stops torrents and preserves download files; ratio/inactivity limits are disabled.
   Review imports/hardlinks before applying it; resume stopped torrents deliberately.
   Disable managed Arr completed-download cleanup before applying qBittorrent
   seeding limits, because reaching a limit can immediately trigger source deletion.

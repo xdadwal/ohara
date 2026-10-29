@@ -12,6 +12,6 @@
     cpu: true
     memory: true
     uptime: true
-    disk: /app/config
+    disk: /media-storage
     expanded: true
     refresh: 10000

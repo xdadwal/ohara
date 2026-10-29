@@ -1,0 +1,19 @@
+# Only included when MEDIA_POOL_MOUNT is configured. systemd starts these after
+# the pool; on-failure handles crashes without unguarded Docker boot auto-start.
+services:
+  homepage:
+    restart: on-failure:5
+  jellyfin:
+    restart: on-failure:5
+  navidrome:
+    restart: on-failure:5
+  radarr:
+    restart: on-failure:5
+  sonarr:
+    restart: on-failure:5
+  lidarr:
+    restart: on-failure:5
+  bazarr:
+    restart: on-failure:5
+  qbittorrent:
+    restart: on-failure:5

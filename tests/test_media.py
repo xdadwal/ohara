@@ -20,8 +20,8 @@ class MediaTests(unittest.TestCase):
             root = Path(directory).resolve()
             credential_fixtures.write(root)
             preferences = {'auto_tmm_enabled': False, 'unrelated': 'preserved',
-                           'max_ratio_enabled': True, 'max_ratio': 0, 'max_ratio_act': 0,
-                           'max_seeding_time_enabled': True, 'max_seeding_time': 0,
+                           'max_ratio_enabled': True, 'max_ratio': 0, 'max_ratio_act': 3,
+                           'max_seeding_time_enabled': True, 'max_seeding_time': 4320,
                            'max_inactive_seeding_time_enabled': True}
             categories = {'movies': {'savePath': '/data/downloads/complete/movies'}}
             settings = {'radarr': {'copyUsingHardlinks': False, 'recycleBin': '', 'custom': 42},
@@ -29,6 +29,7 @@ class MediaTests(unittest.TestCase):
                                    'recycleBinCleanupDays': 30}}
             calls = []
             cleanup = {'radarr': True, 'sonarr': True}
+            self_test=self
             class Client:
                 def __init__(self, url, key=None):
                     self.headers = {}
@@ -41,7 +42,10 @@ class MediaTests(unittest.TestCase):
                         # becomes responsible for source retention.
                         if any(cleanup.values()):
                             raise AssertionError('Cleanup must be disabled before seeding limits')
-                        preferences.update(json.loads(body['json']))
+                        patch_values=json.loads(body['json'])
+                        if patch_values.get('max_seeding_time') == 240:
+                            self_test.assertEqual(preferences['max_ratio_act'],0, 'Stop action must precede shorter limit')
+                        preferences.update(patch_values)
                     if path.endswith('/categories'): return copy.deepcopy(categories)
                     if path == '/api/v3/downloadclient':
                         return [{'id':1, 'name':'Ohara qBittorrent', 'removeCompletedDownloads':cleanup[self.name]}]
@@ -56,9 +60,9 @@ class MediaTests(unittest.TestCase):
             self.assertTrue(preferences['auto_tmm_enabled'])
             self.assertFalse(preferences['max_ratio_enabled'])
             self.assertEqual(preferences['max_ratio'], 0)
-            self.assertEqual(preferences['max_ratio_act'], 3)
+            self.assertEqual(preferences['max_ratio_act'], 0)
             self.assertTrue(preferences['max_seeding_time_enabled'])
-            self.assertEqual(preferences['max_seeding_time'], 4320)
+            self.assertEqual(preferences['max_seeding_time'], 240)
             self.assertFalse(preferences['max_inactive_seeding_time_enabled'])
             self.assertEqual(preferences['unrelated'], 'preserved')
             self.assertEqual(settings['radarr']['recycleBin'], '/data/recycle-bin/movies')
@@ -67,7 +71,7 @@ class MediaTests(unittest.TestCase):
             self.assertTrue(settings['radarr']['copyUsingHardlinks'])
             self.assertEqual(settings['sonarr']['recycleBin'], '/data/custom-bin')
             self.assertEqual(settings['sonarr']['recycleBinCleanupDays'], 30)
-            self.assertEqual(calls.count('/api/v2/app/setPreferences'), 1)
+            self.assertEqual(calls.count('/api/v2/app/setPreferences'), 2)
             self.assertEqual(calls.count('/api/v2/torrents/createCategory'), 1)
             self.assertFalse(any('/torrents/set' in p for p in calls))
             categories['movies']['savePath'] = '/data/custom-downloads'

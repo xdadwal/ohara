@@ -10,6 +10,8 @@ SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
 def prepare(c, root, create, directory, owner, group):
+    import media_pool
+    media_pool.require_mount(c)
     _, values = credential_files.load(root)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])
@@ -112,8 +114,12 @@ def configure_storage(root, urls=None):
             if download.get('name') == 'Ohara qBittorrent' and download.get('removeCompletedDownloads'):
                 download['removeCompletedDownloads'] = False
                 client.call('/api/v3/downloadclient/'+str(download['id']), download, 'PUT')
+    # Stop must be active before reducing the old delete-files seeding limit.
+    if preferences.get('max_ratio_act') != 0:
+        qb.call('/api/v2/app/setPreferences', {'json':json.dumps({'max_ratio_act':0})}, form=True)
+        preferences['max_ratio_act'] = 0
     policy = {'auto_tmm_enabled':True, 'max_ratio_enabled':False,
-              'max_ratio_act':3, 'max_seeding_time_enabled':True, 'max_seeding_time':4320,
+              'max_ratio_act':0, 'max_seeding_time_enabled':True, 'max_seeding_time':240,
               'max_inactive_seeding_time_enabled':False}
     if any(preferences.get(key) != value for key, value in policy.items()):
         qb.call('/api/v2/app/setPreferences', {'json':json.dumps(policy)}, form=True)
@@ -131,7 +137,7 @@ def configure_storage(root, urls=None):
         if settings != before:
             client.call('/api/v3/config/mediamanagement', settings, 'PUT')
     print('Storage policy applied: automatic category paths for new torrents, hardlinks, '
-          'recycle bins, and removal of torrents/download files after 72 hours of seeding. '
+          'recycle bins, and stopping torrents after 4 hours of seeding (files preserved). '
           'Existing torrent states/overrides and custom recycle settings preserved.')
 
 
