@@ -75,6 +75,25 @@ filesystem capacity and used space, not just media file sizes. The internal bran
 shares capacity with the operating system. With `MEDIA_POOL_MOUNT` set, Homepage
 also joins the pool-dependent startup unit; no Docker socket is exposed.
 
+## Temperature readings
+
+The Resources widget enables `cputemp: true`. On the current host, Homepage's
+existing systeminformation dependency reads the CPU sensors without any extra
+bind mount, device access, capabilities or Docker socket. The authenticated
+`/api/widgets/resources?type=cputemp` response returned real CPU/core values
+(52 degrees Celsius at verification). Availability is hardware-dependent; do not
+substitute a fabricated reading when a new host has no supported sensors.
+
+The host also exposes an NVMe temperature sensor. Individual drive temperatures
+are not supplied by the native Resources disk-capacity widget. USB drive sensors
+need SMART passthrough checks and a separate monitoring integration before they
+can be displayed. Read-only diagnostics using Debian smartmontools 7.4-3 returned 34 degrees Celsius
+for the Samsung NVMe and 44 for the WD HDD. The Crucial USB query was slow and
+terminated without a usable reading; passthrough support is unverified. Do not
+periodically retry this adapter until its behavior is understood. The diagnostics
+used a privately unpacked Debian package, not an installed monitoring daemon.
+No persistent drive collector is installed by this change.
+
 ## Existing installations
 
 Back up DATA_ROOT/homepage/services.yaml and widgets.yaml. Merge the selected
@@ -113,7 +132,7 @@ Sources checked 2026-10-16:
 
 ## Immich link
 
-The Photos section in the seed contains a plain link to
+The Images & Videos section in the seed contains a plain link to
 `https://immich.{{HOMEPAGE_VAR_DOMAIN}}`. It needs no API key or shared Docker
 network. On an existing dashboard, merge only this section after the optional
 Immich instance and HTTPS route are verified. Preserve the rest of services.yaml,
@@ -144,11 +163,22 @@ were checked for absence of the actual key.
 
 ## Queue, torrent and DNS widgets
 
-The dashboard splits the former tall media-admin group into two four-card groups:
-**Requests & acquisition** (Seerr, Radarr, Sonarr, Lidarr) and **Media operations**
-(qBittorrent, Maintainerr, Prowlarr, Bazarr). Other cards and their settings remain.
-Fresh installs use the same grouping in the Homepage seed. Existing installations
-need a selective merge with a private backup, preserving full cards/widgets.
+The dashboard uses five groups selected by the owner:
+
+- **Media** (first section): Jellyfin and Navidrome.
+- **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
+- **Utility:** qBittorrent.
+- **Networking:** AdGuard Home and OpenSpeedTest.
+- **Images & Videos:** Immich.
+
+Maintainerr stays with Arr; qBittorrent has its own Utility section.
+All five groups use column layouts, with Media first and up to five group
+columns on larger displays. Smaller displays wrap responsively. The wide-grid
+experiment was reverted at the owner's request; native CPU temperature remains
+enabled. Full service
+cards, links and widget settings are preserved when regrouping the live dashboard.
+Fresh installs use the same grouping in the seed. Existing installations need a
+selective merge with a private backup, preserving operator edits.
 
 Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
 `download` and `upload`, without expanded per-torrent progress rows. These native

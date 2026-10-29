@@ -38,7 +38,7 @@ or new password is required. Remote access can use the existing ordinary SSH
 forwarding workflow; do not expose this hostname publicly without separately
 approved authentication. Shared authentication remains deferred.
 
-The Homepage command adds an absent Maintainerr card to **Media operations**
+The Homepage command adds an absent Maintainerr card to **Arr**
 (alongside qBittorrent, Prowlarr and Bazarr) and fills in a missing native widget. It
 shows handled items and reclaimable storage through `http://maintainerr:6246`,
 with no API key. Existing card properties and configured widgets are preserved;
