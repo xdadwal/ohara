@@ -10,6 +10,8 @@ SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
 def prepare(c, root, create, directory, owner, group):
+    import media_pool
+    media_pool.require_mount(c)
     _, values = credential_files.load(root)
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
     data = Path(c['DATA_ROOT'])

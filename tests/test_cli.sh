@@ -13,6 +13,7 @@ done
 (cd /; "$TASK_TMP/scripts/jellyfin-theme" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/jellyfin-enhanced" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/jellyfin-letterboxd" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/media-pool" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/immich-proxy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/migrate-credentials" --help >/dev/null)
 if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi

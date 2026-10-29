@@ -36,6 +36,9 @@ def docker_prefix():
 
 
 def compose(c, root, args, *, capture=False, timeout=60, docker=None):
+    import media_pool
+    if any(a in {'up', 'start', 'restart', 'run', 'create'} for a in args):
+        media_pool.require_mount(c)
     # Do not let ambient COMPOSE_* variables or shell interpolation override config.
     env = {k: v for k, v in os.environ.items()
            if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES | credential_files.ALL_KEYS | credential_files.DERIVED_WIDGET_KEYS}
@@ -60,7 +63,7 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         'compose', '--project-directory', str(root), '--env-file', '/dev/null',
         '-f', str(root / 'compose.yaml')]
     import jellyfin_theme
-    command += jellyfin_theme.override(c, root) + args
+    command += media_pool.override(c, root) + jellyfin_theme.override(c, root) + args
     return run(command, capture=capture, timeout=timeout, env=env)
 
 
@@ -103,6 +106,8 @@ def check(c, root, *, static=False):
                                capture=True, docker=['docker']))
     validate_model(model, c)
     if not static:
+        import media_pool
+        media_pool.require_mount(c)
         credential_files.load(root)
         bazarr_config = Path(c['DATA_ROOT'])/'bazarr/config/config.yaml'
         if not bazarr_config.exists() and not bazarr_config.is_symlink():

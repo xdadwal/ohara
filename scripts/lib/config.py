@@ -7,7 +7,7 @@ DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK'}
 IMMICH_KEYS = {'IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT', 'IMMICH_LIBRARY_MOUNT', 'IMMICH_DATABASE_MOUNT'}
 
 KEYS = DNS_KEYS | IMMICH_KEYS | {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
-        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}
+        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
 IMAGES = {'ADGUARD_IMAGE', 'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE', 'LIDARR_IMAGE', 'BAZARR_IMAGE', 'NAVIDROME_IMAGE'}
@@ -35,7 +35,7 @@ def parse(path, keys, optional=frozenset(), ignored=frozenset()):
 
 def load(path):
     import credentials
-    values = parse(path, KEYS, DNS_KEYS | IMMICH_KEYS | {'MEDIA_ROOT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
+    values = parse(path, KEYS, DNS_KEYS | IMMICH_KEYS | {'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
     values.pop('FILES_ROOT', None)
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.
@@ -60,12 +60,14 @@ def load(path):
     names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']]
     if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
-    for key in ['DATA_ROOT', 'MEDIA_ROOT']:
+    for key in ['DATA_ROOT', 'MEDIA_ROOT'] + (['MEDIA_POOL_MOUNT'] if 'MEDIA_POOL_MOUNT' in values else []):
         value = values[key]
         if not PATH.fullmatch(value) or value == '/' or '..' in value.split('/') or '//' in value:
             raise ValueError(f'{key}: require a safe absolute path without spaces or traversal')
         if Path(value).is_symlink():
             raise ValueError(f'{key}: symlink roots are not supported')
+    if 'MEDIA_POOL_MOUNT' in values and values['MEDIA_POOL_MOUNT'] != values['MEDIA_ROOT']:
+        raise ValueError('MEDIA_POOL_MOUNT must equal MEDIA_ROOT')
     for key in ['RUN_UID', 'RUN_GID']:
         if not values[key].isdigit() or not 1 <= int(values[key]) <= 2147483647:
             raise ValueError(f'{key}: require a non-root numeric ID')

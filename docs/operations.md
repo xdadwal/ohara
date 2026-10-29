@@ -38,8 +38,9 @@ loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
 ## Host media pool
 
 The current host has an owner-approved mergerfs pool at `/ohara/mnt`, combining
-the existing media directory and the Crucial USB SSD. Services still use their
-original media paths. See [pool configuration and recovery](storage-pool.md).
+the existing media directory and the Crucial USB SSD. Media consumers now bind
+the pooled path with mount-dependent startup; application container paths stay
+unchanged. See [pool configuration and recovery](storage-pool.md).
 
 ## Optional LAN DNS
 
