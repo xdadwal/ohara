@@ -18,6 +18,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install YAML integration test dependency
+        run: python3 -m pip install PyYAML==6.0.3
       - run: python3 -m unittest discover -s tests -v
       - run: tests/test_setup.sh && tests/test_cli.sh && tests/static.sh
       - name: Check CLI with dummy configuration

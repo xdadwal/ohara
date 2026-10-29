@@ -6,8 +6,8 @@ The existing main stack and optional projects remain independent.
 
 ## Storage and deployment
 
-Confirm the owner's storage choice before preparing the live instance. The
-default is `DATA_ROOT/bambuddy` (`/ohara/bambuddy` on this host), on the internal
+The owner selected internal storage on this host. On a new target, confirm the
+owner's choice before preparing the instance. The default is `DATA_ROOT/bambuddy` (`/ohara/bambuddy` on this host), on the internal
 ext4 SSD. `data/` contains SQLite, archives and application-managed keys;
 `logs/` is separate. It is not part of the media/Immich library or mergerfs pool.
 No media data is copied or migrated. Overrides belong in the private `.env`:
@@ -108,8 +108,12 @@ Retiring the service must preserve its data: stop it, remove only its managed
 proxy/card/rewrite deliberately, and never use volume/data deletion for rollback.
 
 Implementation status: disposable loading/state-preservation and LAN proxy tests
-passed. Live storage choice, deployment, native owner setup and A1 mini connection
-remain pending until individually verified.
+passed. The live instance is healthy on `/ohara/bambuddy` (internal ext4), running
+as UID/GID 1000:1000 with a loopback-only backend and private 0700 directories.
+The owner confirmed the A1 mini is already in LAN-only mode. Privileged live
+Nginx apply, native owner setup and A1 mini connection remain pending until
+individually verified. Homepage integration uses `python3-yaml`, included by host
+setup; CI installs the explicit PyYAML dependency into its selected Python.
 
 References: [release](https://github.com/maziggy/bambuddy/releases/tag/v1.2.5.7),
 [release Compose](https://github.com/maziggy/bambuddy/blob/v1.2.5.7/docker-compose.yml),
