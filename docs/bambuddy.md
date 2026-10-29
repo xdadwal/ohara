@@ -118,7 +118,7 @@ route was backed up, validated and applied. Trusted HTTPS and WebSocket upgrade,
 HTTP redirect, disallowed/forged-source rejection, exact DNS over UDP/TCP, and the
 authenticated Homepage Utility card all passed. The live LAN baseline matches
 the repository. The native status API subsequently reported owner setup completed
-and authentication enabled; this is not a separate owner-login test. There are
+and authentication enabled; this is not a separate owner-login test. There is
 an A1 mini configured, and the owner confirmed it is connected in the UI.
 This verifies the manual-IP connection with bridge networking; camera, physical
 printing and a separate owner-login test are not claimed. Homepage integration uses `python3-yaml`, included by host
