@@ -5,7 +5,7 @@ from pathlib import Path
 import config
 import runtime
 
-SERVICES = ('jellyfin', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'qbittorrent')
+SERVICES = ('homepage', 'jellyfin', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'qbittorrent')
 MARKER = '# Managed by Ohara media-pool\n'
 
 

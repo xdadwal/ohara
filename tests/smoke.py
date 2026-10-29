@@ -268,7 +268,7 @@ def main():
                 query = urllib.parse.urlencode({'type':resource})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
                 assert code == 200 and isinstance(json.loads(result), dict), f'{resource}: resource API failed'
-            for target in ['/app/config']:
+            for target in ['/media-storage']:
                 query = urllib.parse.urlencode({'type':'disk', 'target':target})
                 code, result = tls_request(c['HOMEPAGE_HOST'], '/api/widgets/resources?'+query, hdr={'Cookie':session})
                 assert code == 200 and json.loads(result)['drive']['size'] > 0, 'Storage capacity unavailable'

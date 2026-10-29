@@ -10,7 +10,7 @@ It merges these directories without moving existing files:
 
 The disk/pool mount setup is host-specific, not an automatic action in
 `scripts/setup` or `scripts/up`. The current host's private `.env` now sets
-`MEDIA_ROOT=/ohara/mnt` and `MEDIA_POOL_MOUNT=/ohara/mnt`. All seven media consumers
+`MEDIA_ROOT=/ohara/mnt` and `MEDIA_POOL_MOUNT=/ohara/mnt`. All seven media consumers and Homepage
 use the pool; databases and application state remain on their original storage.
 Do not put `/ohara`, `/`, or `/ohara/mnt` itself into the branch list.
 
@@ -109,7 +109,7 @@ non-static checks and media directory preparation verify an exact active
 Compose rendering remains usable without the disk.
 
 When this option is set, the runtime includes `compose.media-pool.yaml`, which
-changes only the seven media consumers to `restart: on-failure:5`. Docker can
+changes the seven media consumers and Homepage to `restart: on-failure:5`. Docker can
 restart crashed processes, but does not automatically start these containers
 at daemon startup ahead of their storage dependency. The remaining services keep
 `unless-stopped` and do not depend on the pool.
@@ -128,7 +128,7 @@ scripts/status
 ```
 
 `install-unit` enables but does not start the unit. The generated root-owned
-`/etc/systemd/system/ohara-media.service` starts only Jellyfin, Navidrome, Radarr,
+`/etc/systemd/system/ohara-media.service` starts Homepage, Jellyfin, Navidrome, Radarr,
 Sonarr, Lidarr, Bazarr and qBittorrent through the repository's supported Compose
 wrapper, preserving Abyss and existing environment filtering. It uses
 `RequiresMountsFor=`, `BindsTo=` and `After=` for the pool and Docker; `PartOf=` and
@@ -142,10 +142,11 @@ No Docker-daemon restart or host-wide storage dependency was introduced.
 | Radarr, Sonarr, Lidarr, qBittorrent | `/ohara/mnt` | `/data` |
 | Jellyfin | `/ohara/mnt/library` | `/media` |
 | Bazarr | `/ohara/mnt/library` | `/data/library` |
+| Homepage (capacity widget) | `/ohara/mnt` | `/media-storage` (read-only) |
 | Navidrome | `/ohara/mnt/library/music` | `/music` (read-only) |
 
 Seerr, Prowlarr and Maintainerr use application APIs and have no media bind mount.
-Homepage, AdGuard, OpenSpeedTest and Immich retain their independent existing
+AdGuard, OpenSpeedTest and Immich retain their independent existing
 storage; Immich's `/data` path and database/cache are preserved. No application
 root folder, download path, user account or source torrent was intentionally
 changed. Do not copy between the pool and its branches; they expose the same files.
@@ -163,7 +164,7 @@ redownload, path repair or seeding policy change was attempted.
 
 For rollback, stop/disable `ohara-media.service` before reverting only the two
 private inputs to the previous configuration (`MEDIA_ROOT=/ohara/media`, remove
-`MEDIA_POOL_MOUNT`). Recreate the seven consumers through the wrapper to restore
+`MEDIA_POOL_MOUNT`). Recreate the eight consumers through the wrapper to restore
 their original mounts and restart policy. **Files created on the Crucial after
 cutover will not appear through the internal branch alone**; inventory them and
 plan a non-destructive migration before reverting active use. Do not delete the

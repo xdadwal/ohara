@@ -44,8 +44,10 @@ class MediaPoolTests(unittest.TestCase):
                 self.assertEqual(service['restart'],'on-failure:5')
                 self.assertTrue(any(v['source'].startswith('/ohara/mnt') for v in service['volumes']))
             else:self.assertEqual(service['restart'],'unless-stopped')
+        hp_mount=next(v for v in model['services']['homepage']['volumes'] if v['target']=='/media-storage')
+        self.assertTrue(hp_mount['read_only'])
         targets={n:[v['target'] for v in model['services'][n]['volumes'] if v['source'].startswith('/ohara/mnt')] for n in media_pool.SERVICES}
-        self.assertEqual(targets,{'jellyfin':['/media'],'navidrome':['/music'],'radarr':['/data'],'sonarr':['/data'],'lidarr':['/data'],'bazarr':['/data/library'],'qbittorrent':['/data']})
+        self.assertEqual(targets,{'homepage':['/media-storage'],'jellyfin':['/media'],'navidrome':['/music'],'radarr':['/data'],'sonarr':['/data'],'lidarr':['/data'],'bazarr':['/data/library'],'qbittorrent':['/data']})
 
     def test_unit_binds_to_pool_without_requiring_it_for_docker(self):
         with patch.object(runtime,'run',return_value='ohara-mnt.mount\n'):

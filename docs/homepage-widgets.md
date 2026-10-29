@@ -68,17 +68,20 @@ The resource strip shows CPU, RAM, uptime and one disk entry, polling every
 10 seconds. CPU/RAM/uptime readings are provided from Homepage's container
 context; this is not a complete host monitoring system.
 
-The disk entry uses /app/config to identify the filesystem holding Ohara's
-Homepage state (DATA_ROOT/homepage). With expanded display, it shows used space
-and total filesystem capacity, not the size of that directory. No media-library
-mount is needed. A filesystem's total is not the sum of every physical disk:
-unmounted disks, separate filesystems and other storage pools are not included.
+The disk entry measures `/media-storage`, a read-only container bind of
+`MEDIA_ROOT`. On this host it reports the mergerfs pool at `/ohara/mnt`, rather
+than Homepage's configuration filesystem on the internal SSD. It shows total
+filesystem capacity and used space, not just media file sizes. The internal branch
+shares capacity with the operating system. With `MEDIA_POOL_MOUNT` set, Homepage
+also joins the pool-dependent startup unit; no Docker socket is exposed.
 
 ## Existing installations
 
 Back up DATA_ROOT/homepage/services.yaml and widgets.yaml. Merge the selected
 widget sections from configs/homepage into those files, preserving custom links,
-weather location and other edits. Do not overwrite them automatically. Update the
+weather location and other edits. Set the Resources disk target to `/media-storage`
+when applying this storage update; preserve the other widget settings. Do not
+overwrite them automatically. Update the
 checkout/Compose definition and recreate Homepage with scripts/up, then refresh
 Homepage. Remove the OpenSpeedTest widget block while retaining its href, and
 replace the two resource sections with the single section in the seed file.
