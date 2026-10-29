@@ -133,11 +133,11 @@ when promoting public access.
 
 On promotion, public-IP HTTPS returned 200 and unauthenticated printer API calls
 returned 401. All other eight admin hosts still returned 403 from disallowed
-sources, including forged headers. The independent external browser tool could
-not reach either Bambuddy or the existing apex, so a separate mobile-data login
-and camera test remains pending; public-IP access from the server is not proof
-of access from another network. Actual printing and an independent owner-login
-verification are not claimed by deployment.
+sources, including forged headers. The owner subsequently confirmed access from a public network. Local and public
+access use the same Bambuddy application and account permissions; there is no
+separate remote/read-only mode. LAN DNS points to the private address, while public
+DNS points to the WAN address. Camera and actual printing remain separately
+unverified by deployment.
 
 Stop Bambuddy before copying its entire state (including SQLite, keys and
 archives), or use its supported in-app backup. A local backup is not an
