@@ -7,6 +7,7 @@ It merges these directories without moving existing files:
 |---|---|---|
 | `/ohara/media` | Internal Samsung NVMe, ext4 root filesystem | Existing media tree |
 | `/mnt/disks/crucial-240/media` | Crucial BX500 USB SSD, ext4 | Additional media capacity |
+| `/mnt/disks/wd-500/media` | WD5000AAKX USB HDD, ext4 | Additional media capacity |
 
 The disk/pool mount setup is host-specific, not an automatic action in
 `scripts/setup` or `scripts/up`. The current host's private `.env` now sets
@@ -29,7 +30,8 @@ internal drive were preserved. `/etc/fstab` contains:
 
 ```fstab
 UUID=abb98774-3ec1-4cf5-a91f-eff080c29ceb /mnt/disks/crucial-240 ext4 defaults,nofail,x-systemd.device-timeout=10s 0 2
-/ohara/media:/mnt/disks/crucial-240/media /ohara/mnt fuse.mergerfs defaults,nofail,allow_other,default_permissions,cache.files=off,dropcacheonclose=true,category.create=mfs,minfreespace=20G,fsname=ohara-media,x-systemd.requires-mounts-for=/mnt/disks/crucial-240 0 0
+UUID=d8f5335d-0032-4029-bf0a-2ec7500cee2c /mnt/disks/wd-500 ext4 defaults,nofail,x-systemd.device-timeout=10s 0 2
+/ohara/media:/mnt/disks/crucial-240/media:/mnt/disks/wd-500/media /ohara/mnt fuse.mergerfs defaults,nofail,allow_other,default_permissions,cache.files=off,dropcacheonclose=true,category.create=mfs,minfreespace=20G,fsname=ohara-media,x-systemd.requires-mounts-for=/mnt/disks/crucial-240,x-systemd.requires-mounts-for=/mnt/disks/wd-500 0 0
 ```
 
 Use the verified disk UUID on a different host, never copy this UUID blindly.
@@ -48,16 +50,24 @@ that threshold; it is not a reservation or quota and does not stop an existing
 file growing or direct writes to a branch. Files stay whole on individual disks.
 The pool provides neither redundancy nor an independent backup.
 
+The WD drive (serial `WD-WCAYUU292552`, label `Ohara-External`) was added as
+a third branch after read-only inspection found only `lost+found`. Its existing
+ext4 filesystem was preserved; it was not formatted. The new `media` directory
+is `akshay:akshay`, mode `0775`. Both external disk mounts are required before
+systemd starts the pool. With all three branches online, available space at this
+point was about 870 GiB (approximately 1.11 TiB total). Current free capacity
+changes with writes; the internal branch continues to share space with `/`.
+
 `allow_other` permits service users to access the root-mounted FUSE filesystem;
 `default_permissions` retains normal Unix permission enforcement. Source ownership
-is preserved. The external `media` branch is `akshay:akshay`, mode `0775`.
+is preserved. Both external `media` branches are `akshay:akshay`, mode `0775`.
 The empty underlying `/ohara/mnt` directory is `root:root`, mode `0555`, so ordinary
 users cannot silently write there when the pool is unmounted. Root can bypass this;
 media consumers explicitly require the pool mount before startup (see below).
 
 `nofail` allows the host to boot without this optional storage. The pool's
 `x-systemd.requires-mounts-for` generates both requirement and ordering dependencies
-on the Crucial mount: systemd must mount the disk successfully before starting the
+on both external mounts: systemd must mount both disks successfully before starting the
 pool. Do not replace this with a mere check that the branch directory exists.
 Use systemd to start the pool; manual `mount /ohara/mnt` bypasses systemd's dependency
 management. Do not unplug a mounted disk during writes.
@@ -67,7 +77,9 @@ management. Do not unplug a mounted disk during writes.
 Live verification covered branch visibility, ordinary-user write/read/fsync,
 rename, and real hardlinks confirmed against backing inode/device, with all
 probe files removed afterward. The pool stopped/started through systemd and
-remained accessible. Generated `Requires=` and `After=` include the Crucial mount.
+remained accessible. Generated `Requires=` and `After=` include both external mounts.
+The three-branch expansion additionally verified writes and download-to-library
+hardlinks on the WD branch before restoring the pool-dependent services.
 The seven media consumers were subsequently recreated with pooled bind mounts
 and their original container paths. No reboot, disk-disconnection test or new
 public endpoint was performed. Capacity at setup was approximately
