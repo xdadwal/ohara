@@ -60,6 +60,48 @@ class BambuddyTests(unittest.TestCase):
             data=yaml.safe_load(once);self.assertEqual(data[0]['Utility'][0],original[0]['Utility'][0])
             self.assertEqual(data[1]['3D Print'][0]['Bambuddy']['href'],'https://bambuddy.example.com')
 
+    def test_status_widget_uses_private_placeholder_and_correct_units(self):
+        profile=b.widget_config('example.com', 7)
+        self.assertEqual(profile['headers']['X-API-Key'], '{{HOMEPAGE_VAR_BAMBUDDY_API_KEY}}')
+        self.assertTrue(profile['url'].endswith('/7/status'))
+        fields={m['field']:m for m in profile['mappings']}
+        self.assertEqual(fields['remaining_time']['suffix'], 'min')
+        self.assertNotIn('temperatures.chamber',fields)
+        with self.assertRaises(ValueError):
+            b.widget_config('example.com', '../control')
+
+    def test_widget_missing_key_does_not_access_api_or_files(self):
+        with patch.object(credentials,'load',return_value=({},{})), patch.object(b.media,'Client') as api:
+            with self.assertRaisesRegex(ValueError,'Read Status-only'):
+                b.widget({'DOMAIN':'example.com'},ROOT)
+            api.assert_not_called()
+
+    def test_widget_detects_printer_preserves_cards_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);path=root/'data/homepage/services.yaml';path.parent.mkdir(parents=True)
+            original=[{'3D Print':[{'Bambuddy':{'href':'https://existing.invalid'}}]},
+                      {'Utility':[{'Other':{'widget':{'type':'customapi','url':'keep'}}}]}]
+            path.write_text(yaml.safe_dump(original))
+            class API:
+                def call(self, route):
+                    return [{'id':7}] if route.endswith('printers/') else {'connected':True}
+            with patch.object(credentials,'load',return_value=({'HOMEPAGE_VAR_BAMBUDDY_API_KEY':'test-only-placeholder'},{})), patch.object(b.media,'Client',return_value=API()):
+                b.widget({'DATA_ROOT':str(root/'data'),'DOMAIN':'example.com'},root)
+                once=path.read_text();b.widget({'DATA_ROOT':str(root/'data'),'DOMAIN':'example.com'},root)
+            self.assertEqual(path.read_text(),once)
+            data=yaml.safe_load(once)
+            self.assertEqual(data[1],original[1])
+            self.assertEqual(data[0]['3D Print'][0]['Bambuddy']['href'],'https://existing.invalid')
+            self.assertNotIn('test-only-placeholder',once)
+
+    def test_widget_multiple_printers_blocks_before_dashboard_write(self):
+        class API:
+            def call(self, route):
+                return [{'id':1},{'id':2}]
+        with patch.object(credentials,'load',return_value=({'HOMEPAGE_VAR_BAMBUDDY_API_KEY':'test-only-placeholder'},{})), patch.object(b.media,'Client',return_value=API()):
+            with self.assertRaisesRegex(ValueError,'exactly one printer'):
+                b.widget({'DOMAIN':'example.com'},ROOT)
+
     def test_conflicting_dns_is_preserved_without_writes(self):
         writes=[]
         class API:

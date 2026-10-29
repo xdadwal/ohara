@@ -12,7 +12,7 @@ import bambuddy
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=['check', 'prepare', 'up', 'stop', 'status', 'homepage', 'dns'])
+    p.add_argument('command', choices=['check', 'prepare', 'up', 'stop', 'status', 'homepage', 'widget', 'dns'])
     p.add_argument('--static', action='store_true', help='check without mounted/prepared storage')
     a = p.parse_args()
     if a.static and a.command != 'check':

@@ -208,3 +208,26 @@ allowlist. Credentials, router/client DNS, filters and published ports are uncha
 When applying this to an existing DNS container, connect its additional network
 without restarting DNS; its Compose definition retains that connection on recreation.
 Verify authenticated widget proxy responses, credential redaction and UDP/TCP DNS.
+
+
+### Bambuddy printer status
+
+Homepage has no native Bambuddy widget in the pinned release. The optional
+Custom API widget shows connection, state, progress, nozzle/bed temperature and
+remaining minutes, refreshing every 15 seconds. No chamber sensor is assumed.
+In Bambuddy Settings → API Keys, create an application-issued key with only
+Read Status enabled: disable every other permission (including default queue
+and management permissions), and restrict it to the intended A1 mini.
+Save it privately as `HOMEPAGE_VAR_BAMBUDDY_API_KEY` in `.env` (mode 0600).
+Never paste the key in chat or put its literal value in services.yaml.
+
+Run `scripts/bambuddy homepage` followed by `scripts/bambuddy widget`.
+The latter discovers exactly one printer accessible to the key, verifies a GET
+status response, backs up and merges the existing card while preserving layout.
+It performs no printer actions and does not create keys or verify their write
+permissions; the owner must select the narrow permissions in the UI.
+Recreate Homepage with the repository runtime wrapper (`scripts/up`) to inject
+the newly allowlisted key. Other services do not receive it. Its custom API
+request uses the Bambuddy HTTPS hostname, which must resolve from Homepage.
+The header remains server-side; only the public field mappings reach browsers.
+A missing key blocks this optional command, not normal service startup.

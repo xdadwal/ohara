@@ -182,3 +182,64 @@ def dns(c, root):
     else:
         api.call('/control/rewrite/add', {'domain': name, 'answer': address})
     print('Exact Bambuddy LAN DNS rewrite present; other records preserved')
+
+
+def widget_config(domain, printer_id):
+    """Only a placeholder is persisted; credentials stay in Homepage's environment."""
+    if type(printer_id) is not int or printer_id < 1:
+        raise ValueError('Invalid Bambuddy printer ID')
+    profile = {
+        'type': 'customapi',
+        'url': f'https://bambuddy.{domain}/api/v1/printers/{printer_id}/status',
+        'headers': {'X-API-Key': '{{HOMEPAGE_VAR_BAMBUDDY_API_KEY}}'},
+        'refreshInterval': 15000, 'display': 'list',
+        'mappings': [
+            {'field': 'connected', 'label': 'Connection', 'remap': [
+                {'value': True, 'to': 'Online'}, {'value': False, 'to': 'Offline'}]},
+            {'field': 'state', 'label': 'State', 'remap': [{'value': None, 'to': 'Unknown'}]},
+            {'field': 'progress', 'label': 'Progress', 'suffix': '%'},
+            {'field': 'temperatures.nozzle', 'label': 'Nozzle', 'suffix': '°C'},
+            {'field': 'temperatures.bed', 'label': 'Bed', 'suffix': '°C'},
+            {'field': 'remaining_time', 'label': 'Remaining', 'suffix': 'min'},
+        ],
+    }
+    for mapping in profile['mappings'][2:]:
+        mapping['remap'] = [{'value': None, 'to': '—'}]
+    return profile
+
+
+def widget(c, root):
+    """Install a status-only widget after an owner supplies an application key."""
+    import credentials
+    import yaml
+    homepage_credentials, _ = credentials.load(root)
+    key = homepage_credentials.get('HOMEPAGE_VAR_BAMBUDDY_API_KEY')
+    if not key:
+        raise ValueError('Save a Bambuddy Read Status-only key as HOMEPAGE_VAR_BAMBUDDY_API_KEY in private .env first')
+    api = media.Client('http://127.0.0.1:8008', key)
+    printers = api.call('/api/v1/printers/')
+    if not isinstance(printers, list) or len(printers) != 1:
+        raise ValueError('Restrict the Homepage API key to exactly one printer in Bambuddy')
+    printer_id = printers[0].get('id')
+    profile = widget_config(c['DOMAIN'], printer_id)
+    status = api.call(f'/api/v1/printers/{printer_id}/status')
+    if not isinstance(status, dict) or not isinstance(status.get('connected'), bool):
+        raise ValueError('Bambuddy returned an unsupported printer status')
+    path = Path(c['DATA_ROOT'])/'homepage/services.yaml'
+    jellyfin_theme.safe(path)
+    before = path.read_text()
+    data = yaml.safe_load(before)
+    cards = [entry['Bambuddy'] for group in data for rows in group.values()
+             for entry in rows if 'Bambuddy' in entry]
+    if len(cards) != 1:
+        raise ValueError('Expected exactly one existing Bambuddy Homepage card; run homepage first')
+    if cards[0].get('widgets'):
+        raise ValueError('Existing multiple Bambuddy widgets require manual review')
+    cards[0]['widget'] = profile
+    after = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
+    if after != before:
+        backup = root/'local/bambuddy-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-widget')
+        backup.mkdir(parents=True, mode=0o700)
+        config.create_file(backup/'services.yaml', before)
+        path.write_text(after)
+    print('Bambuddy status widget configured; recreate Homepage to load its allowlisted key')
