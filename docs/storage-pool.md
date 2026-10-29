@@ -31,7 +31,7 @@ internal drive were preserved. `/etc/fstab` contains:
 ```fstab
 UUID=abb98774-3ec1-4cf5-a91f-eff080c29ceb /mnt/disks/crucial-240 ext4 defaults,nofail,x-systemd.device-timeout=10s 0 2
 UUID=d8f5335d-0032-4029-bf0a-2ec7500cee2c /mnt/disks/wd-500 ext4 defaults,nofail,x-systemd.device-timeout=10s 0 2
-/ohara/media:/mnt/disks/crucial-240/media:/mnt/disks/wd-500/media /ohara/mnt fuse.mergerfs defaults,nofail,allow_other,default_permissions,cache.files=off,dropcacheonclose=true,category.create=mfs,minfreespace=20G,fsname=ohara-media,x-systemd.requires-mounts-for=/mnt/disks/crucial-240,x-systemd.requires-mounts-for=/mnt/disks/wd-500 0 0
+/ohara/media:/mnt/disks/crucial-240/media:/mnt/disks/wd-500/media /ohara/mnt fuse.mergerfs defaults,nofail,allow_other,default_permissions,cache.files=partial,dropcacheonclose=true,category.create=mfs,minfreespace=20G,fsname=ohara-media,x-systemd.requires-mounts-for=/mnt/disks/crucial-240,x-systemd.requires-mounts-for=/mnt/disks/wd-500 0 0
 ```
 
 Use the verified disk UUID on a different host, never copy this UUID blindly.
@@ -71,6 +71,33 @@ on both external mounts: systemd must mount both disks successfully before start
 pool. Do not replace this with a mere check that the branch directory exists.
 Use systemd to start the pool; manual `mount /ohara/mnt` bypasses systemd's dependency
 management. Do not unplug a mounted disk during writes.
+
+## qBittorrent memory-mapped I/O compatibility
+
+Use `cache.files=partial,dropcacheonclose=true` on the installed mergerfs 2.40.2.
+The original `cache.files=off` configuration failed qBittorrent 5.2.4's
+memory-mapped disk access with `file_mmap ... No such device` despite healthy
+mounts, permissions and free space. The write/read/hardlink checks used at initial
+setup did not exercise `mmap` and therefore missed this incompatibility.
+
+The incident was reproduced with a disposable 4 KiB Python `mmap` write in the
+pool: errno 19 before the fix, successful write/flush/read afterward. The live
+cache mode and only the pool's fstab option were changed to `partial`, preserving
+all branches and data. The supported live control avoided unmounting the pool:
+
+```sh
+sudo python3 -c "import os; os.setxattr('/ohara/mnt/.mergerfs', 'user.mergerfs.cache.files', b'partial')"
+# Also change only the pool's /etc/fstab cache.files option to partial.
+sudo systemctl daemon-reload
+```
+
+Runtime controls alone do not persist across remounts. qBittorrent was restarted
+to reopen handles; no other container or playback service was restarted. The four
+new errored downloads returned to downloading/queued/stalled-peer states and data
+transfer resumed. Seven older `missingFiles` entries were left untouched. Do not
+redownload or delete library files to repair missing torrent metadata.
+
+Reference: [upstream mmap compatibility and qBittorrent guidance](https://trapexit.github.io/mergerfs/2.41.1/known_issues_bugs/).
 
 ## Reboot and runtime reconnect behavior
 
