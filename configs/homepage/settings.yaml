@@ -5,15 +5,20 @@ theme: dark
 color: slate
 headerStyle: clean
 hideVersion: true
-maxGroupColumns: 5
 layout:
   Media:
-    style: column
+    style: row
+    columns: 2
   Arr:
-    style: column
+    style: row
+    columns: 4
   Utility:
-    style: column
+    style: row
+    columns: 1
   Networking:
-    style: column
+    style: row
+    columns: 2
   Images & Videos:
-    style: column
+    style: row
+    columns: 1
+fullWidth: true

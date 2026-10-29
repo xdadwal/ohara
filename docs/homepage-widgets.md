@@ -146,15 +146,16 @@ were checked for absence of the actual key.
 
 The dashboard uses five groups selected by the owner:
 
-- **Media** (first column): Jellyfin and Navidrome.
+- **Media** (first section): Jellyfin and Navidrome.
 - **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
 - **Utility:** qBittorrent.
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
 
-Maintainerr stays with Arr; qBittorrent has its own Utility column.
-The settings layout explicitly orders Media first and allows five columns on
-large displays; smaller displays wrap responsively. Full service
+Maintainerr stays with Arr; qBittorrent has its own Utility section.
+All five groups use wide row grids on a full-width page, with Media first. Arr
+uses four cards across, Media and Networking two each, and the single-card
+Utility and Images & Videos sections one each. Smaller displays wrap responsively. Full service
 cards, links and widget settings are preserved when regrouping the live dashboard.
 Fresh installs use the same grouping in the seed. Existing installations need a
 selective merge with a private backup, preserving operator edits.
