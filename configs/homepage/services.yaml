@@ -23,6 +23,55 @@
           user: admin
           token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
           salt: ohara-homepage
+- 3D Print:
+    - Bambuddy:
+        icon: mdi-printer-3d
+        href: "https://bambuddy.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Bambu Lab A1 mini
+- Utility:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Downloads (local network)
+        widget:
+          type: qbittorrent
+          url: http://qbittorrent:8081
+          username: admin
+          password: '{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}'
+          fields:
+          - leech
+          - seed
+          - download
+          - upload
+          enableLeechProgress: false
+- Networking:
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: "https://adguard.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: DNS administration (local network)
+        widget:
+          type: adguard
+          url: http://adguard:3000
+          username: admin
+          password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
+          fields:
+          - blocked
+          - latency
+    - OpenSpeedTest:
+        icon: openspeedtest.png
+        href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
+        description: Test your connection to Ohara
+- Images & Videos:
+    - Immich:
+        icon: immich.png
+        href: "https://immich.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Personal photos and videos
+        widget:
+          type: immich
+          url: "https://immich.{{HOMEPAGE_VAR_DOMAIN}}"
+          key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+          version: 2
+          fields: [photos, videos, storage]
 - Arr:
     - Seerr:
         icon: jellyseerr.png
@@ -79,47 +128,3 @@
         icon: bazarr.png
         href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Subtitles (local network)
-- Utility:
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Downloads (local network)
-        widget:
-          type: qbittorrent
-          url: http://qbittorrent:8081
-          username: admin
-          password: '{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}'
-          fields:
-          - leech
-          - seed
-          - download
-          - upload
-          enableLeechProgress: false
-- Networking:
-    - AdGuard Home:
-        icon: adguard-home.png
-        href: "https://adguard.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: DNS administration (local network)
-        widget:
-          type: adguard
-          url: http://adguard:3000
-          username: admin
-          password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
-          fields:
-          - blocked
-          - latency
-    - OpenSpeedTest:
-        icon: openspeedtest.png
-        href: "https://{{HOMEPAGE_VAR_SPEED_HOST}}"
-        description: Test your connection to Ohara
-- Images & Videos:
-    - Immich:
-        icon: immich.png
-        href: "https://immich.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Personal photos and videos
-        widget:
-          type: immich
-          url: "https://immich.{{HOMEPAGE_VAR_DOMAIN}}"
-          key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
-          version: 2
-          fields: [photos, videos, storage]

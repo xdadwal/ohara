@@ -152,3 +152,7 @@ QBITTORRENT_PASSWORD and optional ADGUARD_PASSWORD through Homepage-only runtime
 aliases. Do not duplicate these values under HOMEPAGE_VAR names in `.env`. Other
 account passwords remain excluded; Navidrome still uses its derived token only.
 See [widget setup](homepage-widgets.md).
+
+Optional `HOMEPAGE_VAR_BAMBUDDY_API_KEY` is an application-issued Bambuddy key
+restricted to Read Status and one printer. Only Homepage receives this key; see
+[the widget setup](homepage-widgets.md#bambuddy-printer-status).

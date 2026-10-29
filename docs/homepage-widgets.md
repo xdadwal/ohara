@@ -163,19 +163,19 @@ were checked for absence of the actual key.
 
 ## Queue, torrent and DNS widgets
 
-The dashboard uses five groups selected by the owner:
+The dashboard uses six groups selected by the owner:
 
 - **Media** (first section): Jellyfin and Navidrome.
 - **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
+- **3D Print:** optional Bambuddy (A1 mini management).
 - **Utility:** qBittorrent.
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
 
-Maintainerr stays with Arr; qBittorrent has its own Utility section.
-All five groups use column layouts, with Media first and up to five group
-columns on larger displays. Smaller displays wrap responsively. The wide-grid
-experiment was reverted at the owner's request; native CPU temperature remains
-enabled. Full service
+Maintainerr stays with Arr; qBittorrent has its own Utility section. Media stays
+first, followed by 3D Print, Utility, Networking and Images & Videos as columns.
+Arr is a wide four-card row below those columns. Smaller displays wrap
+responsively; native CPU temperature remains enabled. Full service
 cards, links and widget settings are preserved when regrouping the live dashboard.
 Fresh installs use the same grouping in the seed. Existing installations need a
 selective merge with a private backup, preserving operator edits.
@@ -208,3 +208,26 @@ allowlist. Credentials, router/client DNS, filters and published ports are uncha
 When applying this to an existing DNS container, connect its additional network
 without restarting DNS; its Compose definition retains that connection on recreation.
 Verify authenticated widget proxy responses, credential redaction and UDP/TCP DNS.
+
+
+### Bambuddy printer status
+
+Homepage has no native Bambuddy widget in the pinned release. The optional
+Custom API widget shows connection, state, progress, nozzle/bed temperature and
+remaining minutes, refreshing every 15 seconds. No chamber sensor is assumed.
+In Bambuddy Settings → API Keys, create an application-issued key with only
+Read Status enabled: disable every other permission (including default queue
+and management permissions), and restrict it to the intended A1 mini.
+Save it privately as `HOMEPAGE_VAR_BAMBUDDY_API_KEY` in `.env` (mode 0600).
+Never paste the key in chat or put its literal value in services.yaml.
+
+Run `scripts/bambuddy homepage` followed by `scripts/bambuddy widget`.
+The latter discovers exactly one printer accessible to the key, verifies a GET
+status response, backs up and merges the existing card while preserving layout.
+It performs no printer actions and does not create keys or verify their write
+permissions; the owner must select the narrow permissions in the UI.
+Recreate Homepage with the repository runtime wrapper (`scripts/up`) to inject
+the newly allowlisted key. Other services do not receive it. Its custom API
+request uses the Bambuddy HTTPS hostname, which must resolve from Homepage.
+The header remains server-side; only the public field mappings reach browsers.
+A missing key blocks this optional command, not normal service startup.

@@ -9,6 +9,8 @@ for command in setup check up status tls media-setup tailscale adguard immich; d
   (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
 done
 (cd /; "$TASK_TMP/scripts/maintainerr" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/bambuddy" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/bambuddy-proxy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/lan-proxy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/jellyfin-theme" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/jellyfin-enhanced" --help >/dev/null)

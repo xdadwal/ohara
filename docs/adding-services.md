@@ -100,3 +100,8 @@ Keep archive-readiness claims pending real backup/restore evidence.
 
 End with what works, its URL, and only the specific remaining action. Avoid
 calling the whole task complete while requested integration is still pending.
+
+For the approved Bambuddy service, its optional read-only printer widget is
+configured with `scripts/bambuddy widget` after owner key provisioning; follow
+[the scoped-key instructions](bambuddy.md#bambuddy-printer-status). Normal
+Bambuddy startup and its Homepage link do not require this optional key.

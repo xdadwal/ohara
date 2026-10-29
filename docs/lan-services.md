@@ -60,7 +60,7 @@ if someone supplies a matching Host/SNI or forged forwarding headers. This does
 not require publishing their names in public DNS or forwarding additional ports.
 
 Disposable check: `python3 tests/smoke_lan_proxy.py` runs both actual baseline
-files against fixture backends/certificates, checks all eight routes, HTTP-to-HTTPS
+files against fixture backends/certificates, checks all eight LAN-only routes, HTTP-to-HTTPS
 redirects, rejected sources and spoofed headers, plus all six existing public
 routes. It does not certify a real LAN client's routing or public reachability.
 
@@ -72,3 +72,9 @@ available. Never expose backend ports or DNS directly to the Internet.
 Maintainerr has no native login; its entire UI/API is administrator access. The
 LAN source restriction is required on every path, including database downloads.
 See [maintainerr.md](maintainerr.md).
+
+Bambuddy was promoted to public HTTPS on 2026-10-30 with the owner's explicit
+approval. Its independent `ohara-bambuddy.conf` is managed by
+`scripts/bambuddy-proxy`; initial onboarding is LAN-only until native owner login
+is verified. The public route does not relax these eight admin hosts. Its exact
+AdGuard rewrite stays so LAN clients use the same name. See [Bambuddy](bambuddy.md).

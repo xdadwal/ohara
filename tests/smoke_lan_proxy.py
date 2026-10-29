@@ -9,6 +9,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts/lib'))
 import runtime
+import bambuddy_proxy
 
 IMAGE = 'nginx@sha256:ed84151ed2d47ef93c0939eb9b9754c6990db6092cd2081e11988a47a83d47ea'
 NAMES = ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'maintainerr')
@@ -27,8 +28,8 @@ def main():
         # Disposable test keys only; never reads production certificates/credentials.
         (base/'key.pem').chmod(0o644)
         blocks = []
-        # Match conf.d's lexical include order on the host.
-        for filename in ('ohara-lan.conf', 'ohara.conf'):
+        # Exercise the exact managed routes together with their shared maps.
+        for filename in ('ohara-lan.conf', 'ohara.conf', 'ohara-bambuddy.conf'):
             data = (ROOT/'configs/nginx/deployed'/filename).read_text()
             data = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', data)
             data = re.sub(r'ssl_certificate_key\s+[^;]+;', 'ssl_certificate_key /fixture/key.pem;', data)
@@ -66,9 +67,25 @@ def main():
                 for tls in (False, True):
                     assert status(hostname, '127.0.0.2', tls) == '403', hostname+' external source accepted'
                     assert status(hostname, '127.0.0.2', tls, True) == '403', hostname+' forged header bypass'
-            for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in'):
+            for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in', 'bambuddy.xdadwal.in'):
                 assert status(hostname, '127.0.0.2', True) == '200', 'Existing public route changed: '+hostname
-            print('PASS: host Nginx baselines parse; eight admin proxies/HTTPS redirects, disallowed sources and forged headers rejected on HTTP/HTTPS, six public routes preserved.')
+            assert status('bambuddy.xdadwal.in', '127.0.0.2', False) == '301'
+            runtime.run(docker+['stop', name])
+            onboarding = bambuddy_proxy.render(ROOT)
+            onboarding = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', onboarding)
+            onboarding = re.sub(r'ssl_certificate_key\s+[^;]+;', 'ssl_certificate_key /fixture/key.pem;', onboarding)
+            onboarding = re.sub(r'proxy_pass http://127\.0\.0\.1:\d+;', 'proxy_pass http://127.0.0.1:18081;', onboarding)
+            (base/'nginx.conf').write_text('events {}\nhttp {\n'+''.join(blocks[:2])+onboarding+
+                                           '\nserver { listen 127.0.0.1:18081; return 200 "fixture backend"; }\n}\n')
+            runtime.run(docker+['start', name])
+            runtime.run(docker+['exec', name, 'curl', '--noproxy', '*', '-fsS', '--retry', '20',
+                                '--retry-connrefused', '--retry-delay', '1', '--retry-max-time', '30',
+                                '--max-time', '5', 'http://127.0.0.1:18081/'], timeout=40)
+            assert status('bambuddy.xdadwal.in', '127.0.0.1', True) == '200'
+            for tls in (False, True):
+                assert status('bambuddy.xdadwal.in', '127.0.0.2', tls) == '403'
+                assert status('bambuddy.xdadwal.in', '127.0.0.2', tls, True) == '403'
+            print('PASS: eight admin proxies remain LAN-only; seven public routes preserved; Bambuddy public and fresh LAN-only onboarding modes verified.')
         finally:
             runtime.run(docker+['rm', '-f', name])
 

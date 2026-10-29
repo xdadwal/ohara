@@ -117,3 +117,10 @@ For optional outgoing Letterboxd diary sync, follow
 Install the exact plugin with the helper, restart only when playback is idle,
 and let each owner link their external account privately in the plugin UI. Do
 not seed external tokens, bulk backfills, incoming diary imports or Seerr requests.
+
+## Optional Bambuddy
+
+Use [Bambuddy setup](bambuddy.md) for the independently pinned Compose project,
+dedicated storage, LAN proxy, exact DNS rewrite and Homepage Utility card. Confirm
+storage on the new host and complete native owner/printer setup privately; do not
+copy example printer identities, disable authentication, or start test prints.

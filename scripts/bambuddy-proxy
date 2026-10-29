@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Activate Bambuddy on this host; fresh owner onboarding defaults to LAN-only."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts/lib'))
+import bambuddy_proxy
+import config
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--apply', action='store_true', help='root: back up, validate and reload both managed route files')
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument('--onboarding-only', action='store_true', help='keep HTTP/HTTPS LAN-only for native owner setup')
+    mode.add_argument('--accounts-ready', action='store_true', help='attest verified owner login and activate public HTTPS')
+    a = p.parse_args()
+    if not a.apply:
+        sys.stdout.write(bambuddy_proxy.render(ROOT, public=a.accounts_ready))
+        return
+    if not (a.onboarding_only or a.accounts_ready):
+        raise ValueError('Choose --onboarding-only, or verify owner login and use --accounts-ready')
+    bambuddy_proxy.apply(config.load(ROOT/'.env'), ROOT, public=a.accounts_ready)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print('Ohara Bambuddy proxy: '+str(error), file=sys.stderr)
+        sys.exit(1)

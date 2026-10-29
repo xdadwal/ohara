@@ -11,6 +11,7 @@ sys.path.insert(0,str(ROOT/'scripts/lib'))
 import config
 import immich
 import maintainerr
+import bambuddy
 
 
 def retry(command,timeout,*,attempts=3):
@@ -30,6 +31,7 @@ def retry(command,timeout,*,attempts=3):
 
 
 def image_list(target):
+    if target=='bambuddy':return list(bambuddy.images(ROOT).values())
     if target=='immich':return list(immich.images(ROOT).values())
     from smoke import NGINX
     return list(dict.fromkeys([*config.images(ROOT/'versions.env').values(),*maintainerr.images(ROOT).values(),NGINX]))
@@ -37,7 +39,7 @@ def image_list(target):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('target',choices=['main','immich'])
+    parser.add_argument('target',choices=['main','immich','bambuddy'])
     args=parser.parse_args()
     images=image_list(args.target)  # Validate public pins before any Docker command.
     retry(['docker','info','--format','{{.ServerVersion}}'],30)

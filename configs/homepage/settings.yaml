@@ -8,7 +8,7 @@ hideVersion: true
 layout:
   Media:
     style: column
-  Arr:
+  3D Print:
     style: column
   Utility:
     style: column
@@ -16,4 +16,7 @@ layout:
     style: column
   Images & Videos:
     style: column
+  Arr:
+    style: row
+    columns: 4
 maxGroupColumns: 5

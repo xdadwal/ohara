@@ -85,6 +85,14 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
   Preserve its branch directories, guarded media startup unit and container paths.
   Do not move/copy data between the pool and its own branches.
+- Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
+  docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
+  native password login, explicitly without adding MFA. Keep the backend
+  loopback-only and use scripts/bambuddy-proxy with the owner-ready guard.
+  Preserve other LAN-only admin routes and the dedicated SQLite/archive directory. Owner/printer access codes stay in its UI;
+  never assume credentials or start/queue a print during deployment. Use bridge
+  networking and manual printer IP; do not enable virtual printers, slicer
+  sidecars, shared authentication, host networking or Docker socket access.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
   A completed command or cached Available label is not evidence of a present file:

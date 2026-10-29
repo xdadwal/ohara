@@ -1,0 +1,36 @@
+# Official Bambuddy, manually configured printer IP; no multicast/virtual proxy.
+name: ohara-bambuddy
+services:
+  bambuddy:
+    image: ${BAMBUDDY_IMAGE:?Run scripts/bambuddy check}
+    user: "${RUN_UID}:${RUN_GID}"
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      TZ: ${TZ}
+      HOST: 0.0.0.0
+      PORT: "8000"
+      DATA_DIR: /app/data
+      LOG_DIR: /app/logs
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      TRUSTED_PROXY_IPS: ${BAMBUDDY_PROXY_IP:-127.0.0.1}
+      FORWARDED_ALLOW_IPS: ${BAMBUDDY_PROXY_IP:-127.0.0.1}
+    ports: ["127.0.0.1:8008:8000"]
+    volumes:
+      - type: bind
+        source: ${BAMBUDDY_ROOT}/data
+        target: /app/data
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BAMBUDDY_ROOT}/logs
+        target: /app/logs
+        bind: {create_host_path: false}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    # The official Python executable carries this file capability. Retain its
+    # bounding bit, even though no privileged or virtual-printer ports are exposed.
+    cap_add: [NET_BIND_SERVICE]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}

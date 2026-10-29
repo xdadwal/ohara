@@ -127,7 +127,7 @@ def prepare(c, root, dry_run=False):
     if dry_run:
         print('Preflight passed. Would install missing Docker/Nginx/Certbot/bpytop packages and prepare storage; no changes made.')
         return
-    ensure_packages(['ca-certificates', 'curl', 'gnupg', 'python3', 'python3-minimal', 'iproute2', 'bpytop'])
+    ensure_packages(['ca-certificates', 'curl', 'gnupg', 'python3', 'python3-minimal', 'python3-yaml', 'iproute2', 'bpytop'])
     if not installed('docker-ce'):
         # A custom/binary Docker install must be reviewed, not overwritten.
         import shutil

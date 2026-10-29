@@ -47,7 +47,7 @@ class ConfigurationTests(unittest.TestCase):
     def test_private_media_ports_cannot_back_public_portfolio(self):
         base = (ROOT / '.env.example').read_text()
         base = base.replace('HOMEPAGE_HOST=xdadwal.in', 'HOMEPAGE_HOST=ohara.xdadwal.in')
-        for port in [2283, 4533, 6767, 8686]:
+        for port in [2283, 4533, 6767, 8008, 8686]:
             with self.subTest(port=port), self.assertRaisesRegex(ValueError, 'private admin port'):
                 self.load(base.replace('PORTFOLIO_PORT=0', f'PORTFOLIO_PORT={port}'))
 
