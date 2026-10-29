@@ -1,3 +1,28 @@
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: "https://{{HOMEPAGE_VAR_JELLYFIN_HOST}}"
+        description: Watch movies and shows
+        widget:
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+          version: 2
+          enableBlocks: true
+          enableNowPlaying: true
+          enableUser: false
+          enableMediaControl: false
+          fields: [movies, series, episodes]
+    - Navidrome:
+        icon: navidrome.png
+        href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
+        description: Listen to your music library
+        widget:
+          type: navidrome
+          url: http://navidrome:4533
+          user: admin
+          token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
+          salt: ohara-homepage
 - Arr:
     - Seerr:
         icon: jellyseerr.png
@@ -38,21 +63,6 @@
           key: '{{HOMEPAGE_VAR_LIDARR_API_KEY}}'
           fields:
           - queued
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Downloads (local network)
-        widget:
-          type: qbittorrent
-          url: http://qbittorrent:8081
-          username: admin
-          password: '{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}'
-          fields:
-          - leech
-          - seed
-          - download
-          - upload
-          enableLeechProgress: false
     - Maintainerr:
         icon: maintainerr.png
         href: "https://maintainerr.{{HOMEPAGE_VAR_DOMAIN}}"
@@ -69,6 +79,22 @@
         icon: bazarr.png
         href: "https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Subtitles (local network)
+- Utility:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Downloads (local network)
+        widget:
+          type: qbittorrent
+          url: http://qbittorrent:8081
+          username: admin
+          password: '{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}'
+          fields:
+          - leech
+          - seed
+          - download
+          - upload
+          enableLeechProgress: false
 - Networking:
     - AdGuard Home:
         icon: adguard-home.png
@@ -97,28 +123,3 @@
           key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
           version: 2
           fields: [photos, videos, storage]
-- Media:
-    - Jellyfin:
-        icon: jellyfin.png
-        href: "https://{{HOMEPAGE_VAR_JELLYFIN_HOST}}"
-        description: Watch movies and shows
-        widget:
-          type: jellyfin
-          url: http://jellyfin:8096
-          key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
-          version: 2
-          enableBlocks: true
-          enableNowPlaying: true
-          enableUser: false
-          enableMediaControl: false
-          fields: [movies, series, episodes]
-    - Navidrome:
-        icon: navidrome.png
-        href: "https://{{HOMEPAGE_VAR_NAVIDROME_HOST}}"
-        description: Listen to your music library
-        widget:
-          type: navidrome
-          url: http://navidrome:4533
-          user: admin
-          token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
-          salt: ohara-homepage

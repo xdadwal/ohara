@@ -144,14 +144,17 @@ were checked for absence of the actual key.
 
 ## Queue, torrent and DNS widgets
 
-The dashboard uses four groups selected by the owner:
+The dashboard uses five groups selected by the owner:
 
-- **Arr:** Seerr, Radarr, Sonarr, Lidarr, qBittorrent, Maintainerr, Prowlarr and Bazarr.
+- **Media** (first column): Jellyfin and Navidrome.
+- **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
+- **Utility:** qBittorrent.
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
-- **Media:** Jellyfin and Navidrome.
 
-The acquisition helpers qBittorrent and Maintainerr stay with Arr. Full service
+Maintainerr stays with Arr; qBittorrent has its own Utility column.
+The settings layout explicitly orders Media first and allows five columns on
+large displays; smaller displays wrap responsively. Full service
 cards, links and widget settings are preserved when regrouping the live dashboard.
 Fresh installs use the same grouping in the seed. Existing installations need a
 selective merge with a private backup, preserving operator edits.
