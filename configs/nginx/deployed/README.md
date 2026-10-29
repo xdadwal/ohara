@@ -4,8 +4,8 @@ These non-secret files track `/etc/nginx/conf.d/` on the xdadwal.in server after
 the authorized music/subtitles deployment on 2026-10-17. The Jellyfin hostname
 cutover to `tv.xdadwal.in` and Navidrome activation have been applied. They contain
 public routes and certificate paths, never private keys or application credentials.
-The Bambuddy LAN route is a tested candidate pending the operator's privileged
-apply step; other LAN routes retain their existing configuration.
+The Bambuddy LAN route was applied and live-verified on 2026-10-29; other LAN
+routes retain their existing configuration.
 
 - `ohara.conf`: wildcard HTTPS, portfolio apex, Homepage at ohara.xdadwal.in,
   Seerr/Jellyfin/OpenSpeedTest/Navidrome, IPv4/IPv6, localhost redirects and local TLS.

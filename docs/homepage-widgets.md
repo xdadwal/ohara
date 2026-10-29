@@ -167,7 +167,7 @@ The dashboard uses five groups selected by the owner:
 
 - **Media** (first section): Jellyfin and Navidrome.
 - **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
-- **Utility:** qBittorrent.
+- **Utility:** qBittorrent and optional Bambuddy (A1 mini management).
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
 

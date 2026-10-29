@@ -110,8 +110,11 @@ proxy/card/rewrite deliberately, and never use volume/data deletion for rollback
 Implementation status: disposable loading/state-preservation and LAN proxy tests
 passed. The live instance is healthy on `/ohara/bambuddy` (internal ext4), running
 as UID/GID 1000:1000 with a loopback-only backend and private 0700 directories.
-The owner confirmed the A1 mini is already in LAN-only mode. Privileged live
-Nginx apply, native owner setup and A1 mini connection remain pending until
+The owner confirmed the A1 mini is already in LAN-only mode. The live Nginx
+route was backed up, validated and applied. Trusted HTTPS and WebSocket upgrade,
+HTTP redirect, disallowed/forged-source rejection, exact DNS over UDP/TCP, and the
+authenticated Homepage Utility card all passed. The live LAN baseline matches
+the repository. Native owner setup and A1 mini connection remain pending until
 individually verified. Homepage integration uses `python3-yaml`, included by host
 setup; CI installs the explicit PyYAML dependency into its selected Python.
 
