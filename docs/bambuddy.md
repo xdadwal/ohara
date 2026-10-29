@@ -172,3 +172,9 @@ the newly allowlisted key. Other services do not receive it. Its custom API
 request uses the Bambuddy HTTPS hostname, which must resolve from Homepage.
 The header remains server-side; only the public field mappings reach browsers.
 A missing key blocks this optional command, not normal service startup.
+
+Live widget activation was verified through authenticated Homepage HTTPS after
+the owner supplied the private application key. The A1 mini returned connected
+status, progress, remaining minutes and nozzle/bed temperatures. The key was
+absent from browser-facing services and widget responses. Only Homepage was
+recreated; other cards and their configuration were verified unchanged.
