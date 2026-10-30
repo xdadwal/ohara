@@ -204,6 +204,11 @@ are under root-only `/var/backups/ohara/ntfy-alerts-*` and proxy backups under
 
 Verification commands:
 
+The CI configuration job uses an isolated Python interpreter and explicitly
+installs `PyYAML==6.0.3` and `bcrypt==4.3.0` before unit tests. Local host setup
+uses the distribution packages above. Container CI prepares ntfy's pinned image
+alongside the other smoke-test images, then runs the disposable ntfy/proxy checks.
+
 ```sh
 python3 -m unittest discover -s tests -v
 tests/test_setup.sh
