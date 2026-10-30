@@ -6,6 +6,19 @@ docs/superpowers/plans/. For future service additions, follow
 [docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
 integration, exact privileged commands and LAN-only owner onboarding where needed.
 
+- Treat every setup, deployment and deliberate live configuration change as work
+  another agent must reproduce on a fresh machine. Update the relevant setup,
+  operations and replication documentation in the same change; documentation is
+  part of completion, not a follow-up. Include exact commands, prerequisites,
+  target-specific discovery, private input locations, persistence, verification
+  and rollback. Distinguish repository templates from installed runtime files,
+  fresh setup from existing-state recovery, and verified behavior from pending
+  tests or explicit owner deferrals. Never rely on chat history, this host's
+  example identities, ignored one-off files or undocumented manual steps as the
+  only setup instructions. Keep agent entry points linked to the current guides
+  and remove contradictory/outdated guidance when behavior changes. If privileged
+  application is pending, document the prepared commands and report that limit.
+
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
@@ -85,6 +98,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
   Preserve its branch directories, guarded media startup unit and container paths.
   Do not move/copy data between the pool and its own branches.
+  For an authorized new pool/watchdog setup, follow docs/agent-setup.md: discover
+  the target's actual filesystem UUIDs, mountpoints and HDD serial; create ignored
+  local/storage-watchdog.json and install it with scripts/storage-watchdog.
+  Never install the example's host-specific identities blindly. Verify the installed
+  /etc/ohara/storage-watchdog.json and timer; ordinary setup does not enable it.
 - Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
   docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
   native password login, explicitly without adding MFA. Keep the backend

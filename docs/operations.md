@@ -41,6 +41,8 @@ The current host has an owner-approved mergerfs pool at `/ohara/mnt`, combining
 the existing media directory, Crucial USB SSD and WD 500 GB USB HDD. Media consumers bind
 the pooled path with mount-dependent startup; application container paths stay
 unchanged. See [pool configuration and recovery](storage-pool.md).
+Optional HDD standby and automatic reconnect recovery use the systemd timer
+described there; stop its timer/worker before planned media-storage maintenance.
 
 ## Optional LAN DNS
 

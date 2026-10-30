@@ -1,0 +1,16 @@
+# Managed by Ohara storage-watchdog
+[Unit]
+Description=Ohara disk reconnect recovery and HDD standby configuration
+After=docker.service
+ConditionPathExists=/etc/ohara/storage-watchdog.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/ohara/storage_watchdog.py
+RuntimeDirectory=ohara-storage-watchdog
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+TimeoutStartSec=60
+UMask=0077
+NoNewPrivileges=yes
+ProtectHome=yes

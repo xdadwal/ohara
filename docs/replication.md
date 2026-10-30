@@ -124,3 +124,11 @@ Use [Bambuddy setup](bambuddy.md) for the independently pinned Compose project,
 dedicated storage, LAN proxy, exact DNS rewrite and Homepage Utility card. Confirm
 storage on the new host and complete native owner/printer setup privately; do not
 copy example printer identities, disable authentication, or start test prints.
+
+## Other host-specific setup
+
+Follow [agent-setup.md](agent-setup.md) for the complete selected-component
+checklist: optional AdGuard/LAN admin routes, Immich Google-only invite-only
+login, mergerfs mount guards, per-host watchdog identities and optional laptop
+lid-close policy. Re-discover hardware/network identities on the target; never
+copy this host's disk UUIDs, credentials or certificate/IP assumptions blindly.
