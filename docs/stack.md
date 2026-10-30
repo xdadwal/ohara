@@ -74,7 +74,9 @@ Immich is implemented as the optional separate `ohara-immich` Compose project,
 operated with `scripts/immich`; production is running with public HTTPS and owner setup complete. It includes its own
 PostgreSQL and Valkey containers, no machine-learning container, and a loopback-only
 web port 2283. Approved storage is `/ohara/immich/library` and
-`/ohara/immich/postgres`. Backup destination, library sizing and archive acceptance remain pending; see [Immich operations](immich.md). Pi-hole and Copyparty have been removed. Their old data
+`/ohara/immich/postgres`. The owner accepted current single-user capacity and
+explicitly deferred independent backups/restore testing; these are not release
+blockers or implemented protections. See [Immich operations](immich.md). Pi-hole and Copyparty have been removed. Their old data
 and live containers are not deleted by a repository change; see operations.md for
 cutover guidance. files.xdadwal.in is no longer an application endpoint.
 

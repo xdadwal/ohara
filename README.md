@@ -32,7 +32,7 @@ The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with lin
 Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
 widgets ([configuration](docs/homepage-widgets.md)). Immich is available as a separate optional project for personal photos/videos,
 with machine learning disabled. See [Immich operations](docs/immich.md); Immich is running with public HTTPS and owner setup complete on this host;
-backup/restore acceptance remains pending.
+independent backups/restore testing are explicitly deferred by the owner.
 Seerr connects to the included media stack. Follow [media setup](docs/media.md) to
 initialize accounts/connections and add your chosen indexers. Music flows from Lidarr into the shared music library and Navidrome. Select subtitle languages
 and providers explicitly in Bazarr; Seerr requests remain movies and series only.
