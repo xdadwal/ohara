@@ -6,6 +6,19 @@ docs/superpowers/plans/. For future service additions, follow
 [docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
 integration, exact privileged commands and LAN-only owner onboarding where needed.
 
+- Treat every setup, deployment and deliberate live configuration change as work
+  another agent must reproduce on a fresh machine. Update the relevant setup,
+  operations and replication documentation in the same change; documentation is
+  part of completion, not a follow-up. Include exact commands, prerequisites,
+  target-specific discovery, private input locations, persistence, verification
+  and rollback. Distinguish repository templates from installed runtime files,
+  fresh setup from existing-state recovery, and verified behavior from pending
+  tests or explicit owner deferrals. Never rely on chat history, this host's
+  example identities, ignored one-off files or undocumented manual steps as the
+  only setup instructions. Keep agent entry points linked to the current guides
+  and remove contradictory/outdated guidance when behavior changes. If privileged
+  application is pending, document the prepared commands and report that limit.
+
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
