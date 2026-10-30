@@ -156,3 +156,13 @@ See [widget setup](homepage-widgets.md).
 Optional `HOMEPAGE_VAR_BAMBUDDY_API_KEY` is an application-issued Bambuddy key
 restricted to Read Status and one printer. Only Homepage receives this key; see
 [the widget setup](homepage-widgets.md#bambuddy-printer-status).
+
+## Optional ntfy
+
+Supply only NTFY_PASSWORD privately for the independent notification service, at
+least 16 characters and at most 72 UTF-8 bytes. It is not required or forwarded
+by the main stack or Homepage. See [ntfy.md](ntfy.md). Initial setup hashes this
+value for the regular ohara account, scoped to ohara-alerts. The host publisher
+receives a root-only derived credential file during explicit alert installation.
+Changing the input alone does not rotate an initialized account. Preserve private
+configuration/authentication state; reconcile rotation through supported controls.

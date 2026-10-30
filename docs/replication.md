@@ -132,3 +132,18 @@ checklist: optional AdGuard/LAN admin routes, Immich Google-only invite-only
 login, mergerfs mount guards, per-host watchdog identities and optional laptop
 lid-close policy. Re-discover hardware/network identities on the target; never
 copy this host's disk UUIDs, credentials or certificate/IP assumptions blindly.
+
+## Optional ntfy notifications
+
+Follow [ntfy.md](ntfy.md) and `scripts/ntfy` for the independently pinned server,
+local storage outside the media pool, native deny-by-default topic authentication,
+HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
+private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
+wake-up relay only with explicit approval. No notification text is forwarded to
+that relay. Verify the real supplied account before public proxy activation.
+Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
+readiness; it reads the actual configured storage UUIDs and preserves the existing
+storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
+delivery. Local publish success is not phone delivery or independent outage
+detection; same-host monitoring cannot report a complete host/network outage.
+Keep credentials out of Homepage, command arguments and logs.

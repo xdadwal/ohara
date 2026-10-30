@@ -1,0 +1,19 @@
+# Managed by Ohara ntfy alerts
+[Unit]
+Description=Observe Ohara service and disk health and publish ntfy transitions
+After=network-online.target
+ConditionPathExists=/etc/ohara/alerts.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/ohara/alerts.py
+StateDirectory=ohara-alerts
+StateDirectoryMode=0700
+TimeoutStartSec=90
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+CapabilityBoundingSet=

@@ -1,0 +1,29 @@
+# Managed by scripts/ntfy-proxy; public with native topic authentication.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name @NTFY_HOST@;
+    return 308 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name @NTFY_HOST@;
+    ssl_certificate /etc/letsencrypt/live/ohara-wildcard/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ohara-wildcard/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    # ntfy clients may pass access tokens in URLs. Do not record request URLs.
+    access_log off;
+    error_log /dev/null;
+    client_max_body_size 1m;
+    location / {
+        proxy_pass http://127.0.0.1:2586;
+        @PROXY_HEADERS@
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $ohara_connection_upgrade;
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}

@@ -19,6 +19,14 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   and remove contradictory/outdated guidance when behavior changes. If privileged
   application is pending, document the prepared commands and report that limit.
 
+- Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy and docs/ntfy.md.
+  Keep its independent SQLite/config storage outside the media pool and backend
+  loopback-only. Deny anonymous topic access, disable public signup, and use the
+  privately supplied NTFY_PASSWORD; never generate passwords/tokens or forward it
+  to Homepage. Ask for phone platform and obtain explicit approval before enabling
+  the ntfy.sh iPhone wake-up relay. Install the separate host alert timer only
+  after authentication is verified; read actual configured disk UUIDs and preserve
+  storage-watchdog recovery. Verify phone delivery separately from publishing.
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
