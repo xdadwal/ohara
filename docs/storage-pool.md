@@ -145,6 +145,12 @@ setting is reapplied after reconnect; no forced standby or USB power-off is used
 The command returning success establishes acceptance, not that a physical idle
 spin-down/wake cycle has been observed through this USB bridge.
 
+Live installation on 2026-10-30 verified timer execution and acceptance of the WD
+standby command. While checking, the expected disks reappeared after the observed
+outage: journal entries progressed from `missing` to `settling` to `recover`,
+then both external mounts, the pool and all eight guarded consumers started
+automatically. No reboot or deliberate disk unplug was used to test recovery.
+
 Recovery decisions and timestamps persist in root-only
 `/run/ohara-storage-watchdog/state.json` between timer runs. This runtime state
 resets on reboot. Missing disks clear the settling timestamp and stop only the
