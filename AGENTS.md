@@ -85,6 +85,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
   Preserve its branch directories, guarded media startup unit and container paths.
   Do not move/copy data between the pool and its own branches.
+  For an authorized new pool/watchdog setup, follow docs/agent-setup.md: discover
+  the target's actual filesystem UUIDs, mountpoints and HDD serial; create ignored
+  local/storage-watchdog.json and install it with scripts/storage-watchdog.
+  Never install the example's host-specific identities blindly. Verify the installed
+  /etc/ohara/storage-watchdog.json and timer; ordinary setup does not enable it.
 - Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
   docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
   native password login, explicitly without adding MFA. Keep the backend

@@ -171,12 +171,14 @@ unmount, fsck, filesystem repair, disk reset or data cleanup is attempted. A
 metadata-only watchdog cannot establish that every block is readable or detect
 all silent I/O failures; inspect kernel logs and storage health for those cases.
 
-Install on this host after reviewing the example's exact UUIDs/serial against
-the attached disks and `/etc/fstab` (replace them for any other host):
+For new setups, follow [the agent workflow](agent-setup.md#optional-media-pool-recovery-and-hdd-standby).
+Create ignored `local/storage-watchdog.json` using actual disk UUIDs, mountpoints
+and HDD serial verified against the target and `/etc/fstab`. The example contains
+this host's identities; never use it unchanged on another host. Install with:
 
 ```sh
 sudo apt-get install --no-install-recommends hdparm
-sudo scripts/storage-watchdog install --config configs/storage/watchdog.example.json
+sudo scripts/storage-watchdog install --config local/storage-watchdog.json
 systemctl list-timers ohara-storage-watchdog.timer
 sudo journalctl -u ohara-storage-watchdog.service -n 30 --no-pager
 ```

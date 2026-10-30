@@ -136,6 +136,51 @@ recovery and verification; cached availability and completed API jobs are not
 proof of a playable file. Never remove a movie, its files, or setup journal as
 an integration repair.
 
+## Optional media-pool recovery and HDD standby
+
+When the owner authorizes a mergerfs pool with watchdog recovery/HDD standby,
+complete [storage-pool.md](storage-pool.md) after the approved disk mounts and
+guarded `ohara-media.service` are in place. Ordinary `scripts/setup` does not
+configure disks or enable the watchdog. Preserve existing host settings; do not
+format, move data, or modify mounts without authorization.
+
+Discover the real filesystem UUIDs with `lsblk -f` and `/dev/disk/by-uuid`, verify
+their mountpoints against `/etc/fstab`, and identify the actual rotational HDD's
+ATA serial using `udevadm info` or a supported identification query. Use those
+facts to create ignored `local/storage-watchdog.json` with the schema in
+`configs/storage/watchdog.example.json`. The example contains xdadwal.in host
+identities, not portable defaults. Never guess identities, substitute unstable
+`/dev/sdX` letters, or apply the HDD setting to an SSD. Ask only if the intended
+disk selection cannot be inferred from the approved pool. The current worker
+supports `/ohara/mnt`, external ext4 branches under `/mnt/disks/`, and one HDD;
+do not silently adapt an incompatible topology.
+
+Install the distribution `hdparm` package and the verified host configuration:
+
+```sh
+sudo apt-get install --no-install-recommends hdparm
+sudo scripts/storage-watchdog install --config local/storage-watchdog.json
+sudo cmp local/storage-watchdog.json /etc/ohara/storage-watchdog.json
+systemctl is-enabled ohara-storage-watchdog.timer
+systemctl list-timers ohara-storage-watchdog.timer
+sudo journalctl -u ohara-storage-watchdog.service -n 30 --no-pager
+```
+
+The installer normalizes JSON formatting; if `cmp` differs, compare parsed JSON
+objects privately to verify the values match. The installed worker reads
+`/etc/ohara/storage-watchdog.json`, not the example or editable local input.
+Preserve existing installed configuration; differing contents require deliberate
+backup/reconciliation rather than replacement. Explain the 30-second checks,
+60-second settling period, five-minute backoff and three-attempt hourly limit.
+Stop the timer and worker before planned storage maintenance.
+
+Verify the timer runs, the intended HDD accepts its standby timeout, and healthy
+services remain running. An absent disk should leave consumers stopped until
+both expected disks return. Do not unplug an in-use disk or force standby merely
+to demonstrate recovery; use mocked tests and observe real reconnects when
+available. Distinguish command acceptance from an observed idle spindown/wake,
+and distinguish a configured recovery policy from a verified live recovery.
+
 ## Optional Tailscale
 
 If remote SSH is requested, follow [tailscale.md](tailscale.md). Inspect existing
