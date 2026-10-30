@@ -1,0 +1,9 @@
+{
+  "pool": "/ohara/mnt",
+  "branches": [
+    {"uuid": "abb98774-3ec1-4cf5-a91f-eff080c29ceb", "mount": "/mnt/disks/crucial-240"},
+    {"uuid": "d8f5335d-0032-4029-bf0a-2ec7500cee2c", "mount": "/mnt/disks/wd-500"}
+  ],
+  "hdd_uuid": "d8f5335d-0032-4029-bf0a-2ec7500cee2c",
+  "hdd_serial": "WD-WCAYUU292552"
+}

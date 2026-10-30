@@ -108,8 +108,8 @@ missing disk, `nofail` lets the host boot while pool-dependent services remain
 unavailable. Startup ordering is configured and inspected, but a full host reboot
 has not been tested.
 
-Runtime USB reconnect is not an automatic retry mechanism. No udev reconnect
-rule or automount unit was installed. When systemd stops the pool mount, the media
+Runtime USB reconnect alone is not an automatic retry mechanism. The optional
+watchdog below adds bounded recovery after both disks return. When systemd stops the pool mount, the media
 unit's `BindsTo=` dependency stops its consumers. A hardware disconnect can also
 leave stale mounts or I/O errors rather than an immediately clean stop; no
 physical unplug test has established recovery behavior for these USB adapters.
@@ -128,6 +128,80 @@ active but returns I/O errors, inspect mount/unit state and logs first; merely
 starting an already-active unit will not repair it. Stop consumers before any
 mount repair, and do not force/lazy-unmount storage while applications use it.
 Reconnection does not by itself restart a failed media unit.
+
+## Optional HDD standby and automatic reconnect recovery
+
+The owner approved an opt-in systemd timer and guarded recovery on 2026-10-30.
+The timer runs `ohara-storage-watchdog.service` every 30 seconds; no cron job or
+host reboot is involved. Its root-owned Python worker reads UUID device nodes,
+udev/sysfs and the kernel mount table. It does not periodically read library files,
+issue SMART checks or read filesystem capacity, so the checks themselves do not
+prevent HDD standby. Other applications may still wake the disk.
+
+The WD HDD receives `hdparm -S 242` (60 minutes of firmware inactivity) once per
+device attachment/boot. Both its ATA serial and rotational-device flag must match
+before the command is allowed. SSDs and unrelated drives are not changed. The
+setting is reapplied after reconnect; no forced standby or USB power-off is used.
+The command returning success establishes acceptance, not that a physical idle
+spin-down/wake cycle has been observed through this USB bridge.
+
+Recovery decisions and timestamps persist in root-only
+`/run/ohara-storage-watchdog/state.json` between timer runs. This runtime state
+resets on reboot. Missing disks clear the settling timestamp and stop only the
+guarded consumers/pool; no recovery attempt is spent while a disk is absent.
+After both expected UUIDs remain present for 60 seconds, the worker queues
+`systemctl start ohara-media.service`; existing dependencies mount both external
+filesystems and the pool before starting the eight consumers. Startup is bounded
+by the existing unit and Compose timeouts. In-progress jobs are left alone.
+An unsuccessful activation waits at least five minutes before another attempt,
+with at most three activations per rolling hour. Healthy running services are
+left alone. A device reappearing resets settling but does not erase the retry
+budget. The timer does not overlap its own running service.
+
+Wrong filesystem/device, read-only mounts, missing branches under a live pool,
+or an observed device-generation change underneath an existing branch mount
+require manual inspection. Consumers are stopped if necessary; no forced/lazy
+unmount, fsck, filesystem repair, disk reset or data cleanup is attempted. A
+metadata-only watchdog cannot establish that every block is readable or detect
+all silent I/O failures; inspect kernel logs and storage health for those cases.
+
+Install on this host after reviewing the example's exact UUIDs/serial against
+the attached disks and `/etc/fstab` (replace them for any other host):
+
+```sh
+sudo apt-get install --no-install-recommends hdparm
+sudo scripts/storage-watchdog install --config configs/storage/watchdog.example.json
+systemctl list-timers ohara-storage-watchdog.timer
+sudo journalctl -u ohara-storage-watchdog.service -n 30 --no-pager
+```
+
+The installer checks the branch UUID/mountpoint pairs against fstab and requires
+the existing guarded media service. It installs a root-owned copy of the worker
+at `/usr/local/lib/ohara/storage_watchdog.py`, configuration at
+`/etc/ohara/storage-watchdog.json`, and the two units under `/etc/systemd/system`.
+It enables the timer even if a disk is absent, so recovery can start after it
+returns. A differing preexisting worker/config is rejected for manual review;
+back it up before deliberately updating. It never changes fstab, branch data,
+credentials, application configuration, router settings or DNS.
+
+For planned maintenance, stop the timer **and** wait for its current worker before
+stopping storage; otherwise it will attempt recovery after the settling period:
+
+```sh
+sudo systemctl stop ohara-storage-watchdog.timer
+sudo systemctl stop ohara-storage-watchdog.service
+sudo systemctl stop ohara-media.service
+```
+
+To retire automatic recovery, disable the timer with
+`sudo systemctl disable --now ohara-storage-watchdog.timer` and stop its worker.
+Disabling the timer does not undo a firmware standby setting already applied.
+To disable that setting, first verify the HDD serial and current whole-disk
+device path, then run `sudo hdparm -S 0 /dev/VERIFIED_WD_DISK`. Never substitute an
+unverified `/dev/sdX`; device letters can change after reconnects.
+
+References: [systemd timers](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html),
+[Debian hdparm manual](https://manpages.debian.org/trixie/hdparm/hdparm.8.en.html).
 
 ## Verification and recovery
 

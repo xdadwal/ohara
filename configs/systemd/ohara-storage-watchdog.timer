@@ -1,0 +1,11 @@
+# Managed by Ohara storage-watchdog
+[Unit]
+Description=Check Ohara external disks every 30 seconds
+
+[Timer]
+OnBootSec=60
+OnUnitInactiveSec=30
+AccuracySec=1
+
+[Install]
+WantedBy=timers.target

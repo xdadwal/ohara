@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Run opt-in host storage recovery; installation: docs/storage-pool.md."""
+from pathlib import Path
+import argparse
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent/'lib'))
+import storage_watchdog
+
+if __name__ == '__main__':
+    try:
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument('command', choices=['install', 'run'])
+        parser.add_argument('--config', type=Path)
+        args = parser.parse_args()
+        if args.command == 'install':
+            if args.config is None:
+                parser.error('install requires --config PATH')
+            storage_watchdog.install(Path(__file__).resolve().parents[1], args.config)
+        else:
+            storage_watchdog.run()
+    except Exception as error:
+        print('Storage watchdog: '+str(error), file=sys.stderr)
+        sys.exit(1)
