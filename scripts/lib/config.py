@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 BAMBUDDY_KEYS = {'BAMBUDDY_ROOT', 'BAMBUDDY_MOUNT'}
-NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY'}
+NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY', 'NTFY_ALLOW_SHORT_PASSWORD'}
 DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK'}
 IMMICH_KEYS = {'IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT', 'IMMICH_LIBRARY_MOUNT', 'IMMICH_DATABASE_MOUNT'}
 
@@ -38,6 +38,8 @@ def parse(path, keys, optional=frozenset(), ignored=frozenset()):
 def load(path):
     import credentials
     values = parse(path, KEYS, DNS_KEYS | IMMICH_KEYS | BAMBUDDY_KEYS | NTFY_KEYS | {'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
+    if values.get('NTFY_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
+        raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
     values.pop('FILES_ROOT', None)
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.

@@ -75,9 +75,12 @@ def load(path):
     if path.is_symlink() or not stat.S_ISREG(s.st_mode) or s.st_mode&0o077 or s.st_uid!=0:
         raise ValueError('Alert configuration must be root-owned mode 0600')
     c=json.loads(path.read_text())
-    if set(c)!={'url','username','password','topic','checks','drives','pool'} or c['url']!='http://127.0.0.1:2586':
+    if (set(c)-{'allow_short_password'})!={'url','username','password','topic','checks','drives','pool'} or c['url']!='http://127.0.0.1:2586':
         raise ValueError('Unexpected alert configuration or publication endpoint')
-    if c['username']!='ohara' or c['topic']!='ohara-alerts' or not isinstance(c['password'],str) or not 16<=len(c['password']) or len(c['password'].encode())>72:
+    if type(c.get('allow_short_password', False)) is not bool:
+        raise ValueError('Invalid short-password exception')
+    minimum = 1 if c.get('allow_short_password', False) else 16
+    if c['username'] not in {'admin','ohara'} or c['topic']!='ohara-alerts' or not isinstance(c['password'],str) or not minimum<=len(c['password']) or len(c['password'].encode())>72:
         raise ValueError('Invalid alert credentials/topic')
     for row in c['checks']:
         if set(row)!={'label','url','media'} or not re.fullmatch(r'[A-Za-z0-9 .-]{1,60}',row['label']) or type(row['media']) is not bool:
@@ -155,7 +158,7 @@ def install(c,root):
         if project in running:rows.append((name,port,path,False))
     d={'url':ntfy.BASE,'username':ntfy.USER,'password':ntfy.password(root),'topic':ntfy.TOPIC,
        'checks':[{'label':n,'url':f'http://127.0.0.1:{p}'+path,'media':m} for n,p,path,m in rows],
-       'drives':[],'pool':None}
+       'drives':[],'pool':None,'allow_short_password':c.get('NTFY_ALLOW_SHORT_PASSWORD','false')=='true'}
     if c.get('MEDIA_POOL_MOUNT'):
         import storage_watchdog
         cfg=storage_watchdog.load_config(storage_watchdog.CONFIG)

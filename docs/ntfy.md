@@ -76,7 +76,7 @@ overwritten by auth-users on the next restart.
 Declarative user/ACL configuration is provisioned by ntfy at startup; preserve
 it rather than removing entries, which upstream may interpret as user deletion.
 
-The `ohara` account is a regular user with read/write access only to topic
+The `admin` account is a regular user with read/write access only to topic
 `ohara-alerts`. Anonymous reads and writes are denied, including with a guessed
 topic name. Other topics are denied. No administrator password or access token
 is invented. The web app itself and health endpoint remain publicly readable;
@@ -119,7 +119,7 @@ The seed Homepage card and initial AdGuard rewrite also cover ntfy for new setup
 ## Phone subscription and delivery verification
 
 Install the official ntfy app. Add server `https://ntfy.xdadwal.in`, sign in using
-username `ohara` and the supplied password, and subscribe to **ohara-alerts**.
+username `admin` and the supplied password, and subscribe to **ohara-alerts**.
 Enable notification permission and appropriate background delivery. Then run:
 
 ```sh
@@ -233,3 +233,36 @@ References: [official installation](https://docs.ntfy.sh/install/),
 [access control and configuration](https://docs.ntfy.sh/config/),
 [phone subscription and Android instant delivery](https://docs.ntfy.sh/subscribe/phone/),
 [iPhone wake-up relay](https://docs.ntfy.sh/config/#ios-instant-notifications).
+
+## Rename the initial account and rotate its password
+
+The owner requested username `admin` and the updated NTFY_PASSWORD on 2026-10-31,
+explicitly accepting a password outside the usual minimum-length policy. Save
+`NTFY_ALLOW_SHORT_PASSWORD=true` in private .env only when that exception is
+explicitly authorized. The default remains 16 characters; empty values and more
+than 72 UTF-8 bytes are always rejected. No other service's policy is weakened.
+The username does not imply administrator privileges: the existing regular role
+and topic permissions are preserved.
+
+ntfy v2.35.0 has no username-rename CLI. The explicit helper stops ntfy, backs up
+its auth database/private server config under `/var/backups/ohara/ntfy-account-*`,
+renames only the existing username while retaining its ID/related records, and
+updates its declarative password hash/ACL username. The supported server startup
+provisions the new password. It verifies authentication and unchanged ID/role;
+failure restores the original auth state. Ambiguous accounts or an unreviewed
+schema/release are refused. Cached messages are not rewritten or deleted.
+
+```sh
+sudo systemctl stop ohara-alerts.timer ohara-alerts.service
+sudo scripts/ntfy rotate-account
+sudo scripts/ntfy install-alerts
+scripts/ntfy status
+scripts/ntfy test
+```
+
+Alert installation refreshes the root-only publisher identity/password and worker
+and resumes the timer. If rotation fails, leave the restored account intact and
+resume the existing timer after inspecting the private error; do not reset/delete
+the auth database. Update saved phone/web logins to `admin` and the current private
+password, keeping the same server and `ohara-alerts` topic. Existing preferences,
+subscriptions and access tokens remain associated with the preserved account ID.

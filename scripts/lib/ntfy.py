@@ -15,7 +15,7 @@ import host
 import runtime
 
 TOPIC = 'ohara-alerts'
-USER = 'ohara'
+USER = 'admin'
 BASE = 'http://127.0.0.1:2586'
 
 
@@ -44,8 +44,14 @@ def settings(c):
 
 
 def password(root):
+    options = config.parse(root/'.env', {'NTFY_ALLOW_SHORT_PASSWORD'}, {'NTFY_ALLOW_SHORT_PASSWORD'},
+                           (config.KEYS-{'NTFY_ALLOW_SHORT_PASSWORD'}) | credentials.ALL_KEYS)
+    flag = options.get('NTFY_ALLOW_SHORT_PASSWORD', 'false')
+    if flag not in {'true', 'false'}:
+        raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
     value = credentials.read(root/'.env', credentials.NTFY_KEYS,
-                             ignored=config.KEYS | (credentials.ALL_KEYS-credentials.NTFY_KEYS))['NTFY_PASSWORD']
+                             ignored=config.KEYS | (credentials.ALL_KEYS-credentials.NTFY_KEYS),
+                             minimum_lengths={'NTFY_PASSWORD':1} if flag == 'true' else None)['NTFY_PASSWORD']
     if len(value.encode()) > 72:
         raise ValueError('NTFY_PASSWORD must be at most 72 UTF-8 bytes for bcrypt')
     return value
@@ -214,3 +220,88 @@ def dns(c, root):
         raise ValueError('Conflicting ntfy DNS rewrite; preserve and inspect')
     if not matches:api.call('/control/rewrite/add',{'domain':name,'answer':address})
     print('Exact ntfy LAN DNS rewrite verified; other records preserved')
+
+
+def rename_database(db, old='ohara', new='admin'):
+    """Offline v2.35 account rename only; preserve ID and all related records."""
+    columns={r[1] for r in db.execute('PRAGMA table_info(user)')}
+    if not {'id','user','pass','role','provisioned'} <= columns:
+        raise ValueError('Unknown ntfy auth schema; inspect without changing it')
+    source=db.execute('SELECT id,role FROM user WHERE user=?',(old,)).fetchall()
+    target=db.execute('SELECT id,role FROM user WHERE user=?',(new,)).fetchall()
+    if len(source)==1 and not target:
+        db.execute('UPDATE user SET user=? WHERE id=? AND user=?',(new,source[0][0],old))
+        return source[0]
+    if not source and len(target)==1:
+        return target[0]
+    raise ValueError('Ambiguous ntfy account state; preserve both accounts and inspect')
+
+
+def rotate_account(c,root):
+    """Explicit owner-authorized offline rename/password update, with rollback."""
+    import bcrypt
+    from contextlib import closing
+    import sqlite3
+    import tempfile
+    if os.geteuid()!=0:
+        raise ValueError('Use sudo scripts/ntfy rotate-account after pausing alert timer/worker')
+    for unit in ['ohara-alerts.timer','ohara-alerts.service']:
+        if runtime.run(['systemctl','show',unit,'-p','ActiveState','--value'],capture=True).strip() == 'active':
+            raise ValueError('Pause ohara-alerts.timer and its worker before account rotation')
+    secret=password(root)
+    storage(c)
+    if not images(root)['NTFY_IMAGE'].startswith('binwiederhier/ntfy:v2.35.0@'):
+        raise ValueError('Offline rename requires review against this ntfy version')
+    _,base,_,_=settings(c)
+    server=base/'config/server.yml';database=base/'data/auth.db'
+    if database.is_symlink() or not database.is_file():raise ValueError('Expected private ntfy auth database')
+    before=server.read_bytes();owner=server.stat()
+    d=read_server(server)
+    entries=[x for x in d.get('auth-users',[]) if x.split(':',1)[0] in {'ohara',USER}]
+    if len(entries)!=1:raise ValueError('Expected one configured old/new ntfy account; preserve and inspect')
+    backup=Path('/var/backups/ohara')/('ntfy-account-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+    backup.mkdir(parents=True,mode=0o700)
+    config.create_file(backup/'server.yml',before.decode(),0o600)
+    compose(c,root,['stop'])
+    # A clean server stop avoids concurrent writers and closes SQLite WAL handles.
+    with closing(sqlite3.connect(database)) as db,closing(sqlite3.connect(backup/'auth.db')) as saved:
+        db.backup(saved)
+    (backup/'auth.db').chmod(0o600)
+    try:
+        with closing(sqlite3.connect(database)) as db:
+            account_id,role=rename_database(db)
+            if role not in {'user','admin'}:raise ValueError('Unexpected account role')
+            db.commit()
+            db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+        rewritten=[]
+        for entry in d['auth-users']:
+            if entry.split(':',1)[0] in {'ohara',USER}:
+                entry=USER+':'+bcrypt.hashpw(secret.encode(),bcrypt.gensalt()).decode()+':'+role
+            rewritten.append(entry)
+        d['auth-users']=rewritten
+        for key in ['auth-access','auth-tokens']:
+            if key in d:
+                d[key]=[USER+entry[len('ohara'):] if entry.startswith('ohara:') else entry for entry in d[key]]
+        fd,name=tempfile.mkstemp(prefix='.ntfy-account-',dir=server.parent)
+        try:
+            with os.fdopen(fd,'w') as f:
+                json.dump(d,f,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
+            os.chmod(name,owner.st_mode&0o777);os.chown(name,owner.st_uid,owner.st_gid)
+            os.replace(name,server)
+        finally:
+            if os.path.exists(name):os.unlink(name)
+        compose(c,root,['up','-d','--wait','--wait-timeout','90'],timeout=180)
+        status(c,root)
+        with closing(sqlite3.connect('file:'+str(database)+'?mode=ro',uri=True)) as db:
+            row=db.execute('SELECT id,role FROM user WHERE user=?',(USER,)).fetchone()
+            if row!=(account_id,role):raise ValueError('Account identity/role changed unexpectedly')
+        if request('/'+TOPIC+'/json?poll=1',data=None,headers={'Authorization':'Basic '+base64.b64encode(('ohara:'+secret).encode()).decode()})[0] not in (401,403):
+            raise ValueError('Old username unexpectedly accepted')
+    except Exception:
+        compose(c,root,['stop'])
+        with closing(sqlite3.connect(backup/'auth.db')) as saved,closing(sqlite3.connect(database)) as db:saved.backup(db)
+        server.write_bytes(before);os.chown(server,owner.st_uid,owner.st_gid);server.chmod(owner.st_mode&0o777)
+        compose(c,root,['up','-d','--wait','--wait-timeout','90'],timeout=180)
+        raise RuntimeError('ntfy account rotation failed; original auth state restored; inspect privately') from None
+    print('ntfy username/password updated; account ID/role, permissions and cached messages preserved')
+    print('Private rollback backup: '+str(backup))

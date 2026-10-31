@@ -58,7 +58,7 @@ class NtfyTests(unittest.TestCase):
                 cfg=json.loads(before)
                 self.assertEqual(cfg['auth-default-access'],'deny-all')
                 self.assertFalse(cfg['enable-signup']);self.assertNotIn('upstream-base-url',cfg)
-                self.assertEqual(cfg['auth-access'],['ohara:ohara-alerts:rw'])
+                self.assertEqual(cfg['auth-access'],['admin:ohara-alerts:rw'])
                 self.assertNotIn('Disposable notification password',p.read_text())
                 self.assertTrue(bcrypt.checkpw(b'Disposable notification password',cfg['auth-users'][0].split(':')[1].encode()))
                 ntfy.prepare(c,root);self.assertEqual(before,p.read_bytes())
@@ -140,3 +140,45 @@ class AlertTests(unittest.TestCase):
             p.symlink_to(target)
             with self.assertRaises(ValueError):alerts.save(p,{})
             self.assertEqual(target.read_text(),'preserve')
+
+
+class AccountRotationTests(unittest.TestCase):
+    def test_offline_rename_preserves_account_identity_and_related_state(self):
+        import sqlite3
+        db=sqlite3.connect(':memory:')
+        try:
+            db.executescript('''CREATE TABLE user(id TEXT,user TEXT,pass TEXT,role TEXT,provisioned INT,prefs TEXT);
+              CREATE TABLE user_access(user_id TEXT,topic TEXT);
+              CREATE TABLE user_token(user_id TEXT,token TEXT);
+              INSERT INTO user VALUES('same-id','ohara','dummy-hash','user',1,'preserved preferences');
+              INSERT INTO user_access VALUES('same-id','ohara-alerts');
+              INSERT INTO user_token VALUES('same-id','dummy-existing-token');''')
+            self.assertEqual(ntfy.rename_database(db),('same-id','user'))
+            self.assertEqual(db.execute('SELECT user,prefs FROM user').fetchone(),('admin','preserved preferences'))
+            self.assertEqual(db.execute('SELECT user_id,topic FROM user_access').fetchone(),('same-id','ohara-alerts'))
+            self.assertEqual(db.execute('SELECT user_id,token FROM user_token').fetchone(),('same-id','dummy-existing-token'))
+            self.assertEqual(ntfy.rename_database(db),('same-id','user'))
+        finally:db.close()
+
+    def test_rename_refuses_colliding_accounts_without_modifying_them(self):
+        import sqlite3
+        db=sqlite3.connect(':memory:')
+        try:
+            db.executescript('''CREATE TABLE user(id TEXT,user TEXT,pass TEXT,role TEXT,provisioned INT);
+              INSERT INTO user VALUES('old','ohara','dummy','user',1);
+              INSERT INTO user VALUES('other','admin','dummy','user',0);''')
+            with self.assertRaises(ValueError):ntfy.rename_database(db)
+            self.assertEqual(db.execute('SELECT user FROM user ORDER BY id').fetchall(),[('ohara',),('admin',)])
+        finally:db.close()
+
+    def test_short_password_requires_explicit_exception_and_remains_nonempty(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);p=root/'.env'
+            p.write_text('NTFY_PASSWORD=weak\n');p.chmod(0o600)
+            with self.assertRaises(ValueError):ntfy.password(root)
+            p.write_text('NTFY_PASSWORD=weak\nNTFY_ALLOW_SHORT_PASSWORD=true\n')
+            self.assertEqual(ntfy.password(root),'weak')
+            p.write_text('NTFY_PASSWORD=\nNTFY_ALLOW_SHORT_PASSWORD=true\n')
+            with self.assertRaises(ValueError):ntfy.password(root)
+            p.write_text('NTFY_PASSWORD='+('x'*73)+'\nNTFY_ALLOW_SHORT_PASSWORD=true\n')
+            with self.assertRaises(ValueError):ntfy.password(root)

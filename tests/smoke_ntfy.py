@@ -37,7 +37,7 @@ def proxy_check(c,root,project):
                            '-p','127.0.0.1::443','-v',str(p)+':/etc/nginx/nginx.conf:ro',
                            '-v',str(certs)+':/certs:ro',NGINX],timeout=120)
         port=int(runtime.run(docker+['port',name,'443'],capture=True).strip().rsplit(':',1)[1])
-        token=base64.b64encode(('ohara:'+ntfy.password(root)).encode()).decode()
+        token=base64.b64encode(('admin:'+ntfy.password(root)).encode()).decode()
         def request(path,body=None,authenticated=False):
             h={'Host':'ntfy.xdadwal.in'}
             if authenticated:h['Authorization']='Basic '+token
@@ -91,7 +91,7 @@ def main():
             alerts.observe(state,'service:fixture',False,'Fixture service')
             alerts.observe(state,'service:fixture',False,'Fixture service')
             alerts.observe(state,'service:fixture',True,'Fixture service')
-            publisher={'url':ntfy.BASE,'topic':'ohara-alerts','username':'ohara','password':ntfy.password(root)}
+            publisher={'url':ntfy.BASE,'topic':'ohara-alerts','username':'admin','password':ntfy.password(root)}
             for event in state['outbox']:alerts.send(publisher,event)
             code,raw=ntfy.request('/ohara-alerts/json?poll=1&since=all',root)
             assert code==200

@@ -162,7 +162,12 @@ restricted to Read Status and one printer. Only Homepage receives this key; see
 Supply only NTFY_PASSWORD privately for the independent notification service, at
 least 16 characters and at most 72 UTF-8 bytes. It is not required or forwarded
 by the main stack or Homepage. See [ntfy.md](ntfy.md). Initial setup hashes this
-value for the regular ohara account, scoped to ohara-alerts. The host publisher
+value for the regular user named admin, scoped to ohara-alerts. The host publisher
 receives a root-only derived credential file during explicit alert installation.
 Changing the input alone does not rotate an initialized account. Preserve private
 configuration/authentication state; reconcile rotation through supported controls.
+
+The default ntfy minimum remains 16 characters. The owner-approved
+NTFY_ALLOW_SHORT_PASSWORD=true exception permits a nonempty shorter password for
+ntfy only; the 72-byte bcrypt bound still applies. Use the explicit account
+rotation workflow in ntfy.md to update existing account and publisher state.

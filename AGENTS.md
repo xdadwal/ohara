@@ -21,7 +21,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 
 - Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy and docs/ntfy.md.
   Keep its independent SQLite/config storage outside the media pool and backend
-  loopback-only. Deny anonymous topic access, disable public signup, and use the
+  loopback-only. The login username is admin (a regular scoped user, not an admin role).
+  Use the documented offline rotate-account workflow for an existing ohara login;
+  preserve its account ID, ACLs, tokens and message cache. An explicit owner
+  NTFY_ALLOW_SHORT_PASSWORD exception affects ntfy only; keep nonempty/72-byte bounds.
+  Deny anonymous topic access, disable public signup, and use the
   privately supplied NTFY_PASSWORD; never generate passwords/tokens or forward it
   to Homepage. Ask for phone platform and obtain explicit approval before enabling
   the ntfy.sh iPhone wake-up relay. Install the separate host alert timer only

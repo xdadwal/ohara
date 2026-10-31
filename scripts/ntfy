@@ -10,7 +10,7 @@ import ntfy
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=['check','prepare','up','stop','status','test','homepage','dns','install-alerts'])
+    p.add_argument('command',choices=['check','prepare','up','stop','status','test','homepage','dns','install-alerts','rotate-account'])
     p.add_argument('--static',action='store_true')
     a=p.parse_args()
     try:
@@ -20,6 +20,7 @@ if __name__=='__main__':
         elif a.command=='up':
             ntfy.check(c,ROOT);ntfy.compose(c,ROOT,['up','-d','--wait','--wait-timeout','90'],timeout=300);ntfy.status(c,ROOT)
         elif a.command=='stop':ntfy.compose(c,ROOT,['stop'])
+        elif a.command=='rotate-account':ntfy.rotate_account(c,ROOT)
         elif a.command=='install-alerts':
             import alerts
             alerts.install(c,ROOT)
