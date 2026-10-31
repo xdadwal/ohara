@@ -9,11 +9,19 @@ The main eleven-service setup/up commands do not start ntfy.
 
 ## Current host readiness
 
-Implementation and the live Homepage card/exact AdGuard rewrite are prepared.
-The owner still needs to supply NTFY_PASSWORD privately and identify the phone
-platform/relay preference. Production server startup, public proxy activation,
-host alert timer installation and phone delivery are pending those inputs.
-Update this record when each layer is actually verified.
+On 2026-10-31, the owner explicitly authorized generation of the ntfy-only
+password; it was saved directly in private `.env` without displaying its value.
+The owner selected Android, so no iOS/upstream relay is configured. This is a
+specific owner-authorized exception, not a change to the default credential policy.
+
+Production ntfy is running with native topic authentication and trusted HTTPS
+at `https://ntfy.xdadwal.in`. The live Homepage card was verified through its
+authenticated API, the exact AdGuard rewrite passed UDP/TCP checks, and the
+host alert timer is installed/enabled. Authenticated test publishing succeeded;
+actual Android background/mobile-data delivery remains owner verification.
+Independent public reachability and reboot persistence have not been established
+by the server-local checks. The exact live proxy is tracked under
+`configs/nginx/deployed/ohara-ntfy.conf`.
 
 ## Inputs and preparation
 
