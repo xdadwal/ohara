@@ -74,3 +74,10 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(len(saved),1)
         self.assertEqual(saved[0]['types'],2|16|128|4096)
         self.assertFalse(saved[0]['embedPoster'])
+
+    def test_docker_cli_uses_private_runtime_config_without_unhiding_home(self):
+        unit=(Path(__file__).resolve().parents[1]/'configs/systemd/ohara-alerts.service').read_text()
+        self.assertIn('ProtectHome=yes',unit)
+        self.assertIn('RuntimeDirectory=ohara-alerts-docker',unit)
+        self.assertIn('RuntimeDirectoryMode=0700',unit)
+        self.assertIn('Environment=DOCKER_CONFIG=/run/ohara-alerts-docker',unit)

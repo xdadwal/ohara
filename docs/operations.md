@@ -476,3 +476,6 @@ For optional ntfy event monitoring, Seerr new-request notifications and the
 read-only Homepage widget, follow
 [host and application alerts](alerts.md). Reinstall the host worker after alert
 changes and configure Seerr separately; preserve private inputs and alert state.
+
+Repeated media outages: follow the [USB/storage incident investigation](storage-incident-2026-10-31.md)
+to correlate kernel disconnects with the guarded media unit before restarting services.

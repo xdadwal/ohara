@@ -217,3 +217,7 @@ credential. The dedicated input was generated only after explicit owner approval
 and stored privately. The disposable pinned ntfy/Homepage test independently
 passed native message retrieval, ACL enforcement and browser credential exclusion.
 This verifies the widget, not Android delivery or a complete fresh Linux install.
+
+The host worker uses a private systemd runtime Docker CLI configuration, retaining
+ProtectHome isolation and avoiding false application-error alerts from hidden home
+config warnings. See the [diagnosis and existing-host update](storage-incident-2026-10-31.md).

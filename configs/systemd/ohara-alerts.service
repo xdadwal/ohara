@@ -9,6 +9,9 @@ Type=oneshot
 ExecStart=/usr/bin/python3 /usr/local/lib/ohara/alerts.py
 StateDirectory=ohara-alerts
 StateDirectoryMode=0700
+RuntimeDirectory=ohara-alerts-docker
+RuntimeDirectoryMode=0700
+Environment=DOCKER_CONFIG=/run/ohara-alerts-docker
 TimeoutStartSec=180
 UMask=0077
 NoNewPrivileges=yes
