@@ -145,11 +145,12 @@ sudo journalctl -u ohara-alerts.service -n 30 --no-pager
 The installer records all eleven main services, ntfy, the Nginx HTTP edge, and the optional Immich,
 Bambuddy, Maintainerr and AdGuard projects currently running. Rerun deliberately
 after adding/removing optional services. It copies only the validated ntfy
-publishing credentials and check definitions to root-only `/etc/ohara/alerts.json`;
+publishing credentials, optional read-only printer key and check definitions to root-only `/etc/ohara/alerts.json`;
 the single editable credential source remains `.env`. These credentials have the
 same single-topic account scope. The root-owned standalone worker is
 `/usr/local/lib/ohara/alerts.py`. It does not load the repository or entire `.env`
-at runtime, use a Docker socket, or restart any service.
+at runtime or restart any service. The root host worker uses selected Docker CLI
+state/log reads; no container receives a Docker socket.
 
 A systemd timer checks local HTTP endpoints every minute. Two consecutive
 failures trigger one high-priority notification; a subsequent successful check
@@ -167,8 +168,10 @@ for recovery; notifications do not alter mount/restart behavior.
 
 System/root filesystem free space below 10 percent is also reported after two
 checks. Pool free-space monitoring is intentionally not polled, to preserve idle
-spindown. Printer events, individual torrent failures and application-specific
-error streams are not automatically configured by this initial monitoring setup.
+spindown. Expanded printer, DNS, watchdog, TLS, Tailscale, container and
+Maintainerr checks plus Seerr native new-request delivery are documented in
+[host and application alerts](alerts.md), including exact setup and rollback.
+Individual torrent failures are not monitored.
 
 State and a bounded retry outbox persist under root-only
 `/var/lib/ohara-alerts/state.json`. If ntfy is temporarily unavailable, up to 100

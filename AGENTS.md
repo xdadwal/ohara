@@ -19,7 +19,8 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   and remove contradictory/outdated guidance when behavior changes. If privileged
   application is pending, document the prepared commands and report that limit.
 
-- Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy and docs/ntfy.md.
+- Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy, docs/ntfy.md
+  and docs/alerts.md for host/printer alerts and native Seerr new-request delivery.
   Keep its independent SQLite/config storage outside the media pool and backend
   loopback-only. The login username is admin (a regular scoped user, not an admin role).
   Use the documented offline rotate-account workflow for an existing ohara login;
