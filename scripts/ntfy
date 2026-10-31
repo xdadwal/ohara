@@ -10,7 +10,7 @@ import ntfy
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=['check','prepare','up','stop','status','test','homepage','dns','install-alerts','rotate-account','seerr'])
+    p.add_argument('command',choices=['check','prepare','up','stop','status','test','homepage','dns','install-alerts','rotate-account','seerr','widget'])
     p.add_argument('--static',action='store_true')
     a=p.parse_args()
     try:

@@ -18,6 +18,8 @@ import ntfy
 import alerts
 import ntfy_proxy
 import runtime
+import media
+import yaml
 
 NGINX='nginx@sha256:ed84151ed2d47ef93c0939eb9b9754c6990db6092cd2081e11988a47a83d47ea'
 
@@ -62,15 +64,46 @@ def proxy_check(c,root,project):
         runtime.run(docker+['rm','-f',name])
 
 
+def homepage_check(c,root,project,reader):
+    """Exercise the pinned real Homepage proxy; credentials never reach its browser API."""
+    directory=root/'homepage';shutil.copytree(ROOT/'configs/homepage',directory)
+    profile=ntfy.widget_profile(c);profile['url']='http://ntfy:8080'
+    (directory/'services.yaml').write_text(yaml.safe_dump([{'Utility':[{'ntfy':{'widget':profile}}]}]))
+    image=config.images(ROOT/'versions.env')['HOMEPAGE_IMAGE']
+    name=project+'-homepage';docker=runtime.docker_prefix()
+    try:
+        runtime.run(docker+['run','-d','--name',name,'--network',project+'_default',
+            '--user',f'{os.getuid()}:{os.getgid()}','-p','127.0.0.1::3000',
+            '-v',str(directory)+':/app/config','-e','HOMEPAGE_ALLOWED_HOSTS=widget.test',
+            '-e','HOMEPAGE_AUTH_ENABLED=false','-e','HOMEPAGE_VAR_NTFY_PASSWORD='+reader,image])
+        port=runtime.run(docker+['port',name,'3000/tcp'],capture=True).strip().rsplit(':',1)[1]
+        api=media.Client('http://127.0.0.1:'+port);api.headers['Host']='widget.test'
+        deadline=time.monotonic()+90
+        while True:
+            try:groups=api.call('/api/services');break
+            except RuntimeError:
+                if time.monotonic()>deadline:raise
+                time.sleep(2)
+        assert reader not in json.dumps(groups),'Reader credential leaked to browser configuration'
+        result=api.call('/api/services/proxy?group=Utility&service=ntfy&index=0&endpoint=messages')
+        assert isinstance(result,dict) and result.get('time'),'Native ntfy widget did not retrieve a notification'
+        assert reader not in json.dumps(result),'Reader credential leaked through proxy response'
+        print('Disposable pinned Homepage: native ntfy message retrieval and browser credential exclusion passed.')
+    finally:runtime.run(docker+['rm','-f',name])
+
+
 def main():
     project='ohara-ntfy-smoke-'+uuid.uuid4().hex[:10]
     (ROOT/'local').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='ntfy-smoke-',dir=ROOT/'local') as directory:
         root=Path(directory).resolve()
         for name in ['compose.ntfy.yaml','versions.ntfy.env']:shutil.copy(ROOT/name,root/name)
-        p=root/'.env';p.write_text('NTFY_PASSWORD=Disposable ntfy fixture only $ # =\n');p.chmod(0o600)
+        p=root/'.env';p.write_text('NTFY_PASSWORD=Disposable ntfy fixture only $ # =\nNTFY_HOMEPAGE_PASSWORD=Disposable reader fixture only\n');p.chmod(0o600)
         c=config.load(ROOT/'.env.example')|{'NTFY_ROOT':str(root/'storage'),'RUN_UID':str(os.getuid()),'RUN_GID':str(os.getgid())}
         ntfy.prepare(c,root)
+        reader=ntfy.reader_password(root)
+        server=Path(c['NTFY_ROOT'])/'config/server.yml'
+        server.write_text(json.dumps(ntfy.reader_config(ntfy.read_server(server),reader)))
         override=root/'override.yaml'
         override.write_text('services:\n  ntfy:\n    ports: !override\n      - "127.0.0.1::8080"\n')
         def compose(args,capture=False):
@@ -109,6 +142,8 @@ def main():
             code,raw=ntfy.request('/ohara-alerts/json?poll=1&since=all',root)
             assert code==200 and any(json.loads(line).get('id')==identifier for line in raw.splitlines())
             print('Disposable ntfy: non-root startup, anonymous read/write denial, scoped topic ACL, authenticated publish/read and persistent cache passed.')
+            ntfy.verify_reader(reader)
+            homepage_check(c,root,project,reader)
             proxy_check(c,root,project)
         finally:
             compose(['down','--volumes'])

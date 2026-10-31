@@ -19,6 +19,9 @@ at `https://ntfy.xdadwal.in`. The live Homepage card was verified through its
 authenticated API, the exact AdGuard rewrite passed UDP/TCP checks, and the
 host alert timer is installed/enabled. Authenticated test publishing succeeded;
 actual Android background/mobile-data delivery remains owner verification.
+The native Homepage widget is now verified with a separate read-only
+`homepage-reader` account; its password was generated with explicit owner approval
+and saved only in private `.env`. The publisher password is not shared with Homepage.
 Independent public reachability and reboot persistence have not been established
 by the server-local checks. The exact live proxy is tracked under
 `configs/nginx/deployed/ohara-ntfy.conf`.
@@ -111,7 +114,9 @@ claim a candidate route is already deployed. Preserve all other public and
 LAN-only routes.
 
 The Homepage helper selectively adds a plain ntfy card and backs up existing YAML
-under ignored `local/ntfy-backups`. No ntfy password is forwarded to Homepage.
+under ignored `local/ntfy-backups`. The publisher password is never forwarded to
+Homepage. The optional `sudo scripts/ntfy widget` workflow uses a separate
+read-only account; see [widget setup and rollback](alerts.md#homepage).
 The DNS helper adds only the exact hostname to existing AdGuard rewrites and
 rejects a conflicting entry. It does not change router/client DNS or publish DNS.
 The seed Homepage card and initial AdGuard rewrite also cover ntfy for new setups.

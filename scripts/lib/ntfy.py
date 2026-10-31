@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import socket
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import config
@@ -305,3 +306,132 @@ def rotate_account(c,root):
         raise RuntimeError('ntfy account rotation failed; original auth state restored; inspect privately') from None
     print('ntfy username/password updated; account ID/role, permissions and cached messages preserved')
     print('Private rollback backup: '+str(backup))
+
+
+READER='homepage-reader'
+
+
+def reader_password(root):
+    value=credentials.read(root/'.env',credentials.NTFY_WIDGET_KEYS,
+        ignored=config.KEYS | (credentials.ALL_KEYS-credentials.NTFY_WIDGET_KEYS))['NTFY_HOMEPAGE_PASSWORD']
+    if len(value.encode())>72:raise ValueError('NTFY_HOMEPAGE_PASSWORD must be at most 72 UTF-8 bytes')
+    if value==password(root):raise ValueError('Homepage reader must have an independent password')
+    return value
+
+
+def reader_config(server, secret):
+    """Add one bounded reader; preserve all publisher accounts/preferences."""
+    import copy
+    import bcrypt
+    d=copy.deepcopy(server)
+    if d.get('auth-default-access')!='deny-all' or d.get('enable-signup') is not False:
+        raise ValueError('Private ntfy defaults required before widget setup')
+    entries=[x for x in d.get('auth-users',[]) if x.split(':',1)[0]==READER]
+    acls=[x for x in d.get('auth-access',[]) if x.split(':',1)[0]==READER]
+    if entries:
+        if len(entries)!=1 or entries[0].rsplit(':',1)[-1]!='user' or acls!=[READER+':'+TOPIC+':ro']:
+            raise ValueError('Existing reader role/ACL differs; preserve and review')
+        if not bcrypt.checkpw(secret.encode(),entries[0].split(':')[1].encode()):
+            raise ValueError('Existing reader password differs; do not rotate implicitly')
+    else:
+        if acls:raise ValueError('Unowned reader ACL requires review')
+        d.setdefault('auth-users',[]).append(READER+':'+bcrypt.hashpw(secret.encode(),bcrypt.gensalt()).decode()+':user')
+        d.setdefault('auth-access',[]).append(READER+':'+TOPIC+':ro')
+    return d
+
+
+def verify_reader(secret):
+    h={'Authorization':'Basic '+base64.b64encode((READER+':'+secret).encode()).decode()}
+    if request('/'+TOPIC+'/json?poll=1',headers=h)[0]!=200:
+        raise ValueError('Reader cannot read its allowed topic')
+    if request('/'+TOPIC,data=b'Read-only permission verification',headers=h)[0]!=403:
+        raise ValueError('Reader publication must be forbidden')
+    if request('/ohara-widget-denied-probe/json?poll=1',headers=h)[0]!=403:
+        raise ValueError('Reader must not read unrelated topics')
+
+
+def widget_profile(c):
+    return {'type':'ntfy','url':'https://'+settings(c)[0],'topic':TOPIC,
+            'username':READER,'password':'{{HOMEPAGE_VAR_NTFY_PASSWORD}}',
+            'fields':['title','message','priority','lastReceived']}
+
+
+def widget(c,root):
+    """Provision the supplied private reader and selectively merge its widget."""
+    import sqlite3
+    from contextlib import closing
+    import tempfile
+    import yaml
+    import jellyfin_theme
+    if os.geteuid()!=0:raise ValueError('Use sudo scripts/ntfy widget')
+    secret=reader_password(root)
+    status(c,root);storage(c)
+    _,base,_,_=settings(c)
+    server=base/'config/server.yml';database=base/'data/auth.db'
+    if database.is_symlink() or not database.is_file():raise ValueError('Existing ntfy auth database required')
+    before=server.read_bytes();owner=server.stat()
+    existing=read_server(server)
+    if not any(x.split(':',1)[0]==READER for x in existing.get('auth-users',[])):
+        with closing(sqlite3.connect('file:'+str(database)+'?mode=ro',uri=True)) as db:
+            if db.execute('SELECT id FROM user WHERE user=?',(READER,)).fetchone():
+                raise ValueError('Unmanaged existing reader account; preserve and review')
+    desired=reader_config(existing,secret)
+    path=jellyfin_theme.safe(Path(c['DATA_ROOT'])/'homepage/services.yaml')
+    original=path.read_text();data=yaml.safe_load(original)
+    cards=[entry['ntfy'] for group in data for rows in group.values() for entry in rows if 'ntfy' in entry]
+    if len(cards)!=1:raise ValueError('Run scripts/ntfy homepage first; exactly one ntfy card is required')
+    if cards[0].get('widgets') or (cards[0].get('widget') and cards[0]['widget']!=widget_profile(c)):
+        raise ValueError('Existing ntfy widget differs; preserve and review')
+    cards[0]['widget']=widget_profile(c)
+    backup=Path('/var/backups/ohara')/('ntfy-widget-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+    backup.mkdir(parents=True,mode=0o700)
+    config.create_file(backup/'server.yml',before.decode(),0o600)
+    config.create_file(backup/'services.yaml',original,0o600)
+    changed=desired!=read_server(server)
+    if changed:
+        compose(c,root,['stop'])
+        with closing(sqlite3.connect(database)) as db,closing(sqlite3.connect(backup/'auth.db')) as saved:db.backup(saved)
+        (backup/'auth.db').chmod(0o600)
+    try:
+        if changed:
+            fd,name=tempfile.mkstemp(prefix='.ntfy-reader-',dir=server.parent)
+            try:
+                with os.fdopen(fd,'w') as f:
+                    json.dump(desired,f,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
+                os.chmod(name,owner.st_mode&0o777);os.chown(name,owner.st_uid,owner.st_gid);os.replace(name,server)
+            finally:
+                if os.path.exists(name):os.unlink(name)
+            compose(c,root,['up','-d','--wait','--wait-timeout','90'],timeout=180)
+        verify_reader(secret);status(c,root)
+        path.write_text(yaml.safe_dump(data,sort_keys=False,allow_unicode=True))
+        runtime.compose(c,root,['up','-d','--no-deps','--wait','--wait-timeout','90','homepage'],timeout=180)
+        verify_homepage_widget(c,root,secret)
+    except Exception:
+        if changed:
+            compose(c,root,['stop'])
+            with closing(sqlite3.connect(backup/'auth.db')) as saved,closing(sqlite3.connect(database)) as db:saved.backup(db)
+            server.write_bytes(before);os.chown(server,owner.st_uid,owner.st_gid);server.chmod(owner.st_mode&0o777)
+            compose(c,root,['up','-d','--wait','--wait-timeout','90'],timeout=180)
+        path.write_text(original)
+        raise RuntimeError('ntfy widget setup failed; previous account/config/card restored; inspect privately') from None
+    print('ntfy read-only widget configured; Homepage recreated; authenticated widget response and credential exclusion verified')
+    print('Private rollback backup: '+str(backup))
+
+
+def verify_homepage_widget(c,root,secret):
+    import media
+    api=media.Client('https://'+c['HOMEPAGE_HOST'])
+    values,_=credentials.load(root)
+    csrf=api.call('/api/auth/csrf')['csrfToken']
+    login=api.call('/api/auth/callback/credentials',{'csrfToken':csrf,
+        'password':values['HOMEPAGE_AUTH_PASSWORD'],'callbackUrl':'https://'+c['HOMEPAGE_HOST'],'json':'true'},form=True)
+    if 'error' in login.get('url',''):raise ValueError('Homepage login failed')
+    groups=api.call('/api/services')
+    if secret in json.dumps(groups):raise ValueError('Reader credential leaked through browser service configuration')
+    cards=[(g['name'],svc) for g in groups for svc in g['services'] if svc['name']=='ntfy']
+    if len(cards)!=1:raise ValueError('Expected one authenticated ntfy card')
+    query=urllib.parse.urlencode({'group':cards[0][0],'service':'ntfy','index':0,'endpoint':'messages'})
+    result=api.call('/api/services/proxy?'+query)
+    if not isinstance(result,dict) or result.get('error') or not any(k in result for k in ('time','message','title')):
+        raise ValueError('Native ntfy widget response invalid; inspect privately')
+    if secret in json.dumps(result):raise ValueError('Reader credential leaked through widget response')

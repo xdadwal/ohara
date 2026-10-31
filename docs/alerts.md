@@ -120,14 +120,81 @@ printer, media or watchdog configuration needs removal.
 
 ## Homepage
 
-The installed Homepage includes its native ntfy widget, documented
-[upstream](https://gethomepage.dev/widgets/services/ntfy/). It displays the latest
-message, priority and receipt time. The existing ntfy link remains active; its
-widget is not enabled because there is no separate owner-supplied read-only ntfy
-credential. Do not forward `NTFY_PASSWORD` to Homepage, make the topic public or
-generate credentials to work around this. Provision a distinct reader account
-with read-only ACL for this topic and supply its token privately before adding a
-selective widget integration and runtime credential allowlist.
+The installed Homepage includes its [native ntfy widget](https://gethomepage.dev/widgets/services/ntfy/).
+It displays the latest message, priority and receipt time. The optional setup
+uses `homepage-reader`, a regular user with only `ohara-alerts:ro`; publishing
+and reads from other topics are denied. It uses Basic authentication over the
+existing HTTPS route, without creating tokens, shared passwords or Docker
+networks. Anonymous denial and the publisher account remain unchanged.
+
+On a fresh machine, first complete the main stack/owner login, ntfy preparation,
+HTTPS activation, and Homepage card steps in [ntfy.md](ntfy.md). This requires
+working trusted DNS/TLS from the Homepage container to `NTFY_HOST`, not just an
+HTTP backend. Supply an independent `NTFY_HOMEPAGE_PASSWORD` in private `.env`
+(mode 0600): at least 16 characters, at most 72 UTF-8 bytes. Keep it different
+from `NTFY_PASSWORD`. It is owner-supplied by default; the current owner explicitly
+authorized generating this reader password on 2026-10-31. This exception does
+not authorize future agents to generate credentials on other machines.
+
+```sh
+sudo scripts/ntfy widget
+```
+
+This command validates inputs and the existing private server, backs up the
+server config and Homepage YAML under root-only
+`/var/backups/ohara/ntfy-widget-*`, and, for a new reader, cleanly stops ntfy and
+backs up its SQLite auth database before updating its declarative user/ACL.
+The restart provisions the reader through ntfy itself. Existing publisher users,
+tokens, ACLs, cache and unrelated card customizations are preserved. A conflicting
+reader role, ACL, password or unmanaged database account is refused for review.
+Repeated setup verifies/preserves the existing account instead of rotating it.
+
+It verifies allowed read, denied write and denied unrelated-topic read, then
+merges only the ntfy card's widget. The card stores a placeholder. The runtime
+passes only the dedicated reader password as `HOMEPAGE_VAR_NTFY_PASSWORD` to
+Homepage; `NTFY_PASSWORD` is never forwarded. Only Homepage is recreated, using
+the normal guarded Compose helper, to load that optional alias. The helper logs
+into the existing protected Homepage API and checks actual native widget data
+and absence of the credential in browser configuration/proxy results. No phone
+notification is sent by widget verification. The plain seed card stays usable
+when the optional reader input has not been configured.
+
+Fresh provisioning installs the reader only after these prerequisites. Existing
+state recovery requires the matching private input plus server/auth state;
+changing `.env` alone does not rotate a reader. Restore the saved input rather
+than deleting or resetting existing accounts. Reader setup failures restore the
+previous auth database/server configuration (when changed) and card. A separate
+reader password change needs an explicit reviewed rotation; setup refuses it.
+
+For rollback, select the correct root-private backup using
+`sudo ls -dt /var/backups/ohara/ntfy-widget-*` (paths only; do not print contents).
+Restore its Homepage YAML to the configured `DATA_ROOT/homepage/services.yaml`,
+retaining that file's existing UID/GID/mode. To undo initial account creation,
+stop ntfy before restoring that backup's `auth.db` and `server.yml` to the
+configured `NTFY_ROOT/data/auth.db` and `NTFY_ROOT/config/server.yml`; retain
+RUN_UID/RUN_GID and mode 0600, then use `scripts/ntfy up` and `scripts/ntfy status`.
+Only creation backups contain `auth.db`; later idempotent runs need only card
+rollback. Do not restore an old database over newer user/token changes without
+review. Restoring an old auth snapshot also restores those older account values.
+Keep cached messages and all other application state.
+
+To remove the reader from Homepage's runtime environment too, remove only
+`NTFY_HOMEPAGE_PASSWORD` from private `.env` after restoring the plain card and
+use the scoped Compose invocation below. Do not run Compose directly with `.env`:
+
+```sh
+sudo python3 - <<'PYCODE'
+import sys
+from pathlib import Path
+root = Path.cwd()  # run from the repository root
+sys.path.insert(0, str(root / 'scripts/lib'))
+import config, runtime
+runtime.compose(config.load(root / '.env'), root,
+                ['up', '-d', '--no-deps', '--wait', '--wait-timeout', '90', 'homepage'],
+                timeout=180)
+PYCODE
+```
+
 
 ## Verified on the current host (2026-10-31)
 
@@ -140,3 +207,13 @@ not establish external reachability. Initial Docker probes revealed containers
 without healthchecks; the corrected projection treats those as running-only
 checks. Homepage's local HTTP health probe uses its accepted internal localhost
 Host header. Neither fix changes application authentication or public routing.
+
+
+The optional native Homepage widget was subsequently installed on this host.
+Allowed topic reads returned 200; publication and unrelated-topic reads returned
+403. Only Homepage was recreated. Its password-protected services API and native
+widget proxy returned actual notification data without exposing the reader
+credential. The dedicated input was generated only after explicit owner approval
+and stored privately. The disposable pinned ntfy/Homepage test independently
+passed native message retrieval, ACL enforcement and browser credential exclusion.
+This verifies the widget, not Android delivery or a complete fresh Linux install.

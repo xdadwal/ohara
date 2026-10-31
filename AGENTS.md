@@ -20,7 +20,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   application is pending, document the prepared commands and report that limit.
 
 - Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy, docs/ntfy.md
-  and docs/alerts.md for host/printer alerts and native Seerr new-request delivery.
+  and docs/alerts.md for host/printer alerts, native Seerr new-request delivery
+  and the optional Homepage widget. Its separate owner-supplied
+  NTFY_HOMEPAGE_PASSWORD is restricted to reading ohara-alerts; only that reader
+  credential may reach Homepage through its narrow runtime alias. Use
+  sudo scripts/ntfy widget after ntfy/Homepage HTTPS and login work.
   Keep its independent SQLite/config storage outside the media pool and backend
   loopback-only. The login username is admin (a regular scoped user, not an admin role).
   Use the documented offline rotate-account workflow for an existing ohara login;

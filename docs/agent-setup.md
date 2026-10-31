@@ -284,6 +284,7 @@ delivery. Local publish success is not phone delivery or independent outage
 detection; same-host monitoring cannot report a complete host/network outage.
 Keep credentials out of Homepage, command arguments and logs.
 
-For optional ntfy event monitoring and Seerr new-request notifications, follow
+For optional ntfy event monitoring, Seerr new-request notifications and the
+read-only Homepage widget, follow
 [host and application alerts](alerts.md). Reinstall the host worker after alert
 changes and configure Seerr separately; preserve private inputs and alert state.
