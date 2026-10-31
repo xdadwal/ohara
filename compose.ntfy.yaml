@@ -1,0 +1,32 @@
+name: ohara-ntfy
+services:
+  ntfy:
+    image: ${NTFY_IMAGE:?Run scripts/ntfy check}
+    command: [serve, --config, /etc/ntfy/server.yml]
+    user: "${RUN_UID}:${RUN_GID}"
+    init: true
+    restart: unless-stopped
+    ports: ["127.0.0.1:2586:8080"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - type: bind
+        source: ${NTFY_ROOT}/config
+        target: /etc/ntfy
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${NTFY_ROOT}/data
+        target: /var/lib/ntfy
+        bind: {create_host_path: false}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/v1/health]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}

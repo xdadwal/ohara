@@ -19,6 +19,23 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   and remove contradictory/outdated guidance when behavior changes. If privileged
   application is pending, document the prepared commands and report that limit.
 
+- Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy, docs/ntfy.md
+  and docs/alerts.md for host/printer alerts, native Seerr new-request delivery
+  and the optional Homepage widget. Its separate owner-supplied
+  NTFY_HOMEPAGE_PASSWORD is restricted to reading ohara-alerts; only that reader
+  credential may reach Homepage through its narrow runtime alias. Use
+  sudo scripts/ntfy widget after ntfy/Homepage HTTPS and login work.
+  Keep its independent SQLite/config storage outside the media pool and backend
+  loopback-only. The login username is admin (a regular scoped user, not an admin role).
+  Use the documented offline rotate-account workflow for an existing ohara login;
+  preserve its account ID, ACLs, tokens and message cache. An explicit owner
+  NTFY_ALLOW_SHORT_PASSWORD exception affects ntfy only; keep nonempty/72-byte bounds.
+  Deny anonymous topic access, disable public signup, and use the
+  privately supplied NTFY_PASSWORD; never generate passwords/tokens or forward it
+  to Homepage. Ask for phone platform and obtain explicit approval before enabling
+  the ntfy.sh iPhone wake-up relay. Install the separate host alert timer only
+  after authentication is verified; read actual configured disk UUIDs and preserve
+  storage-watchdog recovery. Verify phone delivery separately from publishing.
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;

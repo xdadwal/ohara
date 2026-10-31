@@ -27,6 +27,7 @@ persistent read-only overlay; see [theme operations](jellyfin-theme.md).
 | AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003 |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
+| ntfy (optional separate project) | Private notification topics and host alerts | ntfy.xdadwal.in; loopback 2586 |
 | bpytop (host) | CPU, memory, disk, network and process monitoring | Interactive terminal or SSH |
 
 The portfolio profile sets HOMEPAGE_HOST=ohara.xdadwal.in and PORTFOLIO_PORT=8010.
@@ -92,3 +93,7 @@ A1 mini. Use `scripts/bambuddy` and [Bambuddy setup](bambuddy.md); printer acces
 codes are entered only in the private HTTPS UI. Its server, public HTTPS, Homepage and exact local DNS rewrite are live;
 native authentication is enabled; owner-login and actual printer readiness
 remain separate UI verification steps.
+
+ntfy runs outside the media pool in its own project, with anonymous topic access
+denied. The independent host alert timer observes service/disk transitions and
+queues notifications during ntfy downtime; see [ntfy operations](ntfy.md).
