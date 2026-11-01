@@ -97,3 +97,13 @@ remain separate UI verification steps.
 ntfy runs outside the media pool in its own project, with anonymous topic access
 denied. The independent host alert timer observes service/disk transitions and
 queues notifications during ntfy downtime; see [ntfy operations](ntfy.md).
+
+## Optional Kutt shortener
+
+[Kutt](kutt.md) runs in `ohara-kutt` with its own PostgreSQL 17 container and
+private network. Only Kutt binds loopback 3010; PostgreSQL has no host port.
+Redis is disabled and Immich's database is independent. State stays on internal
+storage, outside the USB pool. The default `go.DOMAIN` hostname uses host Nginx
+with LAN-only initial owner onboarding, then authenticated management/public
+redirects. See the guide's current rollout status; templates are not proof of
+live deployment or owner setup. Main eleven-application startup is unchanged.

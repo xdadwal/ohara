@@ -244,3 +244,10 @@ the publisher password never reaches it. This displays the latest notification,
 priority and receipt time, without publishing or managing topics. The helper
 recreates only Homepage and verifies its authenticated API/proxy response and
 credential exclusion. See [prerequisites, persistence and rollback](alerts.md#homepage).
+
+## Kutt short links
+
+The optional Kutt project has a plain link, not a statistics widget. Its seed uses
+HOMEPAGE_VAR_KUTT_HOST, derived only from non-secret KUTT_HOST (default go.DOMAIN).
+`scripts/kutt homepage` merges the live card without replacing unrelated widgets
+or forwarding any Kutt password, API key or signing secret. Follow [Kutt setup](kutt.md).

@@ -29,6 +29,7 @@ jobs:
           scripts/immich check --static
           scripts/bambuddy check --static
           scripts/ntfy check --static
+          scripts/kutt check --static
   containers:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -66,3 +67,15 @@ jobs:
       - name: Prepare pinned Bambuddy image
         run: python3 tests/ci_pull_images.py bambuddy
       - run: python3 tests/smoke_bambuddy.py
+
+  kutt-containers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Prepare pinned Kutt and PostgreSQL test images
+        run: python3 tests/ci_pull_images.py kutt
+      - run: python3 tests/smoke_kutt.py

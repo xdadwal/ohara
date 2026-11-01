@@ -36,6 +36,16 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   the ntfy.sh iPhone wake-up relay. Install the separate host alert timer only
   after authentication is verified; read actual configured disk UUIDs and preserve
   storage-watchdog recovery. Verify phone delivery separately from publishing.
+- Optional Kutt uses scripts/kutt, scripts/kutt-proxy and docs/kutt.md. Keep its
+  independent PostgreSQL 17 project/database/network and internal-disk state,
+  separate from Immich and USB media. No Redis, shared authentication or public
+  PostgreSQL port. Use owner-supplied KUTT_DB_PASSWORD, KUTT_JWT_SECRET and
+  KUTT_PASSWORD in private .env; never generate or forward these to Homepage.
+  First owner creation stays in the LAN-only UI; public activation must verify
+  native login and keep owner-creation endpoints LAN-only. Preserve existing
+  users/links/secret files; do not rotate inputs, ban/delete links or restore
+  snapshots without explicit scope. Banning is accepted without a supported
+  re-enable flow; expiration deletes records, so never use it as pause.
 - Active applications: Seerr (Jellyseerr's successor),
   OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
 - Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;

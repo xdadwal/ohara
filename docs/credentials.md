@@ -182,3 +182,15 @@ and Homepage HTTPS/login are working. Setup does not rotate an existing reader
 password. Follow [widget setup and rollback](alerts.md#homepage). The current
 owner explicitly authorized generating this one reader password; future setups
 still require owner-supplied credentials unless explicitly authorized otherwise.
+
+## Optional Kutt
+
+Supply independent KUTT_DB_PASSWORD (16+ characters), KUTT_JWT_SECRET (32+) and
+KUTT_PASSWORD (16–64) in mode-0600 .env; no defaults are provided. Leading/trailing
+whitespace is rejected because upstream file inputs trim it. No input is returned
+by the public config parser or Homepage credential loader. Only narrow installed
+DB/JWT files are mounted read-only into their relevant containers; the owner's
+UI password stays in private .env and is used only for explicit login verification.
+The separate PostgreSQL app role is restricted; Immich credentials are not reused.
+Preparation preserves matching installed inputs and refuses silent rotation.
+See [Kutt setup, persistence and recovery](kutt.md).

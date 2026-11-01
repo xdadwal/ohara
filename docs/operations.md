@@ -479,3 +479,17 @@ changes and configure Seerr separately; preserve private inputs and alert state.
 
 Repeated media outages: follow the [USB/storage incident investigation](storage-incident-2026-10-31.md)
 to correlate kernel disconnects with the guarded media unit before restarting services.
+
+## Optional URL shortener
+
+For Kutt and its independent PostgreSQL project, follow [Kutt setup and recovery](kutt.md).
+Discover the target's real hostname, private LAN CIDR, certificate paths and
+independent local storage first. The owner supplies KUTT_DB_PASSWORD,
+KUTT_JWT_SECRET and KUTT_PASSWORD privately in .env; never infer or generate them.
+Use the separate prepare/up/proxy/homepage/dns commands and LAN-only native owner
+onboarding. Public proxy activation proves native login using existing account
+state; it never creates/resets an owner. Reinstall the optional authenticated ntfy
+alert configuration after startup to include both containers and the HTTPS route.
+Existing-state recovery retains secret files, PostgreSQL state, account/short-code
+identity and reviewed pins. See the guide for exact commands, private backup,
+explicitly authorized restore, verification and scoped rollback.

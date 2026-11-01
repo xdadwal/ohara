@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+"""Operate optional Kutt/Postgres; owner onboarding stays in the LAN-only UI."""
+import argparse
+from pathlib import Path
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import kutt
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command',choices=['check','prepare','up','stop','status','homepage','dns','backup'])
+    parser.add_argument('--static',action='store_true')
+    args=parser.parse_args()
+    try:
+        if args.static and args.command!='check':parser.error('--static is only for check')
+        c=config.load(ROOT/('.env.example' if args.static else '.env'))
+        if args.command=='check':kutt.check(c,ROOT,static=args.static)
+        elif args.command=='up':
+            kutt.check(c,ROOT);kutt.compose(c,ROOT,['up','-d','--wait','--wait-timeout','180'],timeout=600);kutt.status(c,ROOT)
+        elif args.command=='stop':kutt.compose(c,ROOT,['stop'])
+        else:getattr(kutt,args.command)(c,ROOT)
+    except Exception as error:
+        print('Ohara Kutt: '+str(error),file=sys.stderr);raise SystemExit(1)
