@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""Install Kutt HTTPS with LAN-only first-owner onboarding or verified public mode."""
+import argparse
+from pathlib import Path
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import kutt_proxy
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--apply',action='store_true',required=True)
+    modes=p.add_mutually_exclusive_group(required=True)
+    modes.add_argument('--onboarding-only',action='store_true')
+    modes.add_argument('--accounts-ready',action='store_true')
+    a=p.parse_args()
+    try:kutt_proxy.apply(config.load(ROOT/'.env'),ROOT,public=a.accounts_ready)
+    except Exception as error:
+        print('Ohara Kutt proxy: '+str(error),file=sys.stderr);raise SystemExit(1)

@@ -29,6 +29,10 @@
         href: "https://bambuddy.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Bambu Lab A1 mini
 - Utility:
+    - Kutt:
+        icon: mdi-link-variant
+        href: "https://{{HOMEPAGE_VAR_KUTT_HOST}}"
+        description: Short links and QR codes
     - ntfy:
         icon: ntfy.png
         href: "https://ntfy.{{HOMEPAGE_VAR_DOMAIN}}"

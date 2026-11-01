@@ -13,6 +13,7 @@ import immich
 import maintainerr
 import bambuddy
 import ntfy
+import kutt
 
 
 def retry(command,timeout,*,attempts=3):
@@ -32,6 +33,9 @@ def retry(command,timeout,*,attempts=3):
 
 
 def image_list(target):
+    if target=='kutt':
+        from smoke import NGINX
+        return [*kutt.images(ROOT).values(),NGINX]
     if target=='bambuddy':return list(bambuddy.images(ROOT).values())
     if target=='immich':return list(immich.images(ROOT).values())
     from smoke import NGINX
@@ -40,7 +44,7 @@ def image_list(target):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('target',choices=['main','immich','bambuddy'])
+    parser.add_argument('target',choices=['main','immich','bambuddy','kutt'])
     args=parser.parse_args()
     images=image_list(args.target)  # Validate public pins before any Docker command.
     retry(['docker','info','--format','{{.ServerVersion}}'],30)

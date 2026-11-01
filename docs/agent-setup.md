@@ -288,3 +288,25 @@ For optional ntfy event monitoring, Seerr new-request notifications and the
 read-only Homepage widget, follow
 [host and application alerts](alerts.md). Reinstall the host worker after alert
 changes and configure Seerr separately; preserve private inputs and alert state.
+
+## Optional URL shortener
+
+For Kutt and its independent PostgreSQL project, follow [Kutt setup and recovery](kutt.md).
+Discover the target's real hostname, private LAN CIDR, certificate paths and
+independent local storage first. The owner supplies only KUTT_DB_PASSWORD and KUTT_JWT_SECRET privately in .env;
+never infer or generate them. Start the containers before UI owner creation.
+The owner chooses their login password in that UI; public activation prompts
+privately for it without saving it. Persistent KUTT_PASSWORD is deprecated.
+Use the separate prepare/up/proxy/homepage/dns commands and LAN-only native owner
+onboarding. Public proxy activation proves native login using existing account
+state; it never creates/resets an owner. Reinstall the optional authenticated ntfy
+alert configuration after startup to include both containers and the HTTPS route.
+Existing-state recovery retains secret files, PostgreSQL state, account/short-code
+identity and reviewed pins. See the guide for exact commands, private backup,
+explicitly authorized restore, verification and scoped rollback.
+
+An owner away from the LAN can use the existing Tailscale/OpenSSH loopback tunnel
+for [Kutt remote first-owner creation](kutt.md#remote-owner-creation-through-existing-tailscale-ssh).
+Keep public owner creation denied; do not enable Serve/Funnel or change client DNS.
+DB/JWT inputs and backend readiness remain prerequisites; enable normal public
+HTTPS login only after the owner is created and native credentials are verified.

@@ -182,3 +182,24 @@ and Homepage HTTPS/login are working. Setup does not rotate an existing reader
 password. Follow [widget setup and rollback](alerts.md#homepage). The current
 owner explicitly authorized generating this one reader password; future setups
 still require owner-supplied credentials unless explicitly authorized otherwise.
+
+## Optional Kutt
+
+Supply independent KUTT_DB_PASSWORD (16+ characters) and KUTT_JWT_SECRET (32+)
+in mode-0600 .env; only these two persistent inputs are needed for startup.
+Choose the owner password in the private UI after containers are running.
+KUTT_PASSWORD is deprecated; public activation prompts privately without saving
+it. A legacy dotenv value is accepted temporarily and can be manually removed
+after verification without changing the stored account password. Leading/trailing
+whitespace is rejected because upstream file inputs trim it. No input is returned
+by the public config parser or Homepage credential loader. Only narrow installed
+DB/JWT files are mounted read-only into their relevant containers; the owner's
+UI password is used only transiently for explicit login verification, apart
+from any optional deprecated dotenv value the operator has not yet removed.
+The separate PostgreSQL app role is restricted; Immich credentials are not reused.
+Preparation preserves matching installed inputs and refuses silent rotation.
+See [Kutt setup, persistence and recovery](kutt.md).
+
+An explicit owner-approved `KUTT_ALLOW_SHORT_DB_PASSWORD=true` exception permits
+a nonempty shorter Kutt DB password only. Default minimum and JWT validation
+remain unchanged; see [Kutt exception and recovery](kutt.md#explicit-database-password-exception).

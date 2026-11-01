@@ -221,3 +221,8 @@ This verifies the widget, not Android delivery or a complete fresh Linux install
 The host worker uses a private systemd runtime Docker CLI configuration, retaining
 ProtectHome isolation and avoiding false application-error alerts from hidden home
 config warnings. See the [diagnosis and existing-host update](storage-incident-2026-10-31.md).
+
+Optional [Kutt](kutt.md) is discovered when its separate project is running.
+Reinstall alerts after startup: its local health endpoint, both expected
+containers/PostgreSQL health, and configured trusted HTTPS/certificate route
+are added without changing storage-watchdog recovery.
