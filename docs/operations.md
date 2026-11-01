@@ -1,5 +1,9 @@
 # Ohara operations
 
+Deployment file paths and migration/rollback are documented in
+[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
+private at the repository root.
+
 ## Host preparation
 
 For an agent-led installation, follow [agent-setup.md](agent-setup.md) for
@@ -296,7 +300,7 @@ live data. Do not expose restored services publicly while testing. Have a fallba
 network/DNS path available during recovery. Only an actual restore demonstrates
 backup usefulness; a successful archive command alone does not.
 
-Upgrade through a PR changing reviewed `versions.env` digests. Check upstream
+Upgrade through a PR changing reviewed `versions/stack.env` digests. Check upstream
 release/migration notes and manifests, take a consistent backup, then restart
 with `scripts/up` in a maintenance window. Verify local and external behavior.
 Rollback may require restoring the previous data snapshot as well as configuration

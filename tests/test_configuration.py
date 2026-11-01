@@ -52,9 +52,11 @@ class ConfigurationTests(unittest.TestCase):
                 self.load(base.replace('PORTFOLIO_PORT=0', f'PORTFOLIO_PORT={port}'))
 
     def test_all_images_include_immutable_lidarr_and_bazarr_pins(self):
-        images = config.images(ROOT / 'versions.env')
-        self.assertEqual(len(images), 12)
-        self.assertIn('ADGUARD_IMAGE', images)
+        images = config.images(ROOT / 'versions/stack.env')
+        self.assertEqual(len(images), 11)
+        self.assertNotIn('ADGUARD_IMAGE', images)
+        import adguard
+        self.assertEqual(set(adguard.images(ROOT)), {'ADGUARD_IMAGE'})
         self.assertIn('LIDARR_IMAGE', images)
         self.assertIn('BAZARR_IMAGE', images)
 

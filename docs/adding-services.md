@@ -1,5 +1,9 @@
 # Adding a service to Ohara
 
+Deployment file paths and migration/rollback are documented in
+[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
+private at the repository root.
+
 Use this workflow for future service additions. It records lessons from Immich's
 implementation and deployment on 2026-10-22. The operator expects an authorized
 service setup to include the server, hostname, Homepage card and local DNS, with

@@ -69,7 +69,7 @@ def owner_password(root):
 
 
 def images(root):
-    values=config.parse(root/'versions.kutt.env',{'KUTT_IMAGE','KUTT_POSTGRES_IMAGE'})
+    values=config.parse(root/'versions/kutt.env',{'KUTT_IMAGE','KUTT_POSTGRES_IMAGE'})
     for key,pattern in [('KUTT_IMAGE',r'kutt/kutt:v[0-9.]+@sha256:[a-f0-9]{64}'),
                         ('KUTT_POSTGRES_IMAGE',r'postgres:17\.[0-9]+-alpine[0-9.]+@sha256:[a-f0-9]{64}')]:
         if not re.fullmatch(pattern,values[key]):raise ValueError('Kutt requires reviewed official release/digest pins')
@@ -106,7 +106,7 @@ def compose(c,root,args,*,capture=False,timeout=60,input=None):
     env.update(values)
     docker=['docker'] if 'config' in args else runtime.docker_prefix()
     if docker[:2]==['sudo','-n']:docker=docker[:2]+['--preserve-env='+','.join(sorted(values))]+docker[2:]
-    return runtime.run(docker+['compose','--project-directory',str(root),'--env-file','/dev/null','-f',str(root/'compose.kutt.yaml'),*args],env=env,capture=capture,timeout=timeout,input=input)
+    return runtime.run(docker+['compose','--project-directory',str(root),'--env-file','/dev/null','-f',str(root/'compose/kutt.yaml'),*args],env=env,capture=capture,timeout=timeout,input=input)
 
 
 def check(c,root,*,static=False):
@@ -237,7 +237,8 @@ def backup(c,root):
     config.create_file(dest/'database.sql',dump,0o600)
     for filename in ('db-password','jwt-secret'):
         config.create_file(dest/filename,(base/'secrets'/filename).read_text(),0o600)
-    config.create_file(dest/'versions.kutt.env',(root/'versions.kutt.env').read_text(),0o600)
+    # Keep the existing private backup format compatible.
+    config.create_file(dest/'versions.kutt.env',(root/'versions/kutt.env').read_text(),0o600)
     print('Private local Kutt backup: '+str(dest)+'; copy encrypted to an independent destination for host-loss protection')
 
 

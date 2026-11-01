@@ -1,5 +1,9 @@
 # Current Ohara stack
 
+Deployment file paths and migration/rollback are documented in
+[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
+private at the repository root.
+
 This is the implemented repository configuration, not a claim that a production
 server is deployed or publicly reachable. Eleven applications run in the main Docker Compose project,
 with optional AdGuard Home in the separate `ohara-dns` project.

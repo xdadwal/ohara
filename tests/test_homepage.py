@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 from pathlib import Path
 import os
 import sys
@@ -81,8 +82,8 @@ class ConfiguredPasswordTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             shutil.copytree(ROOT/'configs', root/'configs')
-            for name in ['compose.yaml', 'versions.env']:
-                shutil.copy(ROOT/name, root/name)
+            for name in ['compose/stack.yaml', 'versions/stack.env']:
+                copy_deployment(root,name)
             c = config.load(ROOT/'.env.example')
             c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'), RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
             credential_fixtures.write(root)

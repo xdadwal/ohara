@@ -19,7 +19,7 @@ Short codes are random by default (six characters in the pinned release); a
 custom alias is optional. Example codes are illustrative, not created or reserved
 before the service and owner account exist.
 
-The helper uses official release/digest pins in `versions.kutt.env`, inspected
+The helper uses official release/digest pins in `versions/kutt.env`, inspected
 for amd64/arm64. Do not replace pins with `latest`. PostgreSQL uses the reviewed
 Alpine image's UID/GID 70; preparation confirms its UID on the actual target.
 Both containers run without root/capabilities, with read-only root filesystems
@@ -93,8 +93,8 @@ From the repository root after supported host/Docker setup:
 
 ```sh
 scripts/kutt check --static
-docker pull "$(sed -n 's/^KUTT_IMAGE=//p' versions.kutt.env)"
-docker pull "$(sed -n 's/^KUTT_POSTGRES_IMAGE=//p' versions.kutt.env)"
+docker pull "$(sed -n 's/^KUTT_IMAGE=//p' versions/kutt.env)"
+docker pull "$(sed -n 's/^KUTT_POSTGRES_IMAGE=//p' versions/kutt.env)"
 sudo scripts/kutt prepare
 sudo scripts/kutt up
 sudo scripts/kutt status

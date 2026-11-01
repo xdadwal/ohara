@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 import importlib.util
 import json
 from pathlib import Path
@@ -18,8 +19,8 @@ class StackTests(unittest.TestCase):
             root = Path(directory)
             c['DATA_ROOT'] = str(root/'data')
             c['MEDIA_ROOT'] = str(root/'media')
-            for name in ['compose.yaml', 'versions.env']:
-                shutil.copy(ROOT / name, root / name)
+            for name in ['compose/stack.yaml', 'versions/stack.env']:
+                copy_deployment(root,name)
             runtime.check(c, root, static=True)
             with self.assertRaisesRegex(ValueError, 'private config'):
                 runtime.check(c, root)

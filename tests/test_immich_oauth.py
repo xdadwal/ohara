@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 import json
 import os
 from pathlib import Path
@@ -101,7 +102,7 @@ class ImmichOAuthTests(unittest.TestCase):
     def test_google_credentials_never_enter_compose_environment_or_argv(self):
         self.inputs()
         immich_oauth.prepare(self.root, self.c)
-        shutil.copy(ROOT / 'versions.immich.env', self.root)
+        copy_deployment(self.root,'versions/immich.env')
         with patch.dict(os.environ, {'IMMICH_GOOGLE_CLIENT_SECRET': self.secret}), \
                 patch('immich.password', return_value='DisposableDBOnly1234'), \
                 patch('immich.runtime.docker_prefix', return_value=['docker']), patch('immich.runtime.run') as run:

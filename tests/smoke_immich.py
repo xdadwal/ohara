@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Start the pinned Immich release with disposable volumes and machine learning off."""
+from deployment_fixtures import copy_deployment
 import json
 from pathlib import Path
 import shutil
@@ -20,8 +21,8 @@ def main():
     project = 'ohara-immich-smoke-' + uuid.uuid4().hex[:10]
     with tempfile.TemporaryDirectory(prefix='ohara-immich-smoke-') as directory:
         root = Path(directory)
-        shutil.copy(ROOT / 'compose.immich.yaml', root)
-        shutil.copy(ROOT / 'versions.immich.env', root)
+        copy_deployment(root,'compose/immich.yaml')
+        copy_deployment(root,'versions/immich.env')
         shutil.copytree(ROOT / 'configs/immich', root / 'configs/immich')
         # Fixed test input, never installed in the real private configuration.
         (root / '.env').write_text('IMMICH_DB_PASSWORD=DisposableSmokeOnly12345\n')

@@ -21,7 +21,7 @@ def require_mount(c):
 
 
 def override(c, root):
-    return ['-f', str(root/'compose.media-pool.yaml')] if c.get('MEDIA_POOL_MOUNT') else []
+    return ['-f', str(root/'compose/overrides/media-pool.yaml')] if c.get('MEDIA_POOL_MOUNT') else []
 
 
 def unit(c, root):

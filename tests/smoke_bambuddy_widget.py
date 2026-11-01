@@ -20,7 +20,7 @@ import runtime
 
 def main():
     docker = runtime.docker_prefix()
-    image = config.images(ROOT/'versions.env')['HOMEPAGE_IMAGE']
+    image = config.images(ROOT/'versions/stack.env')['HOMEPAGE_IMAGE']
     identifier = 'ohara-widget-'+uuid.uuid4().hex[:10]
     key = 'disposable-bambuddy-widget-status-key'
     status = {'connected': True, 'state': 'RUNNING', 'progress': 42,

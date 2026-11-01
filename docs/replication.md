@@ -1,5 +1,9 @@
 # Replicate the deployment
 
+Deployment file paths and migration/rollback are documented in
+[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
+private at the repository root.
+
 Use the merged PRs in **both** repositories, not a copy of private one-off setup
 scripts. Ohara provisions the media/dashboard stack and Nginx; the separate
 [portfolio repository](https://github.com/xdadwal/xdadwal.in) runs its FastAPI app.

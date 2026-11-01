@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 import json
 import os
 from pathlib import Path
@@ -52,7 +53,7 @@ class AdguardTests(unittest.TestCase):
             text = (ROOT/'.env.example').read_text()+'\nADGUARD_BIND_IP=192.168.1.101\nADGUARD_NETWORK=192.168.1.0/24\nADGUARD_PASSWORD=fixture-password-12345\n'
             (root/'.env').write_text(text)
             (root/'.env').chmod(0o600)
-            (root/'versions.env').write_text((ROOT/'versions.env').read_text())
+            copy_deployment(root,'versions/adguard.env')
             c = config.load(root/'.env')
             self.assertNotIn('ADGUARD_PASSWORD', c)
             self.assertEqual(adguard.password(root), 'fixture-password-12345')

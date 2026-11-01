@@ -1,5 +1,9 @@
 # Agent-led initial setup
 
+Deployment file paths and migration/rollback are documented in
+[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
+private at the repository root.
+
 Use this workflow when the user asks you to prepare or deploy Ohara on the target
 machine. Repository editing alone does not authorize live deployment. A shared
 authentication service is deferred; keep independent service credentials.

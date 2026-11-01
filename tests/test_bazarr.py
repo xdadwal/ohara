@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 from pathlib import Path
 import json
 import sys
@@ -80,8 +81,8 @@ class BazarrLegacyStartupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             shutil.copytree(ROOT/'configs', root/'configs')
-            for name in ['compose.yaml', 'versions.env']:
-                shutil.copy(ROOT/name, root/name)
+            for name in ['compose/stack.yaml', 'versions/stack.env']:
+                copy_deployment(root,name)
             credential_fixtures.write(root)
             c = config.load(ROOT/'.env.example')
             c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'),

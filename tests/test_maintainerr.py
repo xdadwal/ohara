@@ -19,7 +19,7 @@ class MaintainerrTests(unittest.TestCase):
             m.compose(c,ROOT,['up','-d'])
             self.assertFalse(set(run.call_args.kwargs['env']) & credentials.ALL_KEYS)
             self.assertNotIn('COMPOSE_FILE',run.call_args.kwargs['env'])
-            self.assertIn(str(ROOT/'compose.maintainerr.yaml'),run.call_args.args[0])
+            self.assertIn(str(ROOT/'compose/maintainerr.yaml'),run.call_args.args[0])
         m.check(c,ROOT,static=True)
 
     def test_prepare_rejects_symlink_and_preserves_existing_files(self):
