@@ -278,8 +278,12 @@ no-store. It does not establish a real phone QR scan or fresh bare-metal setup.
 
 As prepared on 2026-11-01: public DNS wildcard resolves the default host to the
 current server, port 3010 is available, and the isolated feature smoke passed.
-Private Kutt inputs have been requested; real startup/proxy application, owner
-onboarding, live Homepage/DNS/alerts, actual public reachability and QR scanning
-remain pending until those inputs/onboarding are supplied and verified. No live
+The owner requested a plain Utility link without a widget; it was selectively
+merged into the live Homepage and verified through its authenticated services
+API on 2026-11-01. Existing cards/widgets were preserved, with the prior YAML
+backed up under ignored local/kutt-backups. The link does not establish Kutt
+backend readiness. Private Kutt inputs have been requested; real startup/proxy
+application, owner onboarding, live DNS/alerts, actual public reachability and QR
+scanning remain pending until those inputs/onboarding are supplied and verified. No live
 Kutt account or production secret has been generated. Keep this section aligned
 with verified rollout rather than interpreting test fixtures as owner setup.

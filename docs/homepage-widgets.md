@@ -251,3 +251,7 @@ The optional Kutt project has a plain link, not a statistics widget. Its seed us
 HOMEPAGE_VAR_KUTT_HOST, derived only from non-secret KUTT_HOST (default go.DOMAIN).
 `scripts/kutt homepage` merges the live card without replacing unrelated widgets
 or forwarding any Kutt password, API key or signing secret. Follow [Kutt setup](kutt.md).
+
+On 2026-11-01 the owner explicitly chose no Kutt widget. The plain Kutt link
+was merged into Utility on the live Homepage and verified through its
+authenticated services API; the backend itself still awaits private setup inputs.
