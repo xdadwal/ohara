@@ -1,7 +1,7 @@
 # Bambuddy for the A1 mini
 
 Optional independent project `ohara-bambuddy`, using official `1.2.5.7` pinned by
-multi-architecture digest in `versions.bambuddy.env`. The owner's A1 mini is in
+multi-architecture digest in `versions/bambuddy.env`. The owner's A1 mini is in
 LAN-only mode and was confirmed connected through manual IP/bridge networking.
 
 ## Storage and startup

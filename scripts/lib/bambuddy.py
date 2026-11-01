@@ -33,7 +33,7 @@ def settings(c):
 
 
 def images(root):
-    values = config.parse(root/'versions.bambuddy.env', {'BAMBUDDY_IMAGE'})
+    values = config.parse(root/'versions/bambuddy.env', {'BAMBUDDY_IMAGE'})
     if not re.fullmatch(r'ghcr.io/maziggy/bambuddy:[0-9.]+@sha256:[a-f0-9]{64}', values['BAMBUDDY_IMAGE']):
         raise ValueError('Bambuddy requires an official immutable release image')
     return values
@@ -97,7 +97,7 @@ def compose(c, root, args, *, capture=False, timeout=60):
     if prefix[:2] == ['sudo', '-n']:
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
     return runtime.run(prefix+['compose', '--project-directory', str(root), '--env-file', '/dev/null',
-                              '-f', str(root/'compose.bambuddy.yaml'), *args], env=env, capture=capture, timeout=timeout)
+                              '-f', str(root/'compose/bambuddy.yaml'), *args], env=env, capture=capture, timeout=timeout)
 
 
 def check(c, root, *, static=False):

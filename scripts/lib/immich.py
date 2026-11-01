@@ -46,7 +46,7 @@ def settings(c):
 
 
 def images(root):
-    values = config.parse(root / 'versions.immich.env', IMAGE_KEYS)
+    values = config.parse(root / 'versions/immich.env', IMAGE_KEYS)
     if any(not re.fullmatch(r'[a-z0-9./:_-]+@sha256:[a-f0-9]{64}', v) for v in values.values()):
         raise ValueError('Immich images must have immutable digest pins')
     return values
@@ -76,7 +76,7 @@ def compose(c, root, args, *, static=False, capture=False, timeout=60, allow_sho
     if prefix[:2] == ['sudo', '-n']:
         prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
     return runtime.run(prefix + ['compose', '--project-directory', str(root),
-        '--env-file', '/dev/null', '-f', str(root / 'compose.immich.yaml')] + args,
+        '--env-file', '/dev/null', '-f', str(root / 'compose/immich.yaml')] + args,
         env=env, capture=capture, timeout=timeout)
 
 

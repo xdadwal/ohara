@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Disposable official Bambuddy check; never connects a printer or starts a print."""
+from deployment_fixtures import copy_deployment
 import json
 import os
 from pathlib import Path
@@ -23,8 +24,8 @@ def main():
     (ROOT/'local').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='bambuddy-smoke-', dir=ROOT/'local') as d:
         root = Path(d).resolve()
-        for name in ('compose.bambuddy.yaml', 'versions.bambuddy.env'):
-            shutil.copy(ROOT/name, root/name)
+        for name in ('compose/bambuddy.yaml', 'versions/bambuddy.env'):
+            copy_deployment(root,name)
         c = config.load(ROOT/'.env.example')
         c.update(DATA_ROOT=str(root/'state'), RUN_UID=str(os.getuid() or 1000), RUN_GID=str(os.getgid() or 1000))
         base, _ = bambuddy.settings(c)

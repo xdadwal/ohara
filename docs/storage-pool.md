@@ -259,7 +259,7 @@ non-static checks and media directory preparation verify an exact active
 `fuse.mergerfs` mount before touching storage or starting containers. Static
 Compose rendering remains usable without the disk.
 
-When this option is set, the runtime includes `compose.media-pool.yaml`, which
+When this option is set, the runtime includes `compose/overrides/media-pool.yaml`, which
 changes the seven media consumers and Homepage to `restart: on-failure:5`. Docker can
 restart crashed processes, but does not automatically start these containers
 at daemon startup ahead of their storage dependency. The remaining services keep

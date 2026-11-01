@@ -51,7 +51,7 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         env.update(homepage)
         env.update(credential_files.navidrome_widget_environment(media))
         env.update(credential_files.admin_widget_environment(root,media))
-    env.update(config.images(root / 'versions.env'))
+    env.update(config.images(root / 'versions/stack.env'))
     env['COMPOSE_DISABLE_ENV_FILE'] = '1'
     prefix = docker if docker is not None else docker_prefix()
     if prefix[:2] == ['sudo', '-n']:
@@ -61,7 +61,7 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(allowed))]+prefix[2:]
     command = prefix + [
         'compose', '--project-directory', str(root), '--env-file', '/dev/null',
-        '-f', str(root / 'compose.yaml')]
+        '-f', str(root / 'compose/stack.yaml')]
     import jellyfin_theme
     command += media_pool.override(c, root) + jellyfin_theme.override(c, root) + args
     return run(command, capture=capture, timeout=timeout, env=env)
@@ -83,7 +83,7 @@ def validate_model(model, c):
     }
     services = model['services']
     if set(services) != set(expected):
-        raise ValueError('Unexpected application inventory in compose.yaml')
+        raise ValueError('Unexpected application inventory in compose/stack.yaml')
     hp = services['homepage'].get('environment', {})
     if (hp.get('HOMEPAGE_AUTH_ENABLED') != 'true' or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['HOMEPAGE_HOST']
             or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['HOMEPAGE_HOST']):

@@ -22,7 +22,7 @@ signed apt repository, then enables tailscaled. It does not execute a downloaded
 installer, upgrade an already installed client, install/configure sshd, join a
 network or change Tailscale preferences. Existing package installations are left
 untouched; conflicting repository/custom binary installations require review.
-An installed package remains managed separately from versions.env/Compose.
+An installed package remains managed separately from versions/stack.env/Compose.
 
 If sshd is absent, deliberately install the distribution openssh-server package
 and verify your existing key login from the LAN before remote enrollment. Preserve

@@ -26,7 +26,7 @@ def storage(c):
 
 
 def images(root):
-    values = config.parse(root/'versions.maintainerr.env',IMAGE_KEYS)
+    values = config.parse(root/'versions/maintainerr.env',IMAGE_KEYS)
     if not re.fullmatch(r'ghcr.io/maintainerr/maintainerr:[0-9.]+@sha256:[a-f0-9]{64}',values['MAINTAINERR_IMAGE']):
         raise ValueError('Maintainerr requires an official immutable release image')
     return values
@@ -40,7 +40,7 @@ def compose(c,root,args,*,capture=False,timeout=60):
     prefix = ['docker'] if args[0]=='config' else runtime.docker_prefix()
     if prefix[:2]==['sudo','-n']:
         prefix=prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
-    return runtime.run(prefix+['compose','--project-directory',str(root),'--env-file','/dev/null','-f',str(root/'compose.maintainerr.yaml')]+args,env=env,capture=capture,timeout=timeout)
+    return runtime.run(prefix+['compose','--project-directory',str(root),'--env-file','/dev/null','-f',str(root/'compose/maintainerr.yaml')]+args,env=env,capture=capture,timeout=timeout)
 
 
 def check(c,root,*,static=False):

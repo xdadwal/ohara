@@ -1,7 +1,8 @@
 # Working on Ohara
 
 Ohara provisions a small Linux homeserver. Read README.md, docs/stack.md and docs/operations.md
-before changing deployment behavior. The approved migration plan is under
+before changing deployment behavior. See docs/deployment-layout.md for canonical
+compose/PROJECT.yaml and versions/PROJECT.env paths; overrides live in compose/overrides/. The approved migration plan is under
 docs/superpowers/plans/. For future service additions, follow
 [docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
 integration, exact privileged commands and LAN-only owner onboarding where needed.
@@ -90,7 +91,7 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.
   Continue independent checks while waiting; do not guess required answers.
-- `compose.yaml`, `.env.example`, and `versions.env` define deployment;
+- `compose/stack.yaml`, `.env.example`, and `versions/stack.env` define deployment;
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
 - Commands resolve their own repository path. Use `scripts/setup --help`,
   `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.
@@ -166,11 +167,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   client roles before changing preferences; restrict tailnet network policy to
   the intended SSH users/devices and port. No public SSH port forward.
 - Public DNS records are managed at GoDaddy. Optional AdGuard Home is explicitly
-  approved for LAN DNS/filtering in the separate compose.adguard.yaml project;
+  approved for LAN DNS/filtering in the separate compose/adguard.yaml project;
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
   IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
   DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  Optional Maintainerr is approved as the separate compose.maintainerr.yaml project;
+  Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
   use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
   UI/API LAN-only. Reuse existing private application keys, preserve its state,
   and create no cleanup rules or destructive actions without an owner policy.

@@ -1,7 +1,7 @@
 # AdGuard Home LAN DNS
 
 AdGuard is optional and runs in the separate `ohara-dns` Compose project defined
-by `compose.adguard.yaml`. Starting it does not restart the eleven application
+by `compose/adguard.yaml`. Starting it does not restart the eleven application
 containers. Public DNS stays at GoDaddy and host Nginx continues serving HTTPS.
 There is no Unbound dependency. Router DHCP remains enabled; AdGuard DHCP is off.
 
@@ -124,3 +124,7 @@ Homepage DNS statistics use the existing media network: AdGuard additionally joi
 fresh host, start the main stack first so that shared network exists. Only the
 selected dashboard credentials reach Homepage; AdGuard receives no media/Homepage
 credentials in its environment. See [Homepage widgets](homepage-widgets.md).
+
+AdGuard image pins live independently in `versions/adguard.env`, paired with
+`compose/adguard.yaml`; the main stack no longer carries the optional DNS pin.
+See [deployment layout](deployment-layout.md).

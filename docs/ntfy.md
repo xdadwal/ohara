@@ -30,7 +30,7 @@ by the server-local checks. The exact live proxy is tracked under
 
 Read AGENTS.md and adding-services.md first. Inspect actual mounts, ports,
 certificate coverage, public DNS, private inputs and existing service state.
-Verify the official version/digest in `versions.ntfy.env`; the reviewed image
+Verify the official version/digest in `versions/ntfy.env`; the reviewed image
 supports amd64 and arm64. Do not copy this host's IP/certificate assumptions to
 another server. The automatic proxy helper currently requires the existing
 xdadwal.in wildcard certificate; adapt/review another host's proxy deliberately.

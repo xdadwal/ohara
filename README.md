@@ -1,5 +1,8 @@
 # Ohara
 
+Deployment definitions live in [`compose/`](compose/), with matching public pins
+in [`versions/`](versions/). See [layout and migration](docs/deployment-layout.md).
+
 A small, agent-friendly homeserver setup for **xdadwal.in**. Docker Compose runs
 applications; Nginx and Certbot on the Linux host provide public HTTPS.
 

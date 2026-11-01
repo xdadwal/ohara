@@ -3,6 +3,7 @@ import base64
 import ipaddress
 import json
 import os
+import re
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -61,19 +62,26 @@ def password(root):
                             ignored=config.KEYS | (credentials.ALL_KEYS - credentials.DNS_KEYS))['ADGUARD_PASSWORD']
 
 
+def images(root):
+    values=config.parse(root/'versions/adguard.env',{'ADGUARD_IMAGE'})
+    if not re.fullmatch(r'adguard/adguardhome:v[0-9.]+@sha256:[a-f0-9]{64}',values['ADGUARD_IMAGE']):
+        raise ValueError('AdGuard requires an official immutable release image')
+    return values
+
+
 def compose(c, root, args, *, capture=False, timeout=60):
     # DNS never needs or receives media/Homepage credentials, even in its environment.
     env = {k:v for k,v in os.environ.items() if not k.startswith('COMPOSE_') and
            k not in config.KEYS | config.IMAGES | credentials.ALL_KEYS | credentials.DERIVED_WIDGET_KEYS}
     values = {k:c[k] for k in ('DATA_ROOT', 'RUN_UID', 'RUN_GID', 'ADGUARD_BIND_IP')}
-    values['ADGUARD_IMAGE'] = config.images(root/'versions.env')['ADGUARD_IMAGE']
+    values['ADGUARD_IMAGE'] = images(root)['ADGUARD_IMAGE']
     values['COMPOSE_DISABLE_ENV_FILE'] = '1'
     env.update(values)
     prefix = runtime.docker_prefix()
     if prefix[:2] == ['sudo', '-n']:
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
     return runtime.run(prefix+['compose', '--project-directory', str(root), '--env-file', '/dev/null',
-                              '-f', str(root/'compose.adguard.yaml')]+args,
+                              '-f', str(root/'compose/adguard.yaml')]+args,
                        capture=capture, timeout=timeout, env=env)
 
 

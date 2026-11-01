@@ -51,11 +51,11 @@ class ThemeTests(unittest.TestCase):
             names = ['index.html']+['ui/'+name for name in theme.FILES]
             for name in names:
                 (base/name).write_bytes(b'fixture')
-            manifest = {'schema':1,'enabled':True,'image':config.images(ROOT/'versions.env')['JELLYFIN_IMAGE'],
+            manifest = {'schema':1,'enabled':True,'image':config.images(ROOT/'versions/stack.env')['JELLYFIN_IMAGE'],
                         'files':{name:hashlib.sha256(b'fixture').hexdigest() for name in names}}
             (base/'manifest.json').write_text(json.dumps(manifest))
             c = {'DATA_ROOT':directory}
-            self.assertEqual(theme.override(c, ROOT), ['-f',str(ROOT/'compose.jellyfin-theme.yaml')])
+            self.assertEqual(theme.override(c, ROOT), ['-f',str(ROOT/'compose/overrides/jellyfin-theme.yaml')])
             (base/'index.html').write_bytes(b'operator edit')
             with self.assertRaisesRegex(ValueError,'changed or are missing'):
                 theme.override(c,ROOT)

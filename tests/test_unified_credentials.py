@@ -1,3 +1,4 @@
+from deployment_fixtures import copy_deployment
 from pathlib import Path
 import os
 import sys
@@ -113,7 +114,7 @@ class UnifiedCredentialsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d).resolve()
             self.fixture(root)
-            (root/'versions.env').write_text((ROOT/'versions.env').read_text())
+            copy_deployment(root,'versions/stack.env')
             hp, media = credentials.load(root)
             c = config.load(root/'.env')
             with patch.dict(os.environ, {'RADARR_PASSWORD':'ambient-secret',

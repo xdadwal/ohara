@@ -59,7 +59,7 @@ def password(root):
 
 
 def images(root):
-    d = config.parse(root/'versions.ntfy.env', {'NTFY_IMAGE'})
+    d = config.parse(root/'versions/ntfy.env', {'NTFY_IMAGE'})
     if not re.fullmatch(r'binwiederhier/ntfy:v[0-9.]+@sha256:[a-f0-9]{64}', d['NTFY_IMAGE']):
         raise ValueError('ntfy requires the official immutable release image')
     return d
@@ -92,7 +92,7 @@ def compose(c, root, args, capture=False, timeout=60):
     if prefix[:2] == ['sudo','-n']:
         prefix = prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
     return runtime.run(prefix+['compose','--project-directory',str(root),'--env-file','/dev/null',
-                              '-f',str(root/'compose.ntfy.yaml'),*args], env=env, capture=capture, timeout=timeout)
+                              '-f',str(root/'compose/ntfy.yaml'),*args], env=env, capture=capture, timeout=timeout)
 
 
 def check(c, root, static=False):

@@ -41,7 +41,7 @@ def main():
         data['filters'] = []  # Controlled filter test without a downloaded list.
         data['user_rules'] = ['||blocked.example.test^']
         (base/'conf/AdGuardHome.yaml').write_text(json.dumps(data))
-        image = config.images(ROOT/'versions.env')['ADGUARD_IMAGE']
+        image = adguard.images(ROOT)['ADGUARD_IMAGE']
         try:
             docker('run', '-d', '--name', name, '--cap-drop', 'ALL',
                    '--cap-add', 'NET_BIND_SERVICE', '--cap-add', 'NET_RAW',

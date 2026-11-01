@@ -1,8 +1,8 @@
 # Immich operations
 
 Immich is implemented as the independent `ohara-immich` Compose project in
-`compose.immich.yaml`. It is optional: the main setup/up/status commands never
-start it. The release is v3.3.5, with immutable images in `versions.immich.env`
+`compose/immich.yaml`. It is optional: the main setup/up/status commands never
+start it. The release is v3.3.5, with immutable images in `versions/immich.env`
 matching the official release Compose dependencies. PostgreSQL and Valkey run in
 containers with no published ports. Only Immich publishes `127.0.0.1:2283`.
 The production instance was started privately on 2026-10-22 after the operator
@@ -122,7 +122,7 @@ Follow the release's supported [backup and restore procedure](https://docs.immic
    Include the completed database dump. Copying only the nested `library` directory
    misses assets; copying photos without the database loses application state.
 3. Encrypt and transfer the backup off-host. Privately preserve `.env`, any local
-   settings, the deployment commit and `versions.immich.env`. Raw PostgreSQL files
+   settings, the deployment commit and `versions/immich.env`. Raw PostgreSQL files
    copied while the database is running are not a consistent database backup.
 4. Restore into an isolated project with separate paths/volumes and a different
    loopback port, using the same Immich release and its supported onboarding

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise pinned applications and rendered Nginx using only disposable data."""
+from deployment_fixtures import copy_deployment
 import http.client
 import hashlib
 import json
@@ -51,9 +52,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='smoke-', dir=ROOT / 'local') as directory:
         root = Path(directory).resolve()
         shutil.copytree(ROOT / 'configs', root / 'configs')
-        shutil.copy(ROOT / 'compose.yaml', root / 'compose.yaml')
-        shutil.copy(ROOT / 'compose.jellyfin-theme.yaml', root / 'compose.jellyfin-theme.yaml')
-        shutil.copy(ROOT / 'versions.env', root / 'versions.env')
+        copy_deployment(root,'compose/stack.yaml')
+        copy_deployment(root,'compose/overrides/jellyfin-theme.yaml')
+        copy_deployment(root,'versions/stack.env')
         c = config.load(ROOT / '.env.example')
         c['HOMEPAGE_HOST'] = 'ohara.' + c['DOMAIN']
         c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'),
@@ -312,7 +313,7 @@ def main():
             compose(['down', '--remove-orphans'], timeout=90)
             # Linux preserves container UIDs on bind-mounted dummy files. Restore
             # only this generated fixture's data ownership before tempfile cleanup.
-            cleanup_image = config.images(root / 'versions.env')['QBITTORRENT_IMAGE']
+            cleanup_image = config.images(root / 'versions/stack.env')['QBITTORRENT_IMAGE']
             runtime.run(docker + ['run', '--rm', '--user', '0:0', '--entrypoint', '/bin/sh',
                                  '-v', f'{root / "data"}:/fixture', cleanup_image,
                                  '-c', 'chown -R "$1:$2" /fixture', 'fixture-cleanup',

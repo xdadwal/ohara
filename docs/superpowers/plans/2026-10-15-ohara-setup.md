@@ -1,10 +1,15 @@
 # Ohara Agent-Friendly Setup Implementation Plan
 
+Historical implementation plan: current scripts and operational guides supersede
+its command examples. Follow [deployment layout](../../deployment-layout.md) for
+current file organization. Never pass private `.env` directly to Compose, even
+where an old planning example below suggests it.
+
 Copyparty/file-sharing provisions in this historical plan were removed on
 2026-10-16; use docs/stack.md and current deployment code.
 
 Pi-hole/LAN DNS provisions in this historical plan were removed on 2026-10-16.
-Use current compose.yaml, AGENTS.md and operations.md for deployment.
+Use current compose/stack.yaml, AGENTS.md and operations.md for deployment.
 
 Credential generation in this historical plan is superseded by the user-managed
 input workflow in [credentials.md](../../credentials.md) (2026-10-16).
@@ -64,9 +69,9 @@ Seerr is a request manager, not playback or acquisition. Do not silently restore
 ```text
 AGENTS.md                         agent entry point and operational boundaries
 README.md                         service inventory and fresh-host quick start
-compose.yaml                      retained application services only
+compose/stack.yaml                      retained application services only
 .env.example                      documented non-secret configuration schema
-versions.env                      reviewed image tags/digests, committed
+versions/stack.env                      reviewed image tags/digests, committed
 configs/copyparty/config.example   authenticated file-sharing template
 configs/nginx/*.template           HTTP bootstrap and HTTPS virtual hosts
 scripts/setup                     host preparation, no application deployment
@@ -83,7 +88,7 @@ docs/operations.md                 install, public activation, backup, recovery
 docs/decisions.md                  short rationale and unresolved choices
 ```
 
-Configuration fields: `DOMAIN`, `LAN_IP`, `TZ`, `DATA_ROOT`, `FILES_ROOT`, `RUN_UID`, `RUN_GID`, `ACME_EMAIL`, `REQUESTS_HOST`, `FILES_HOST`, `SPEED_HOST`. Default data root `/ohara`; never make an existing personal directory public by inference. Store local secrets/config under an ignored `local/` directory with restrictive permissions. Do not treat `.env` as executable shell code or accept arbitrary executable values. Image references live only in `versions.env`.
+Configuration fields: `DOMAIN`, `LAN_IP`, `TZ`, `DATA_ROOT`, `FILES_ROOT`, `RUN_UID`, `RUN_GID`, `ACME_EMAIL`, `REQUESTS_HOST`, `FILES_HOST`, `SPEED_HOST`. Default data root `/ohara`; never make an existing personal directory public by inference. Store local secrets/config under an ignored `local/` directory with restrictive permissions. Do not treat `.env` as executable shell code or accept arbitrary executable values. Image references live only in `versions/stack.env`.
 
 Commands resolve paths from the repository location, work from any current directory, accept `--help`, return nonzero on failure, avoid secret output, and have bounded network requests. Elevated operations use root or sudo only where required; Docker commands use existing access or sudo without adding users to the Docker group automatically. Unattended setup uses explicit `--non-interactive` and fails on missing required inputs instead of prompting indefinitely.
 
@@ -97,7 +102,7 @@ Commands resolve paths from the repository location, work from any current direc
 
 ## Task 1: Establish the agent entry point and configuration contract
 
-**Files:** Create `AGENTS.md`, `.env.example`, `versions.env`, `docs/decisions.md`, `scripts/render-config.py`, `tests/test_configuration.py`; update `.gitignore` and `README.md`.
+**Files:** Create `AGENTS.md`, `.env.example`, `versions/stack.env`, `docs/decisions.md`, `scripts/render-config.py`, `tests/test_configuration.py`; update `.gitignore` and `README.md`.
 
 **Produces:** One documented configuration schema; strict parser/rendering used by later commands.
 
@@ -110,15 +115,15 @@ Commands resolve paths from the repository location, work from any current direc
 
 ## Task 2: Replace the fragmented application stack
 
-**Files:** Create `compose.yaml`; modify `versions.env`, Copyparty configuration, `scripts/check`, `scripts/up`, `scripts/status`, `scripts/lib/common.sh`, and configuration tests.
+**Files:** Create `compose/stack.yaml`; modify `versions/stack.env`, Copyparty configuration, `scripts/check`, `scripts/up`, `scripts/status`, `scripts/lib/common.sh`, and configuration tests.
 
 **Consumes:** Task 1 schema. **Produces:** Local-only application startup with predictable persistent paths.
 
-- [ ] Verify official stable releases and architecture manifests, record source URLs, and pin image digests in `versions.env`. Do not use floating `latest` tags for deployment.
+- [ ] Verify official stable releases and architecture manifests, record source URLs, and pin image digests in `versions/stack.env`. Do not use floating `latest` tags for deployment.
 - [ ] Define Seerr with `init: true`, UID-compatible config storage, loopback port 5055, restart policy, and bounded log retention. Use its default SQLite deployment; do not introduce PostgreSQL for it.
 - [ ] Define Copyparty with loopback port 3923, explicit file root, authenticated permissions, supported hashed credential configuration, and a narrowly trusted proxy header. Keep credentials in ignored local config. Disable anonymous read/write.
 - [ ] Define OpenSpeedTest on loopback port 3000, and Pi-hole DNS on `${LAN_IP}:53` TCP/UDP with administration on loopback port 8888. Apply current v6 settings and persistent storage; omit unneeded DHCP/NTP capabilities.
-- [ ] Implement `check` without starting containers or installing dependencies. Use `docker compose --env-file versions.env --env-file .env config --quiet`, then inspect normalized JSON internally to assert service inventory and exact port bindings; never print secret-bearing normalized configuration.
+- [ ] Implement `check` without starting containers or installing dependencies. Use `docker compose --env-file versions/stack.env --env-file .env config --quiet`, then inspect normalized JSON internally to assert service inventory and exact port bindings; never print secret-bearing normalized configuration.
 - [ ] Make `up` validate first and start the local stack only. Give `status` finite timeouts and distinct output for container running, HTTP reachable, and owner/integration configuration pending.
 - [ ] Test missing secrets, unwritable/new storage, invalid addresses, and exact retained-service/port inventory. Run disposable-container smoke checks without private data.
 - [ ] Commit the local-stack deliverable.

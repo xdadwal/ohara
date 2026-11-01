@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Disposable ntfy auth/cache/publish/subscribe checks; never production credentials."""
+from deployment_fixtures import copy_deployment
 import json
 import base64
 import http.client
@@ -69,7 +70,7 @@ def homepage_check(c,root,project,reader):
     directory=root/'homepage';shutil.copytree(ROOT/'configs/homepage',directory)
     profile=ntfy.widget_profile(c);profile['url']='http://ntfy:8080'
     (directory/'services.yaml').write_text(yaml.safe_dump([{'Utility':[{'ntfy':{'widget':profile}}]}]))
-    image=config.images(ROOT/'versions.env')['HOMEPAGE_IMAGE']
+    image=config.images(ROOT/'versions/stack.env')['HOMEPAGE_IMAGE']
     name=project+'-homepage';docker=runtime.docker_prefix()
     try:
         runtime.run(docker+['run','-d','--name',name,'--network',project+'_default',
@@ -97,7 +98,7 @@ def main():
     (ROOT/'local').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='ntfy-smoke-',dir=ROOT/'local') as directory:
         root=Path(directory).resolve()
-        for name in ['compose.ntfy.yaml','versions.ntfy.env']:shutil.copy(ROOT/name,root/name)
+        for name in ['compose/ntfy.yaml','versions/ntfy.env']:copy_deployment(root,name)
         p=root/'.env';p.write_text('NTFY_PASSWORD=Disposable ntfy fixture only $ # =\nNTFY_HOMEPAGE_PASSWORD=Disposable reader fixture only\n');p.chmod(0o600)
         c=config.load(ROOT/'.env.example')|{'NTFY_ROOT':str(root/'storage'),'RUN_UID':str(os.getuid()),'RUN_GID':str(os.getgid())}
         ntfy.prepare(c,root)

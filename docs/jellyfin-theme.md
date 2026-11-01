@@ -21,7 +21,7 @@ scripts/jellyfin-theme check
 ```
 
 Install validates API access, generates the overlay from the exact digest-pinned
-image in versions.env, recreates only Jellyfin, and applies branding/preferences
+image in versions/stack.env, recreates only Jellyfin, and applies branding/preferences
 through supported APIs. It briefly interrupts Jellyfin playback during recreation.
 Open https://tv.xdadwal.in and hard-refresh the browser after installation.
 
@@ -52,7 +52,7 @@ of a mutable `main` script. Authentication tokens are not embedded in assets.
 
 Generated files live under `DATA_ROOT/jellyfin-theme/`: the patched `index.html`,
 reviewed `ui/` assets and `manifest.json` (enabled state, base-image pin and hashes).
-Normal check/up/status commands retain `compose.jellyfin-theme.yaml` when enabled.
+Normal check/up/status commands retain `compose/overrides/jellyfin-theme.yaml` when enabled.
 The two web mounts are read-only; image, user, port bindings and existing config,
 cache and media mounts retain their configuration. Preparing files alone does not
 enable the overlay on a fresh host.

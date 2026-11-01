@@ -42,7 +42,7 @@ def override(c, root):
     manifest = state(c)
     if not manifest or not manifest['enabled']:
         return []
-    if manifest.get('image') != config.images(root/'versions.env')['JELLYFIN_IMAGE']:
+    if manifest.get('image') != config.images(root/'versions/stack.env')['JELLYFIN_IMAGE']:
         raise ValueError('Jellyfin image changed: run scripts/jellyfin-theme install to refresh its web overlay')
     expected = {'index.html'} | {'ui/'+name for name in FILES}
     if set(manifest.get('files', {})) != expected:
@@ -51,7 +51,7 @@ def override(c, root):
         path = safe(Path(c['DATA_ROOT'])/'jellyfin-theme'/name)
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
             raise ValueError('Jellyfin theme assets changed or are missing; review before startup')
-    return ['-f', str(root/'compose.jellyfin-theme.yaml')]
+    return ['-f', str(root/'compose/overrides/jellyfin-theme.yaml')]
 
 
 def write(path, data, c):
@@ -81,7 +81,7 @@ def prepare(c, root, *, enabled=None):
     for name, digest in upstream['sha256'].items():
         if name not in {*FILES, 'LICENSE'} or hashlib.sha256((source/name).read_bytes()).hexdigest() != digest:
             raise ValueError('Vendored Abyss assets do not match the reviewed upstream manifest')
-    image = config.images(root/'versions.env')['JELLYFIN_IMAGE']
+    image = config.images(root/'versions/stack.env')['JELLYFIN_IMAGE']
     # Read the pristine index from the exact pinned image, never an already patched
     # running container. No volumes, networking, privileged mode or shell installer.
     original = runtime.run(runtime.docker_prefix()+[
