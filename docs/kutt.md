@@ -342,7 +342,8 @@ no-store. It does not establish a real phone QR scan or fresh bare-metal setup.
 On 2026-11-01 the supplied DB/JWT inputs were validated without displaying values.
 The owner explicitly approved the shorter DB password using the exception below.
 Real Kutt/Postgres containers are now healthy on internal storage; their restricted
-DB role is verified and owner setup was pending at the last status inspection.
+DB role is verified and the owner has now confirmed first-account creation, and an active verified
+admin is present. Native credential proof remains required before public activation.
 The live route is LAN-only onboarding, not public activation. Trusted HTTPS at
 `https://kutt.xdadwal.in/create-admin` returned 200 from the LAN; the native form
 was verified without submitting an account. A Docker peer outside the LAN returned
@@ -353,8 +354,8 @@ identities blindly to a fresh host. Public activation must update that baseline.
 
 The exact live AdGuard rewrite returned 192.168.1.101 over UDP and TCP. The plain
 Kutt Utility card was verified through Homepage's authenticated API; no widget
-or credentials were added. Native owner creation, explicit owner login proof,
-public activation, mobile-data access and a real QR scan remain owner verification.
+or credentials were added. Owner creation is complete. Explicit native owner login proof, public activation,
+mobile-data access and a real QR scan remain pending verification.
 No production account, short link or QR was automatically created. State and
 credentials remain outside Git. Full fresh-machine provisioning is not claimed.
 
@@ -424,8 +425,12 @@ On 2026-11-01 this temporary trace was enabled while diagnosing the owner's 403;
 the server's forced-LAN and system-DNS setup requests both returned 200. The
 original route is backed up at
 `/var/backups/ohara/kutt-source-diagnosis-20261101-073651-743601/ohara-kutt.conf`.
-A denied client reload is still required before assigning a root cause. This
-temporary runtime trace is not a change to the tracked stable onboarding baseline.
+The trace subsequently recorded four 403 responses from addresses outside the
+configured LAN; this confirms the source rule was reached but does not identify
+the client DNS/VPN/relay path. The trace was removed on 2026-11-01 after capture,
+and the exact original LAN-only route was restored and matched against the
+tracked stable onboarding baseline. No client IP logs are versioned. This
+temporary trace did not change the access policy.
 After capturing it, confirm no intervening route activation occurred, restore
 that exact backup with `bambuddy_proxy.deploy` (creating a new rollback backup),
 and verify `sudo nginx -t` plus the LAN page and non-LAN denial again. If the
