@@ -29,6 +29,10 @@
         href: "https://bambuddy.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Bambu Lab A1 mini
 - Utility:
+    - ntfy:
+        icon: ntfy.png
+        href: "https://ntfy.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Server notifications
     - qBittorrent:
         icon: qbittorrent.png
         href: "https://qbittorrent.{{HOMEPAGE_VAR_DOMAIN}}"

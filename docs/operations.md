@@ -456,3 +456,26 @@ onboarding](bambuddy.md). Keep its HTTP backend loopback-only. The owner approve
 public HTTPS with native password login and no added MFA after LAN onboarding;
 use `scripts/bambuddy-proxy`. No printer-control or discovery ports are published. Owner setup
 and printer credentials stay in the HTTPS UI.
+
+## Optional ntfy notifications
+
+Follow [ntfy.md](ntfy.md) and `scripts/ntfy` for the independently pinned server,
+local storage outside the media pool, native deny-by-default topic authentication,
+HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
+private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
+wake-up relay only with explicit approval. No notification text is forwarded to
+that relay. Verify the real supplied account before public proxy activation.
+Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
+readiness; it reads the actual configured storage UUIDs and preserves the existing
+storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
+delivery. Local publish success is not phone delivery or independent outage
+detection; same-host monitoring cannot report a complete host/network outage.
+Keep credentials out of Homepage, command arguments and logs.
+
+For optional ntfy event monitoring, Seerr new-request notifications and the
+read-only Homepage widget, follow
+[host and application alerts](alerts.md). Reinstall the host worker after alert
+changes and configure Seerr separately; preserve private inputs and alert state.
+
+Repeated media outages: follow the [USB/storage incident investigation](storage-incident-2026-10-31.md)
+to correlate kernel disconnects with the guarded media unit before restarting services.

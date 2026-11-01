@@ -58,3 +58,11 @@ and the repository, followed by playback verification.
 `files.xdadwal.in` appears only in the old HTTP ACME/redirect host list; there is
 no HTTPS file service. Localhost redirects to the apex portfolio. Keep these
 details when comparing/restoring this baseline, rather than inferring new routes.
+
+## ntfy route
+
+`ohara-ntfy.conf` records the authenticated notification route activated on
+2026-10-31 through scripts/ntfy-proxy. It preserves streaming/WebSockets,
+redirects HTTP with 308 and suppresses token-bearing request-URL logs. Backend
+2586 remains loopback-only. See docs/ntfy.md for host-specific prerequisites,
+credential handling, installation and verification scope.

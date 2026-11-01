@@ -323,3 +323,6 @@ external branch or restore the whole private `.env` over later credential edits.
 
 References: [Debian 2.40.2 manual](https://manpages.debian.org/trixie/mergerfs/mergerfs.1.en.html),
 [upstream systemd mount dependencies](https://trapexit.github.io/mergerfs/latest/quickstart/#systemd-mount-dependencies).
+
+For correlated USB disconnect/media outage diagnosis and the separate Docker CLI
+alert warning fix, see [the October 31 investigation](storage-incident-2026-10-31.md).

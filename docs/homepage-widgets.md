@@ -231,3 +231,16 @@ the newly allowlisted key. Other services do not receive it. Its custom API
 request uses the Bambuddy HTTPS hostname, which must resolve from Homepage.
 The header remains server-side; only the public field mappings reach browsers.
 A missing key blocks this optional command, not normal service startup.
+
+
+## ntfy latest notification
+
+The optional native `ntfy` widget is installed selectively with
+`sudo scripts/ntfy widget`, after ntfy HTTPS and the existing Homepage login work.
+Supply the independent `NTFY_HOMEPAGE_PASSWORD` privately in `.env`; no default
+secret is provided. The `homepage-reader` user has only `ohara-alerts:ro`.
+The live card uses `{{HOMEPAGE_VAR_NTFY_PASSWORD}}`, populated only for Homepage;
+the publisher password never reaches it. This displays the latest notification,
+priority and receipt time, without publishing or managing topics. The helper
+recreates only Homepage and verifies its authenticated API/proxy response and
+credential exclusion. See [prerequisites, persistence and rollback](alerts.md#homepage).

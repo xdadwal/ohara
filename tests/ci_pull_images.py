@@ -12,6 +12,7 @@ import config
 import immich
 import maintainerr
 import bambuddy
+import ntfy
 
 
 def retry(command,timeout,*,attempts=3):
@@ -34,7 +35,7 @@ def image_list(target):
     if target=='bambuddy':return list(bambuddy.images(ROOT).values())
     if target=='immich':return list(immich.images(ROOT).values())
     from smoke import NGINX
-    return list(dict.fromkeys([*config.images(ROOT/'versions.env').values(),*maintainerr.images(ROOT).values(),NGINX]))
+    return list(dict.fromkeys([*config.images(ROOT/'versions.env').values(),*maintainerr.images(ROOT).values(),*ntfy.images(ROOT).values(),NGINX]))
 
 
 def main():

@@ -156,3 +156,29 @@ See [widget setup](homepage-widgets.md).
 Optional `HOMEPAGE_VAR_BAMBUDDY_API_KEY` is an application-issued Bambuddy key
 restricted to Read Status and one printer. Only Homepage receives this key; see
 [the widget setup](homepage-widgets.md#bambuddy-printer-status).
+
+## Optional ntfy
+
+Supply only NTFY_PASSWORD privately for the independent notification service, at
+least 16 characters and at most 72 UTF-8 bytes. It is not required or forwarded
+by the main stack or Homepage. See [ntfy.md](ntfy.md). Initial setup hashes this
+value for the regular user named admin, scoped to ohara-alerts. The host publisher
+receives a root-only derived credential file during explicit alert installation.
+Changing the input alone does not rotate an initialized account. Preserve private
+configuration/authentication state; reconcile rotation through supported controls.
+
+The default ntfy minimum remains 16 characters. The owner-approved
+NTFY_ALLOW_SHORT_PASSWORD=true exception permits a nonempty shorter password for
+ntfy only; the 72-byte bcrypt bound still applies. Use the explicit account
+rotation workflow in ntfy.md to update existing account and publisher state.
+
+
+The optional ntfy Homepage widget uses a different input,
+`NTFY_HOMEPAGE_PASSWORD` (16 characters minimum, 72 UTF-8 bytes maximum), for
+`homepage-reader`, restricted to reading `ohara-alerts`. Only its derived alias
+`HOMEPAGE_VAR_NTFY_PASSWORD` reaches Homepage; the publisher `NTFY_PASSWORD`
+never does. Supply it privately, then run `sudo scripts/ntfy widget` after ntfy
+and Homepage HTTPS/login are working. Setup does not rotate an existing reader
+password. Follow [widget setup and rollback](alerts.md#homepage). The current
+owner explicitly authorized generating this one reader password; future setups
+still require owner-supplied credentials unless explicitly authorized otherwise.
