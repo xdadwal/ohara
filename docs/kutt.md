@@ -190,9 +190,9 @@ password-protected; public registration and owner creation stay restricted.
 
 If forwarding fails, verify the existing SSH session, permitted tailnet port-22
 policy, local port availability and server backend readiness. Do not expose the
-unclaimed setup endpoint publicly as a workaround. This workflow is prepared;
-real owner creation/public activation remain pending private inputs and owner UI
-completion. The disposable smoke already verifies loopback first-owner creation
+unclaimed setup endpoint publicly as a workaround. The current host has since
+completed owner creation and public-user activation; a real remote browser/tunnel
+bootstrap was not observed by the agent. The disposable smoke already verifies loopback first-owner creation
 and subsequent explicit native login, not a real remote browser/tunnel session.
 
 Once the owner has completed that UI step:
@@ -380,23 +380,28 @@ no-store. It does not establish a real phone QR scan or fresh bare-metal setup.
 
 On 2026-11-01 the supplied DB/JWT inputs were validated without displaying values.
 The owner explicitly approved the shorter DB password using the exception below.
-Real Kutt/Postgres containers are now healthy on internal storage; their restricted
-DB role is verified and the owner has now confirmed first-account creation, and an active verified
-admin is present. Native credential proof remains required before public activation.
-The live route is LAN-only onboarding, not public activation. Trusted HTTPS at
-`https://kutt.xdadwal.in/create-admin` returned 200 from the LAN; the native form
-was verified without submitting an account. A Docker peer outside the LAN returned
-403 even with a forged LAN forwarding header. This is a source-restriction test,
-not a claim of independent Internet reachability. The installed LAN-only baseline
-is tracked in configs/nginx/deployed/ohara-kutt.conf; do not copy its LAN/certificate
-identities blindly to a fresh host. Public activation must update that baseline.
+Real Kutt/Postgres containers are healthy on internal storage with their restricted
+DB role verified. The owner completed first-account creation and reported the
+service working. Public-user activation is now installed: the live route exactly
+matches `kutt_proxy.render(..., public=True)` and the tracked deployed baseline.
+The helper retains its private native-login verification requirement; no owner
+password was captured or persisted by the agent.
+
+Trusted LAN `/login` returns 200. A non-LAN Docker peer receives 200 for `/login`
+and 403 for `/admin` and `/api/users/admin`. Dedicated disposable tests additionally
+verify the restriction with valid administrator cookies, native USER-role and
+own-record isolation, both API aliases and case variants. These source-boundary
+tests are separate from an independent mobile/Internet connection. The public-user
+baseline is tracked in configs/nginx/deployed/ohara-kutt.conf; do not blindly copy
+this host's LAN/certificate identities elsewhere.
 
 The exact live AdGuard rewrite returned 192.168.1.101 over UDP and TCP. The plain
 Kutt Utility card was verified through Homepage's authenticated API; no widget
-or credentials were added. Owner creation is complete. Explicit native owner login proof, public activation,
-mobile-data access and a real QR scan remain pending verification.
-No production account, short link or QR was automatically created. State and
-credentials remain outside Git. Full fresh-machine provisioning is not claimed.
+or credentials were added. Kutt app/database/TLS alert checks were healthy with
+an empty notification outbox after installation. A phone QR scan and mobile-data
+redirect test remain owner verification. No production user, short link or QR was
+automatically created by the agent. Private state/credentials remain outside Git.
+Full fresh-machine provisioning and independent off-host backup are not claimed.
 
 The default hostname was changed from go.DOMAIN to kutt.DOMAIN at the owner's
 request before any production Kutt account/link existed. The private KUTT_HOST
@@ -478,9 +483,8 @@ Retain the metadata privately; do not commit client IP logs or inferred identiti
 
 On 2026-11-01 the owner selected LAN-only administration with authenticated
 regular-user public access. The updated privileged-route guards were applied
-to the live onboarding-only route and its tracked baseline refreshed. Public
-regular-user access is still pending the interactive native owner verification
-command; it has not been opened based merely on account presence. The disposable
+first to the onboarding-only route, and subsequently activated for public regular
+users; the tracked baseline now matches the live public-user/LAN-admin profile. The disposable
 proxy test verifies valid-admin-cookie denial outside LAN, case/API aliases,
 LAN admin access, regular public login/own-link creation/editing, native USER-role
 denial of admin access, and public redirects. No real regular user or link was

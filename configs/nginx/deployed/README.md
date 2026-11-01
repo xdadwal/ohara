@@ -67,14 +67,11 @@ redirects HTTP with 308 and suppresses token-bearing request-URL logs. Backend
 2586 remains loopback-only. See docs/ntfy.md for host-specific prerequisites,
 credential handling, installation and verification scope.
 
-`ohara-kutt.conf` records the live 2026-11-01 LAN-only owner-onboarding route
-for kutt.xdadwal.in, verified with trusted LAN HTTPS and a denied non-LAN Docker
-peer despite forged forwarding headers. Public activation and owner login are
-pending. After verified activation, refresh this exact baseline. LAN/certificate
-paths are current-host identities; use scripts/kutt-proxy and docs/kutt.md for
-actual target discovery rather than blindly copying this installed baseline.
-
-The Kutt onboarding baseline now includes permanent LAN-only privileged admin
-routes/forms and both API aliases. Public regular-user activation remains behind
-the native owner-login verification command. Refresh the baseline after that
-command, retaining these admin source restrictions.
+`ohara-kutt.conf` records the live 2026-11-01 public-user/LAN-admin route for
+kutt.xdadwal.in, exactly matching the reviewed public template after owner setup.
+Trusted LAN login and non-LAN login return 200; non-LAN admin UI/API return 403.
+Valid-admin-cookie/case/API-alias denial and regular-user functionality are also
+covered by disposable TLS tests. Owner-creation paths remain LAN-only. This is
+not an independent mobile/Internet test. LAN/certificate paths are current-host
+identities; use scripts/kutt-proxy and docs/kutt.md for target discovery rather
+than blindly copying this installed baseline. Refresh it after deliberate changes.
