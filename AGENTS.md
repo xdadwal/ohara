@@ -39,8 +39,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - Optional Kutt uses scripts/kutt, scripts/kutt-proxy and docs/kutt.md. Keep its
   independent PostgreSQL 17 project/database/network and internal-disk state,
   separate from Immich and USB media. No Redis, shared authentication or public
-  PostgreSQL port. Use owner-supplied KUTT_DB_PASSWORD, KUTT_JWT_SECRET and
-  KUTT_PASSWORD in private .env; never generate or forward these to Homepage.
+  PostgreSQL port. Use owner-supplied KUTT_DB_PASSWORD and KUTT_JWT_SECRET in
+  private .env; never generate or forward these to Homepage. Start containers
+  before owner UI setup; its password is chosen there and verified by a private
+  terminal prompt, not persisted. KUTT_PASSWORD is deprecated compatibility only.
   First owner creation stays in the LAN-only UI; public activation must verify
   native login and keep owner-creation endpoints LAN-only. Preserve existing
   users/links/secret files; do not rotate inputs, ban/delete links or restore

@@ -15,6 +15,9 @@ flow was not found; do not describe it as a reversible enable/disable switch.
 The owner accepted this scope. Expiration is different: upstream periodically
 deletes expired links, so do not use it as a pause mechanism. QR codes encode the
 stable short URL, not its current target; changing the target needs no new QR.
+Short codes are random by default (six characters in the pinned release); a
+custom alias is optional. Example codes are illustrative, not created or reserved
+before the service and owner account exist.
 
 The helper uses official release/digest pins in `versions.kutt.env`, inspected
 for amd64/arm64. Do not replace pins with `latest`. PostgreSQL uses the reviewed
@@ -66,8 +69,8 @@ The owner supplies independent literal inputs in private mode-0600 `.env`:
 
 - `KUTT_DB_PASSWORD`: at least 16 characters.
 - `KUTT_JWT_SECRET`: at least 32 characters, persisted signing secret.
-- `KUTT_PASSWORD`: owner UI password, 16–64 characters. It is checked when proving
-  native owner login before public activation; no owner account is auto-created.
+Choose the owner password directly in Kutt’s UI after containers are running;
+it is not a required dotenv input. No owner account is auto-created.
 
 Do not generate values without explicit owner authorization, request them in
 chat, source `.env`, reuse an Immich/other application secret, or pass the whole
@@ -75,11 +78,12 @@ file to Docker. Leading/trailing whitespace is rejected because Kutt trims file
 inputs. Quoted SQL punctuation is handled by the reviewed initialization script;
 credential text is never executed or interpolated into shell commands.
 
-Only DB/JWT values are needed to start local services; the owner input can follow
-before UI onboarding/public activation. `prepare` writes only narrow private
+Only DB/JWT values are needed to prepare and start services. First start the
+containers, then create the owner through the private UI/tunnel, then verify
+login and activate public HTTPS. `prepare` writes only narrow private
 files under `KUTT_ROOT/secrets`, not a second editable dotenv. The DB input is
 read-only in the two relevant containers; JWT is read-only in Kutt only. The UI
-password is not forwarded into either container or Homepage. Existing secret
+password is not provisioned into either container or Homepage by our helpers. Existing secret
 files must match private inputs; reruns refuse implicit rotation. Preserve the
 same JWT when restoring state so existing sessions are not invalidated by accident.
 
@@ -139,8 +143,8 @@ the card through the existing password-protected Homepage API; do not reset it.
 No Kutt account password/API key is forwarded to Homepage.
 
 On the real LAN, open `https://kutt.xdadwal.in` (use the chosen target hostname).
-The owner creates the first administrator with their actual email and the private
-KUTT_PASSWORD. After account creation, explicitly sign in once; do not assume the
+The owner creates the first administrator with their actual email and a password
+chosen directly in that UI. After account creation, explicitly sign in once; do not assume the
 welcome screen proves authentication. The helper does not invent emails or create
 users. SMTP, OIDC, public registration and anonymous link creation stay disabled.
 Without SMTP, email reset/verification/report features are unavailable; preserve
@@ -152,7 +156,7 @@ An owner away from the LAN can bootstrap through ordinary OpenSSH over the
 already enrolled private tailnet. This does not enable Tailscale SSH, Serve,
 Funnel, subnet routes, DNS acceptance or a public port-22 forward. Public
 first-owner creation remains blocked by Nginx. Prerequisites are the same private
-DB/JWT inputs, started Kutt/Postgres backend, an owner-supplied KUTT_PASSWORD,
+DB/JWT inputs, started Kutt/Postgres backend,
 existing authorized SSH keys and an enrolled owner client with permitted SSH.
 A tunnel cannot make an unstarted backend available.
 
@@ -170,7 +174,7 @@ Keep that terminal open and use `http://localhost:33010/create-admin` on that
 same laptop. HTTP is confined to browser/SSH loopback endpoints; the remote leg
 is encrypted by SSH. No certificate warning, client DNS modification or new
 public listener is needed. Create the actual owner using their real email and
-matching private KUTT_PASSWORD. Do not paste credentials into a tunnel command.
+a password chosen directly in the UI. Do not paste credentials into a tunnel command.
 The current host values discovered on 2026-11-01 are login `akshay`, server
 `100.98.112.121`; the owner Mac had an existing private SSH session. Do not assume
 those identities/IPs on a fresh machine.
@@ -207,9 +211,19 @@ LAN-only. This is distinct from a LAN-only administration policy.
 
 Public activation reads the single existing verified active admin email privately
 from its own database, logs in through Kutt's native API using the supplied
-password, and proves admin API access. Missing/ambiguous owners or failed login
+password, and proves admin API access. The command prompts without echo in an
+interactive terminal and never saves that password. Missing/ambiguous owners or failed login
 leave the public guard in place. Status showing an account merely present is not
 proof of completed login. Other applications/accounts are never imported.
+
+`KUTT_PASSWORD` is deprecated as a persistent input. Existing private files may
+retain it temporarily for backward-compatible verification; it is not required
+by prepare/up or new owner creation. After verifying an existing installation,
+remove that line manually from private .env. Removal does not change the account
+or its password hash in PostgreSQL. Future public-activation/recovery checks
+prompt privately again if needed. With no legacy value and no interactive TTY,
+activation fails closed with instructions to run interactively; there is no
+account-presence-only bypass. Never put the password in command arguments or chat.
 
 Before calling the deployment ready, verify LAN HTTPS, public redirect behavior
 from an actually external connection, native owner login, Homepage, local DNS and

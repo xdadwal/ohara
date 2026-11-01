@@ -29,7 +29,7 @@ class KuttTests(unittest.TestCase):
             p.chmod(0o600)
             self.assertIn("' $ # =",kutt.secrets(root)['KUTT_DB_PASSWORD'])
             self.assertNotIn('KUTT_PASSWORD',kutt.secrets(root))
-            kutt.secrets(root,owner=True)
+            self.assertEqual(kutt.owner_password(root),'Fixture owner password')
             p.write_text('KUTT_DB_PASSWORD=  Fixture database secret\nKUTT_JWT_SECRET=Fixture signing 0123456789abcdef0123456789\n')
             with self.assertRaises(ValueError):kutt.secrets(root)
             p.chmod(0o644)
@@ -66,7 +66,7 @@ class KuttTests(unittest.TestCase):
         deploy.assert_not_called()
 
     def test_ambiguous_existing_accounts_do_not_get_reset(self):
-        with patch.object(kutt,'secrets',return_value={'KUTT_PASSWORD':'Fixture owner password'}),patch.object(kutt,'sql',return_value='one@example.test\ntwo@example.test'),patch.object(kutt,'client') as client:
+        with patch.object(kutt,'owner_password',return_value='Fixture owner password'),patch.object(kutt,'sql',return_value='one@example.test\ntwo@example.test'),patch.object(kutt,'client') as client:
             with self.assertRaises(ValueError):kutt.require_accounts(self.c,ROOT)
         client.assert_not_called()
 
@@ -77,3 +77,16 @@ class KuttTests(unittest.TestCase):
         check.assert_called_once_with(self.c,ROOT)
         self.assertEqual(compose.call_args.kwargs['input'],fixture)
         self.assertNotIn(fixture,compose.call_args.args[2])
+
+    def test_startup_needs_only_db_and_jwt_and_verification_prompt_is_transient(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);p=root/'.env'
+            original='KUTT_DB_PASSWORD=Fixture database password\nKUTT_JWT_SECRET=Fixture signing 0123456789abcdef0123456789\n'
+            p.write_text(original);p.chmod(0o600)
+            self.assertEqual(set(kutt.secrets(root)),{'KUTT_DB_PASSWORD','KUTT_JWT_SECRET'})
+            with patch.object(kutt.sys.stdin,'isatty',return_value=True),patch.object(kutt.getpass,'getpass',return_value='Fixture temporary owner'):
+                self.assertEqual(kutt.owner_password(root),'Fixture temporary owner')
+            self.assertEqual(p.read_text(),original)
+            with patch.object(kutt.sys.stdin,'isatty',return_value=False),patch.object(kutt.getpass,'getpass') as prompt:
+                with self.assertRaises(ValueError):kutt.owner_password(root)
+            prompt.assert_not_called()

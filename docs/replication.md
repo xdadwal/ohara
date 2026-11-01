@@ -157,8 +157,10 @@ changes and configure Seerr separately; preserve private inputs and alert state.
 
 For Kutt and its independent PostgreSQL project, follow [Kutt setup and recovery](kutt.md).
 Discover the target's real hostname, private LAN CIDR, certificate paths and
-independent local storage first. The owner supplies KUTT_DB_PASSWORD,
-KUTT_JWT_SECRET and KUTT_PASSWORD privately in .env; never infer or generate them.
+independent local storage first. The owner supplies only KUTT_DB_PASSWORD and KUTT_JWT_SECRET privately in .env;
+never infer or generate them. Start the containers before UI owner creation.
+The owner chooses their login password in that UI; public activation prompts
+privately for it without saving it. Persistent KUTT_PASSWORD is deprecated.
 Use the separate prepare/up/proxy/homepage/dns commands and LAN-only native owner
 onboarding. Public proxy activation proves native login using existing account
 state; it never creates/resets an owner. Reinstall the optional authenticated ntfy

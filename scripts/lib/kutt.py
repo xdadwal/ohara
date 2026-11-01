@@ -3,6 +3,8 @@ import base64
 import datetime
 import ipaddress
 import json
+import getpass
+import sys
 import os
 from pathlib import Path
 import re
@@ -40,13 +42,26 @@ def settings(c):
     return name,base,mount
 
 
-def secrets(root,*,owner=False):
-    required={'KUTT_DB_PASSWORD','KUTT_JWT_SECRET'} | ({'KUTT_PASSWORD'} if owner else set())
+def secrets(root):
+    required={'KUTT_DB_PASSWORD','KUTT_JWT_SECRET'}
     values=credentials.read(root/'.env',required,ignored=config.KEYS | (credentials.ALL_KEYS-required))
     if any(v!=v.strip() for v in values.values()):raise ValueError('Kutt file inputs must not have leading/trailing whitespace')
     if len(set(values.values()))!=len(values):raise ValueError('Kutt inputs must be independent values')
-    if owner and len(values['KUTT_PASSWORD'])>64:raise ValueError('KUTT_PASSWORD exceeds native 64-character limit')
     return values
+
+
+def owner_password(root):
+    """Transient terminal input; deprecated private dotenv input remains compatible."""
+    legacy=credentials.read(root/'.env',set(),{'KUTT_PASSWORD'},
+                            ignored=config.KEYS | (credentials.ALL_KEYS-{'KUTT_PASSWORD'}))
+    if legacy.get('KUTT_PASSWORD'):
+        value=legacy['KUTT_PASSWORD']
+    else:
+        if not sys.stdin.isatty():
+            raise ValueError('Run --accounts-ready in an interactive terminal for private owner login verification; no stored KUTT_PASSWORD is required')
+        value=getpass.getpass('Existing Kutt owner password (verification only; not saved): ')
+    if not 8<=len(value)<=64:raise ValueError('Owner password must satisfy Kutt native 8–64 character bounds')
+    return value
 
 
 def images(root):
@@ -161,10 +176,11 @@ def status(c,root):
 
 
 def require_accounts(c,root):
-    password=secrets(root,owner=True)['KUTT_PASSWORD']
     emails=sql(c,root,"SELECT email FROM users WHERE role='ADMIN' AND verified=true AND banned=false ORDER BY id").splitlines()
     if len(emails)!=1:raise ValueError('Exactly one verified enabled owner is required for initial public activation')
+    password=owner_password(root)
     api=client();reply=api.call('/api/auth/login',{'email':emails[0],'password':password})
+    del password
     if not isinstance(reply,dict) or not reply.get('token'):raise ValueError('Native Kutt owner login not verified')
     api.headers['Cookie']='token='+reply['token']
     api.call('/api/users/admin')

@@ -185,12 +185,17 @@ still require owner-supplied credentials unless explicitly authorized otherwise.
 
 ## Optional Kutt
 
-Supply independent KUTT_DB_PASSWORD (16+ characters), KUTT_JWT_SECRET (32+) and
-KUTT_PASSWORD (16–64) in mode-0600 .env; no defaults are provided. Leading/trailing
+Supply independent KUTT_DB_PASSWORD (16+ characters) and KUTT_JWT_SECRET (32+)
+in mode-0600 .env; only these two persistent inputs are needed for startup.
+Choose the owner password in the private UI after containers are running.
+KUTT_PASSWORD is deprecated; public activation prompts privately without saving
+it. A legacy dotenv value is accepted temporarily and can be manually removed
+after verification without changing the stored account password. Leading/trailing
 whitespace is rejected because upstream file inputs trim it. No input is returned
 by the public config parser or Homepage credential loader. Only narrow installed
 DB/JWT files are mounted read-only into their relevant containers; the owner's
-UI password stays in private .env and is used only for explicit login verification.
+UI password is used only transiently for explicit login verification, apart
+from any optional deprecated dotenv value the operator has not yet removed.
 The separate PostgreSQL app role is restricted; Immich credentials are not reused.
 Preparation preserves matching installed inputs and refuses silent rotation.
 See [Kutt setup, persistence and recovery](kutt.md).
