@@ -36,7 +36,7 @@ def network(c):
 def render(c,root,*,public=False):
     cert,key=tls_paths(c)
     text=(root/'configs/nginx/kutt.template').read_text()
-    replace={'@MODE@':'public redirects/native login' if public else 'LAN-only owner onboarding',
+    replace={'@MODE@':'public user links/login; LAN-only administration' if public else 'LAN-only owner onboarding',
              '@LAN_NETWORK@':network(c),'@KUTT_HOST@':kutt.settings(c)[0],
              '@ONBOARDING_GUARD@':'' if public else 'if ($ohara_kutt_allowed = 0) { return 403; }',
              '@TLS_CERT@':cert,'@TLS_KEY@':key,
@@ -66,4 +66,4 @@ def apply(c,root,*,public=False):
             raise ValueError('Another Nginx site defines Kutt; preserve and review')
     backup=Path('/var/backups/ohara')/('kutt-proxy-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
     bambuddy_proxy.deploy({target:render(c,root,public=public).encode()},backup)
-    print('Kutt '+('public redirects' if public else 'LAN-only owner onboarding')+' HTTPS enabled; other routes preserved')
+    print('Kutt '+('public user links with LAN-only administration' if public else 'LAN-only owner onboarding')+' HTTPS enabled; other routes preserved')

@@ -107,3 +107,8 @@ storage, outside the USB pool. The default `kutt.DOMAIN` hostname uses host Ngin
 with LAN-only initial owner onboarding, then authenticated management/public
 redirects. See the guide's current rollout status; templates are not proof of
 live deployment or owner setup. Main eleven-application startup is unchanged.
+
+Kutt public mode allows authenticated regular-user link operations and public
+redirects while restricting the admin panel/forms and privileged API aliases to
+the LAN. The shared login page remains public; registration/anonymous creation
+remain disabled. See [user provisioning and activation](kutt.md#regular-users-and-lan-only-administration).

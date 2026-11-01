@@ -46,7 +46,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   An explicit KUTT_ALLOW_SHORT_DB_PASSWORD exception is DB-only: retain nonempty
   validation and unchanged JWT requirements; do not replace supplied values.
   First owner creation stays in the LAN-only UI; public activation must verify
-  native login and keep owner-creation endpoints LAN-only. Preserve existing
+  native login and keep owner-creation and all privileged admin routes LAN-only.
+  Authenticated regular users may create/manage their own links publicly; keep
+  anonymous creation/registration disabled. Create USER accounts only through
+  explicit owner policy/UI, with verified status when SMTP is disabled. Preserve existing
   users/links/secret files; do not rotate inputs, ban/delete links or restore
   snapshots without explicit scope. Banning is accepted without a supported
   re-enable flow; expiration deletes records, so never use it as pause.

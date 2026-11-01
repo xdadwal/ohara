@@ -205,9 +205,14 @@ sudo scripts/ntfy install-alerts
 sudo systemctl start ohara-alerts.service
 ```
 
-Public mode currently permits the login and management UI/API from the Internet,
-protected by native account authentication. Only first-owner creation is always
-LAN-only. This is distinct from a LAN-only administration policy.
+Public mode permits the shared login page and authenticated regular-user link
+creation/management from the Internet. The admin panel, all privileged link/user/
+domain API routes (both /api and /api/v2), admin forms/confirmations, and first-owner
+creation remain LAN-only. Matching is case-insensitive like Express. A valid
+administrator session does not bypass the source restriction. The shared login
+itself is not role-specific: an admin account can still sign in and use ordinary
+account functions remotely, but cannot access administrative routes outside LAN.
+Native Kutt role checks additionally deny regular users admin privileges on LAN.
 
 Public activation reads the single existing verified active admin email privately
 from its own database, logs in through Kutt's native API using the supplied
@@ -238,6 +243,40 @@ local trusted HTTPS route/certificate. It preserves the storage watchdog and all
 other checks. Kutt API health alone is shallow; DB container health and HTTPS
 route checks add independent observations. The same host cannot detect its own
 complete outage in real time. See [alerts](alerts.md).
+
+## Regular users and LAN-only administration
+
+From the actual LAN, sign in and open `https://kutt.DOMAIN/admin` (use the real
+hostname). Create each intended account with its real email, independent password
+and role **USER**, not ADMIN. With SMTP disabled, mark approved users verified,
+leave them unbanned, and do not request a verification email. Users choose or
+receive their credentials privately through the owner; agents do not invent
+identities/passwords, auto-create production users or send invitations.
+
+After verified public activation, regular users sign in at
+`https://kutt.DOMAIN/login` and create/edit their own links and view QR codes.
+Anonymous link creation and open registration stay disabled. Public short-link
+redirection needs no login. Admin pages/API are LAN-only even with a valid owner
+cookie and forged forwarding headers; users' own-link authorization is also
+checked by Kutt. Do not reuse admin tokens in a public automation/client widget.
+
+Existing hosts apply the new policy by rerunning the normal guarded proxy helper:
+
+```sh
+# While still onboarding / before owner-password verification:
+sudo scripts/kutt-proxy --apply --onboarding-only
+# From an interactive SSH terminal after owner setup, to allow regular public users:
+sudo scripts/kutt-proxy --apply --accounts-ready
+```
+
+The second command prompts privately for owner verification; a successful run
+keeps administrative paths LAN-only while allowing regular public access. There
+is no bypass based solely on account presence. Refresh the tracked deployed
+baseline after deliberate application, and preserve the helper's scoped backup
+for rollback. Restoring a prior public-mode route would restore its broader
+admin exposure, so prefer the current onboarding-only mode if rolling back
+before a fixed public policy can be verified. The privileged route list is
+reviewed against the pinned release's routes; audit it when upgrading Kutt.
 
 ## Persistence, upgrade and existing-state recovery
 
@@ -436,3 +475,13 @@ that exact backup with `bambuddy_proxy.deploy` (creating a new rollback backup),
 and verify `sudo nginx -t` plus the LAN page and non-LAN denial again. If the
 current route has changed, preserve it and remove only this trace after review.
 Retain the metadata privately; do not commit client IP logs or inferred identities.
+
+On 2026-11-01 the owner selected LAN-only administration with authenticated
+regular-user public access. The updated privileged-route guards were applied
+to the live onboarding-only route and its tracked baseline refreshed. Public
+regular-user access is still pending the interactive native owner verification
+command; it has not been opened based merely on account presence. The disposable
+proxy test verifies valid-admin-cookie denial outside LAN, case/API aliases,
+LAN admin access, regular public login/own-link creation/editing, native USER-role
+denial of admin access, and public redirects. No real regular user or link was
+automatically created.

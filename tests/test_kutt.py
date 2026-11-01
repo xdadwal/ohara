@@ -50,8 +50,8 @@ class KuttTests(unittest.TestCase):
         c=self.c | {'KUTT_LAN_NETWORK':'192.168.1.0/24'}
         onboarding=kutt_proxy.render(c,ROOT)
         public=kutt_proxy.render(c,ROOT,public=True)
-        self.assertEqual(onboarding.count('if ($ohara_kutt_allowed = 0)'),3)
-        self.assertEqual(public.count('if ($ohara_kutt_allowed = 0)'),1)
+        self.assertEqual(onboarding.count('if ($ohara_kutt_allowed = 0)'),4)
+        self.assertEqual(public.count('if ($ohara_kutt_allowed = 0)'),2)
         self.assertIn('proxy_set_header X-Forwarded-For $remote_addr;',public)
         self.assertIn('proxy_cache off;',public)
         self.assertIn('Cache-Control "no-store" always;',public)

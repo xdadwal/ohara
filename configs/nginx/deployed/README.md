@@ -73,3 +73,8 @@ peer despite forged forwarding headers. Public activation and owner login are
 pending. After verified activation, refresh this exact baseline. LAN/certificate
 paths are current-host identities; use scripts/kutt-proxy and docs/kutt.md for
 actual target discovery rather than blindly copying this installed baseline.
+
+The Kutt onboarding baseline now includes permanent LAN-only privileged admin
+routes/forms and both API aliases. Public regular-user activation remains behind
+the native owner-login verification command. Refresh the baseline after that
+command, retaining these admin source restrictions.

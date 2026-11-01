@@ -96,14 +96,16 @@ def main():
             assert request('/'+address)[2]['Location']=='/banned'
             code,raw,_=request('/api/links',token=token)
             assert code==200 and address.encode() in raw,'Banning removed the persistent link'
-            proxy_check(c,root,project,compose,docker)
+            code,_,_=request('/api/users/admin',{'email':'member@example.test','password':'Fixture member password only','role':'USER','verified':True,'banned':False},token)
+            assert code in (200,201),'Fixture regular-user creation failed'
+            proxy_check(c,root,project,compose,docker,token)
             print('PASS: Kutt/Postgres non-root/read-only startup, restricted DB role, anonymous/signup denial, owner login boundary, create/edit/persistent redirects, SQL backup/restore, native QR UI/assets and ban without deletion.')
         finally:
             compose(['down','--volumes'])
             runtime.run(docker+['volume','rm',volume])
 
 
-def proxy_check(c,root,project,compose,docker):
+def proxy_check(c,root,project,compose,docker,admin_token):
     certs=root/'certs';certs.mkdir()
     runtime.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN='+kutt.settings(c)[0],'-keyout',str(certs/'key.pem'),'-out',str(certs/'cert.pem')])
     network=json.loads(runtime.run(docker+['network','inspect',project+'_default'],capture=True))[0]
@@ -117,10 +119,10 @@ def proxy_check(c,root,project,compose,docker):
         path.write_text(render(False))
         runtime.run(docker+['run','-d','--name',name,'--network',project+'_default','-p','127.0.0.1::443','-p','127.0.0.1::80','-v',str(path)+':/etc/nginx/nginx.conf:ro','-v',str(certs)+':/certs:ro',NGINX])
         port=int(runtime.run(docker+['port',name,'443'],capture=True).strip().rsplit(':',1)[1])
-        def https():
+        def https(path="/api/health",token=None):
             conn=http.client.HTTPSConnection('127.0.0.1',port,context=ssl._create_unverified_context(),timeout=5)
             try:
-                conn.request('GET','/api/health',headers={'Host':kutt.settings(c)[0]})
+                conn.request('GET',path,headers={'Host':kutt.settings(c)[0],**({'Cookie':'token='+token} if token else {})})
                 response=conn.getresponse();return response.status,response.read(),response.headers
             finally:conn.close()
         for attempt in range(30):
@@ -129,8 +131,10 @@ def proxy_check(c,root,project,compose,docker):
             except OSError:pass
             time.sleep(1)
         else:raise AssertionError('Disposable Kutt TLS route not ready')
-        def peer(path,scheme='https'):
-            code="fetch('"+scheme+"://"+name+path+"',{headers:{Host:'"+kutt.settings(c)[0]+"','X-Forwarded-For':'127.0.0.1'},redirect:'manual'}).then(r=>console.log(r.status))"
+        def peer(path,scheme='https',token=None):
+            headers={'Host':kutt.settings(c)[0],'X-Forwarded-For':'127.0.0.1'}
+            if token:headers['Cookie']='token='+token
+            code='fetch('+json.dumps(scheme+'://'+name+path)+',{headers:'+json.dumps(headers)+',redirect:"manual"}).then(r=>console.log(r.status))'
             return runtime.run(docker+['exec','-e','NODE_TLS_REJECT_UNAUTHORIZED=0',app,'node','-e',code],capture=True).strip()
         assert peer('/api/health')=='403','Onboarding accepted forged LAN headers'
         assert peer('/api/health','http')=='403','HTTP onboarding redirected a non-LAN client'
@@ -138,8 +142,28 @@ def proxy_check(c,root,project,compose,docker):
         assert peer('/api/health')=='200','Public route remained restricted'
         assert peer('/api/auth/create-admin')=='403','Public first-owner endpoint exposed'
         assert peer('/api/v2/auth/create-admin')=='403','Public v2 first-owner alias exposed'
+        for route in ['/admin','/ADMIN','/admin/link/edit/test','/create-user','/add-domain','/confirm-user-delete','/api/users/admin','/api/v2/links/admin','/API/V2/DOMAINS/ADMIN']:
+            assert peer(route,token=admin_token)=='403','Non-LAN admin route exposed: '+route
+        assert https('/api/users/admin',admin_token)[0]==200,'LAN admin API inaccessible'
+        # Exercise a real regular-user session from the denied/non-LAN peer.
+        code="""(async()=>{
+          const base=BASE,host=HOST;
+          const headers={Host:host,'Content-Type':'application/json'};
+          const login=await fetch(base+'/api/auth/login',{method:'POST',headers,body:JSON.stringify({email:'member@example.test',password:'Fixture member password only'})});
+          const session=await login.json(); headers.Cookie='token='+session.token;
+          const created=await fetch(base+'/api/links',{method:'POST',headers,body:JSON.stringify({target:'https://example.org/member-first',customurl:'public-member'})});
+          const link=await created.json();
+          const edited=await fetch(base+'/api/links/'+link.id,{method:'PATCH',headers,body:JSON.stringify({target:'https://example.org/member-second'})});
+          const admin=await fetch(base+'/api/users/admin',{headers});
+          const nativeAdmin=await fetch('http://127.0.0.1:3000/api/users/admin',{headers});
+          const listing=await (await fetch(base+'/api/links',{headers})).text();
+          const redirect=await fetch(base+'/public-member',{headers:{Host:host},redirect:'manual'});
+          console.log(JSON.stringify({login:login.status,create:created.status,edit:edited.status,admin:admin.status,nativeAdmin:nativeAdmin.status,foreignVisible:listing.includes('stable-qr'),redirect:redirect.headers.get('location')}));
+        })().catch(()=>process.exit(1))""".replace('BASE',json.dumps('https://'+name)).replace('HOST',json.dumps(kutt.settings(c)[0]))
+        observed=json.loads(runtime.run(docker+['exec','-e','NODE_TLS_REJECT_UNAUTHORIZED=0',app,'node','-e',code],capture=True))
+        assert observed['login']==200 and observed['create'] in (200,201) and observed['edit']==200 and observed['admin']==403 and observed['nativeAdmin'] in (401,403) and not observed['foreignVisible'] and observed['redirect']=='https://example.org/member-second','Regular public user/redirect isolation failed: '+json.dumps(observed)
         assert https()[2].get('Cache-Control')=='no-store','Dynamic redirects must not be proxy/browser cached'
-        print('PASS: Kutt TLS route, LAN-only onboarding, forged forwarding-header denial, public transition, private owner-creation route and no-store policy.')
+        print('PASS: Kutt TLS route, LAN-only onboarding, forged forwarding-header denial, public transition, LAN-only privileged routes (including valid admin sessions/case variants), regular public user creation/editing/redirects and no-store policy.')
     finally:runtime.run(docker+['rm','-f',name])
 
 
