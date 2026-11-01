@@ -90,3 +90,16 @@ class KuttTests(unittest.TestCase):
             with patch.object(kutt.sys.stdin,'isatty',return_value=False),patch.object(kutt.getpass,'getpass') as prompt:
                 with self.assertRaises(ValueError):kutt.owner_password(root)
             prompt.assert_not_called()
+
+    def test_short_database_password_requires_explicit_exception(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);p=root/'.env';p.chmod(0o600) if p.exists() else None
+            base='KUTT_DB_PASSWORD=short\nKUTT_JWT_SECRET=Fixture signing 0123456789abcdef0123456789\n'
+            p.write_text(base);p.chmod(0o600)
+            with self.assertRaises(ValueError):kutt.secrets(root)
+            p.write_text(base+'KUTT_ALLOW_SHORT_DB_PASSWORD=true\n')
+            self.assertEqual(kutt.secrets(root)['KUTT_DB_PASSWORD'],'short')
+            p.write_text(base.replace('=short','=')+'KUTT_ALLOW_SHORT_DB_PASSWORD=true\n')
+            with self.assertRaises(ValueError):kutt.secrets(root)
+            p.write_text(base.replace('Fixture signing 0123456789abcdef0123456789','short')+'KUTT_ALLOW_SHORT_DB_PASSWORD=true\n')
+            with self.assertRaises(ValueError):kutt.secrets(root)

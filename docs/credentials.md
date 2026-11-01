@@ -199,3 +199,7 @@ from any optional deprecated dotenv value the operator has not yet removed.
 The separate PostgreSQL app role is restricted; Immich credentials are not reused.
 Preparation preserves matching installed inputs and refuses silent rotation.
 See [Kutt setup, persistence and recovery](kutt.md).
+
+An explicit owner-approved `KUTT_ALLOW_SHORT_DB_PASSWORD=true` exception permits
+a nonempty shorter Kutt DB password only. Default minimum and JWT validation
+remain unchanged; see [Kutt exception and recovery](kutt.md#explicit-database-password-exception).

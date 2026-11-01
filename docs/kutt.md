@@ -339,17 +339,24 @@ disposable database, native QR UI/assets, ban without
 record deletion, TLS/forwarded-header source restrictions, public transition and
 no-store. It does not establish a real phone QR scan or fresh bare-metal setup.
 
-As prepared on 2026-11-01: public DNS wildcard resolves the default host to the
-current server, port 3010 is available, and the isolated feature smoke passed.
-The owner requested a plain Utility link without a widget; it was selectively
-merged into the live Homepage and verified through its authenticated services
-API on 2026-11-01. Existing cards/widgets were preserved, with the prior YAML
-backed up under ignored local/kutt-backups. The link does not establish Kutt
-backend readiness. Private Kutt inputs have been requested; real startup/proxy
-application, owner onboarding, live DNS/alerts, actual public reachability and QR
-scanning remain pending until those inputs/onboarding are supplied and verified. No live
-Kutt account or production secret has been generated. Keep this section aligned
-with verified rollout rather than interpreting test fixtures as owner setup.
+On 2026-11-01 the supplied DB/JWT inputs were validated without displaying values.
+The owner explicitly approved the shorter DB password using the exception below.
+Real Kutt/Postgres containers are now healthy on internal storage; their restricted
+DB role is verified and owner setup was pending at the last status inspection.
+The live route is LAN-only onboarding, not public activation. Trusted HTTPS at
+`https://kutt.xdadwal.in/create-admin` returned 200 from the LAN; the native form
+was verified without submitting an account. A Docker peer outside the LAN returned
+403 even with a forged LAN forwarding header. This is a source-restriction test,
+not a claim of independent Internet reachability. The installed LAN-only baseline
+is tracked in configs/nginx/deployed/ohara-kutt.conf; do not copy its LAN/certificate
+identities blindly to a fresh host. Public activation must update that baseline.
+
+The exact live AdGuard rewrite returned 192.168.1.101 over UDP and TCP. The plain
+Kutt Utility card was verified through Homepage's authenticated API; no widget
+or credentials were added. Native owner creation, explicit owner login proof,
+public activation, mobile-data access and a real QR scan remain owner verification.
+No production account, short link or QR was automatically created. State and
+credentials remain outside Git. Full fresh-machine provisioning is not claimed.
 
 The default hostname was changed from go.DOMAIN to kutt.DOMAIN at the owner's
 request before any production Kutt account/link existed. The private KUTT_HOST
@@ -359,3 +366,14 @@ selectively migrate the former go.DOMAIN link, preserving its other fields and
 unrelated cards with a private YAML backup. Existing deployments with published
 short links must retain their original hostname explicitly or plan a separate
 domain/QR migration; changing a hostname does not update printed QR codes.
+
+## Explicit database password exception
+
+The owner explicitly approved their supplied shorter database password on
+2026-11-01. Private `KUTT_ALLOW_SHORT_DB_PASSWORD=true` permits a nonempty shorter
+KUTT_DB_PASSWORD only; the default minimum remains 16 and JWT requirements remain
+unchanged. This does not authorize generating/replacing inputs or weaken any
+other account's validation. PostgreSQL still has no host port and its app role
+remains restricted. Fresh hosts need explicit owner approval before setting this
+flag. Restore the same flag with the matching private input during recovery.
+Changing the flag/input does not rotate an existing database password.

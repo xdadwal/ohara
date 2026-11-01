@@ -43,6 +43,8 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   private .env; never generate or forward these to Homepage. Start containers
   before owner UI setup; its password is chosen there and verified by a private
   terminal prompt, not persisted. KUTT_PASSWORD is deprecated compatibility only.
+  An explicit KUTT_ALLOW_SHORT_DB_PASSWORD exception is DB-only: retain nonempty
+  validation and unchanged JWT requirements; do not replace supplied values.
   First owner creation stays in the LAN-only UI; public activation must verify
   native login and keep owner-creation endpoints LAN-only. Preserve existing
   users/links/secret files; do not rotate inputs, ban/delete links or restore

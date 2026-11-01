@@ -44,7 +44,11 @@ def settings(c):
 
 def secrets(root):
     required={'KUTT_DB_PASSWORD','KUTT_JWT_SECRET'}
-    values=credentials.read(root/'.env',required,ignored=config.KEYS | (credentials.ALL_KEYS-required))
+    options=config.parse(root/'.env',{'KUTT_ALLOW_SHORT_DB_PASSWORD'},{'KUTT_ALLOW_SHORT_DB_PASSWORD'},(config.KEYS-{'KUTT_ALLOW_SHORT_DB_PASSWORD'}) | credentials.ALL_KEYS)
+    flag=options.get('KUTT_ALLOW_SHORT_DB_PASSWORD','false')
+    if flag not in {'true','false'}:raise ValueError('Invalid Kutt DB password exception')
+    values=credentials.read(root/'.env',required,ignored=config.KEYS | (credentials.ALL_KEYS-required),
+                            minimum_lengths={'KUTT_DB_PASSWORD':1} if flag=='true' else None)
     if any(v!=v.strip() for v in values.values()):raise ValueError('Kutt file inputs must not have leading/trailing whitespace')
     if len(set(values.values()))!=len(values):raise ValueError('Kutt inputs must be independent values')
     return values

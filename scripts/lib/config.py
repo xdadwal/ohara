@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 BAMBUDDY_KEYS = {'BAMBUDDY_ROOT', 'BAMBUDDY_MOUNT'}
-KUTT_KEYS = {'KUTT_HOST','KUTT_ROOT','KUTT_MOUNT','KUTT_LAN_NETWORK','KUTT_TLS_CERT','KUTT_TLS_KEY'}
+KUTT_KEYS = {'KUTT_HOST','KUTT_ROOT','KUTT_MOUNT','KUTT_LAN_NETWORK','KUTT_TLS_CERT','KUTT_TLS_KEY','KUTT_ALLOW_SHORT_DB_PASSWORD'}
 NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY', 'NTFY_ALLOW_SHORT_PASSWORD'}
 DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK'}
 IMMICH_KEYS = {'IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT', 'IMMICH_LIBRARY_MOUNT', 'IMMICH_DATABASE_MOUNT'}
@@ -39,6 +39,8 @@ def parse(path, keys, optional=frozenset(), ignored=frozenset()):
 def load(path):
     import credentials
     values = parse(path, KEYS, DNS_KEYS | IMMICH_KEYS | BAMBUDDY_KEYS | NTFY_KEYS | KUTT_KEYS | {'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
+    if values.get('KUTT_ALLOW_SHORT_DB_PASSWORD','false') not in {'true','false'}:
+        raise ValueError('KUTT_ALLOW_SHORT_DB_PASSWORD must be true or false')
     if values.get('KUTT_HOST') and not HOST.fullmatch(values['KUTT_HOST']):
         raise ValueError('KUTT_HOST must be a valid hostname')
     if values.get('NTFY_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
