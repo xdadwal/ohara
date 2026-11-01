@@ -302,3 +302,9 @@ alert configuration after startup to include both containers and the HTTPS route
 Existing-state recovery retains secret files, PostgreSQL state, account/short-code
 identity and reviewed pins. See the guide for exact commands, private backup,
 explicitly authorized restore, verification and scoped rollback.
+
+An owner away from the LAN can use the existing Tailscale/OpenSSH loopback tunnel
+for [Kutt remote first-owner creation](kutt.md#remote-owner-creation-through-existing-tailscale-ssh).
+Keep public owner creation denied; do not enable Serve/Funnel or change client DNS.
+DB/JWT inputs and backend readiness remain prerequisites; enable normal public
+HTTPS login only after the owner is created and native credentials are verified.

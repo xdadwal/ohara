@@ -146,6 +146,51 @@ users. SMTP, OIDC, public registration and anonymous link creation stay disabled
 Without SMTP, email reset/verification/report features are unavailable; preserve
 account inputs and backups rather than enabling another mail service by default.
 
+### Remote owner creation through existing Tailscale SSH
+
+An owner away from the LAN can bootstrap through ordinary OpenSSH over the
+already enrolled private tailnet. This does not enable Tailscale SSH, Serve,
+Funnel, subnet routes, DNS acceptance or a public port-22 forward. Public
+first-owner creation remains blocked by Nginx. Prerequisites are the same private
+DB/JWT inputs, started Kutt/Postgres backend, an owner-supplied KUTT_PASSWORD,
+existing authorized SSH keys and an enrolled owner client with permitted SSH.
+A tunnel cannot make an unstarted backend available.
+
+Discover the actual server tailnet IPv4 with `tailscale ip -4` and existing SSH
+login with the target's account/session configuration. On the owner's laptop,
+forward a free loopback-only local port to Kutt's loopback backend:
+
+```sh
+# Replace SSH_LOGIN and SERVER_TAILNET_IP with discovered target values.
+ssh -N -o ExitOnForwardFailure=yes \
+  -L 127.0.0.1:33010:127.0.0.1:3010 SSH_LOGIN@SERVER_TAILNET_IP
+```
+
+Keep that terminal open and use `http://localhost:33010/create-admin` on that
+same laptop. HTTP is confined to browser/SSH loopback endpoints; the remote leg
+is encrypted by SSH. No certificate warning, client DNS modification or new
+public listener is needed. Create the actual owner using their real email and
+matching private KUTT_PASSWORD. Do not paste credentials into a tunnel command.
+The current host values discovered on 2026-11-01 are login `akshay`, server
+`100.98.112.121`; the owner Mac had an existing private SSH session. Do not assume
+those identities/IPs on a fresh machine.
+
+This loopback URL is for initial account creation. Kutt production cookies are
+Secure and its initial welcome response is not proof of a usable browser login;
+do not weaken cookie settings or reset the new owner if the local page does not
+stay signed in. After creation, the agent runs the normal `--accounts-ready`
+command below to verify native owner credentials/admin access and enable public
+HTTPS. Then the owner signs in at the real `https://kutt.DOMAIN` URL from their
+public network and closes the tunnel (Ctrl-C). The administrator remains native
+password-protected; public registration and owner creation stay restricted.
+
+If forwarding fails, verify the existing SSH session, permitted tailnet port-22
+policy, local port availability and server backend readiness. Do not expose the
+unclaimed setup endpoint publicly as a workaround. This workflow is prepared;
+real owner creation/public activation remain pending private inputs and owner UI
+completion. The disposable smoke already verifies loopback first-owner creation
+and subsequent explicit native login, not a real remote browser/tunnel session.
+
 Once the owner has completed that UI step:
 
 ```sh
