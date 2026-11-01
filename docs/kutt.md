@@ -377,3 +377,57 @@ other account's validation. PostgreSQL still has no host port and its app role
 remains restricted. Fresh hosts need explicit owner approval before setting this
 flag. Restore the same flag with the matching private input during recovery.
 Changing the flag/input does not rotate an existing database password.
+
+## Diagnose a LAN browser receiving 403
+
+A LAN connection must be tested from the affected browser/device: the server's
+own DNS/HTTPS probe cannot prove that client's DNS/VPN/relay path. Do not assume
+Wi-Fi membership identifies the address Nginx receives, or broaden the onboarding
+allowlist without evidence. Compare a request to the hostname against a forced
+LAN request on that client, without changing router/client DNS configuration:
+
+```sh
+curl -I https://kutt.xdadwal.in/create-admin
+curl -I --resolve kutt.xdadwal.in:443:192.168.1.101 \
+  https://kutt.xdadwal.in/create-admin
+```
+
+Use the target's discovered host/IP instead of this host's values elsewhere.
+Preserve the LAN-only owner guard. Browser DNS cache, secure DNS, VPN/relay paths,
+a different subnet or application authorization must be distinguished using
+actual request evidence; they are possible causes, not established diagnoses.
+
+For an authorized temporary source-only trace, back up the managed route before
+editing. Define an HTTP-context format/map before its server blocks:
+
+```nginx
+log_format ohara_kutt_source '$time_iso8601 src=$remote_addr status=$status';
+map $status $ohara_kutt_source_denied { default 0; 403 1; }
+```
+
+Replace only this virtual host's two `access_log off;` directives temporarily:
+
+```nginx
+access_log /var/log/nginx/ohara-kutt-source.log ohara_kutt_source if=$ohara_kutt_source_denied;
+```
+
+Use the atomic backup/test/reload procedure in `bambuddy_proxy.deploy`, preserving
+all guards, forwarding-header sanitization and other route files. The trace must
+contain no URL, query, cookie, request body or credentials. Request one reload
+from the affected client, then inspect only the bounded diagnostic metadata:
+
+```sh
+sudo tail -n 10 /var/log/nginx/ohara-kutt-source.log
+```
+
+On 2026-11-01 this temporary trace was enabled while diagnosing the owner's 403;
+the server's forced-LAN and system-DNS setup requests both returned 200. The
+original route is backed up at
+`/var/backups/ohara/kutt-source-diagnosis-20261101-073651-743601/ohara-kutt.conf`.
+A denied client reload is still required before assigning a root cause. This
+temporary runtime trace is not a change to the tracked stable onboarding baseline.
+After capturing it, confirm no intervening route activation occurred, restore
+that exact backup with `bambuddy_proxy.deploy` (creating a new rollback backup),
+and verify `sudo nginx -t` plus the LAN page and non-LAN denial again. If the
+current route has changed, preserve it and remove only this trace after review.
+Retain the metadata privately; do not commit client IP logs or inferred identities.
