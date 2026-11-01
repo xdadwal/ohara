@@ -47,11 +47,11 @@ ip -j -4 address show
 findmnt --target /ohara -o TARGET,FSTYPE
 ss -ltn
 sudo nginx -t
-dig +short go.xdadwal.in A
+dig +short kutt.xdadwal.in A
 ```
 
 Choose the actual hostname and local independent filesystem. Default non-secret
-settings are `KUTT_HOST=go.DOMAIN`, `KUTT_ROOT=DATA_ROOT/kutt`, `KUTT_MOUNT=/`.
+settings are `KUTT_HOST=kutt.DOMAIN`, `KUTT_ROOT=DATA_ROOT/kutt`, `KUTT_MOUNT=/`.
 Set them in private `.env` if different. `KUTT_LAN_NETWORK` must be the verified
 private IPv4 LAN CIDR; it defaults to the explicitly configured ADGUARD_NETWORK.
 The proxy verifies that an actual global-scope host interface is within it.
@@ -124,8 +124,8 @@ host so short codes/targets/tokens are not recorded as request URLs there.
 Verify local DNS against the actual configured AdGuard address, both protocols:
 
 ```sh
-dig @192.168.1.101 go.xdadwal.in A
-dig +tcp @192.168.1.101 go.xdadwal.in A
+dig @192.168.1.101 kutt.xdadwal.in A
+dig +tcp @192.168.1.101 kutt.xdadwal.in A
 ```
 
 Replace the address/hostname from target discovery. The DNS helper selectively
@@ -138,7 +138,7 @@ live Homepage predates that variable, its helper stores the resolved URL. Verify
 the card through the existing password-protected Homepage API; do not reset it.
 No Kutt account password/API key is forwarded to Homepage.
 
-On the real LAN, open `https://go.xdadwal.in` (use the chosen target hostname).
+On the real LAN, open `https://kutt.xdadwal.in` (use the chosen target hostname).
 The owner creates the first administrator with their actual email and the private
 KUTT_PASSWORD. After account creation, explicitly sign in once; do not assume the
 welcome screen proves authentication. The helper does not invent emails or create
@@ -155,6 +155,10 @@ sudo scripts/kutt status
 sudo scripts/ntfy install-alerts
 sudo systemctl start ohara-alerts.service
 ```
+
+Public mode currently permits the login and management UI/API from the Internet,
+protected by native account authentication. Only first-owner creation is always
+LAN-only. This is distinct from a LAN-only administration policy.
 
 Public activation reads the single existing verified active admin email privately
 from its own database, logs in through Kutt's native API using the supplied
@@ -287,3 +291,12 @@ application, owner onboarding, live DNS/alerts, actual public reachability and Q
 scanning remain pending until those inputs/onboarding are supplied and verified. No live
 Kutt account or production secret has been generated. Keep this section aligned
 with verified rollout rather than interpreting test fixtures as owner setup.
+
+The default hostname was changed from go.DOMAIN to kutt.DOMAIN at the owner's
+request before any production Kutt account/link existed. The private KUTT_HOST
+setting and live Utility link were updated to kutt.xdadwal.in; its public DNS and
+existing wildcard certificate coverage were verified. The Homepage helper can
+selectively migrate the former go.DOMAIN link, preserving its other fields and
+unrelated cards with a private YAML backup. Existing deployments with published
+short links must retain their original hostname explicitly or plan a separate
+domain/QR migration; changing a hostname does not update printed QR codes.

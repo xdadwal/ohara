@@ -18,7 +18,7 @@ class KuttTests(unittest.TestCase):
     def setUp(self):self.c=config.load(ROOT/'.env.example')
 
     def test_storage_and_hostname_overlap_refused(self):
-        self.assertEqual(kutt.settings(self.c)[0],'go.xdadwal.in')
+        self.assertEqual(kutt.settings(self.c)[0],'kutt.xdadwal.in')
         for changes in ({'KUTT_ROOT':self.c['MEDIA_ROOT']+'/kutt'},{'KUTT_ROOT':self.c['DATA_ROOT']+'/immich/kutt'},{'KUTT_ROOT':'/tmp/../etc/kutt'},{'KUTT_HOST':self.c['HOMEPAGE_HOST']},{'KUTT_HOST':'radarr.xdadwal.in'},{'RUN_UID':'0'}):
             with self.subTest(changes=changes),self.assertRaises(ValueError):kutt.settings(self.c | changes)
 

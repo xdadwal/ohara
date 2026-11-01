@@ -20,7 +20,7 @@ PORT=3010
 
 def settings(c):
     if int(c['RUN_UID'])==0 or int(c['RUN_GID'])==0:raise ValueError('Kutt app requires a non-root UID/GID')
-    name=c.get('KUTT_HOST','go.'+c['DOMAIN'])
+    name=c.get('KUTT_HOST','kutt.'+c['DOMAIN'])
     others={c[k] for k in ('DOMAIN','HOMEPAGE_HOST','REQUESTS_HOST','JELLYFIN_HOST','SPEED_HOST','NAVIDROME_HOST')}
     others.update(prefix+'.'+c['DOMAIN'] for prefix in ('ntfy','immich','bambuddy','maintainerr','adguard','radarr','sonarr','prowlarr','qbittorrent','lidarr','bazarr'))
     if not config.HOST.fullmatch(name) or name in others:raise ValueError('KUTT_HOST must be a distinct valid hostname')
@@ -177,11 +177,17 @@ def homepage(c,root):
     before=p.read_text();data=yaml.safe_load(before)
     cards=[entry['Kutt'] for g in data for rows in g.values() for entry in rows if 'Kutt' in entry]
     if cards:
-        if len(cards)!=1 or cards[0].get('href') not in ('https://'+name,'https://{{HOMEPAGE_VAR_KUTT_HOST}}'):raise ValueError('Existing Kutt card differs; preserve and review')
-        print('Existing Kutt Homepage card preserved');return
-    group=next((g['Utility'] for g in data if 'Utility' in g),None)
-    if group is None:group=[];data.append({'Utility':group})
-    group.append({'Kutt':{'icon':'mdi-link-variant','href':'https://'+name,'description':'Short links and QR codes'}})
+        if len(cards)!=1:raise ValueError('Multiple Kutt cards; preserve and review')
+        if cards[0].get('href') in ('https://'+name,'https://{{HOMEPAGE_VAR_KUTT_HOST}}'):
+            print('Existing Kutt Homepage card preserved');return
+        if cards[0].get('href')!='https://go.'+c['DOMAIN']:
+            raise ValueError('Existing Kutt card differs; preserve and review')
+        # Owner-approved migration from the original go.DOMAIN default.
+        cards[0]['href']='https://'+name
+    else:
+        group=next((g['Utility'] for g in data if 'Utility' in g),None)
+        if group is None:group=[];data.append({'Utility':group})
+        group.append({'Kutt':{'icon':'mdi-link-variant','href':'https://'+name,'description':'Short links and QR codes'}})
     backup=root/'local/kutt-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     backup.mkdir(parents=True,mode=0o700);config.create_file(backup/'services.yaml',before,0o600)
     p.write_text(yaml.safe_dump(data,sort_keys=False,allow_unicode=True))

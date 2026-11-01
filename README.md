@@ -26,7 +26,7 @@ media settings on another machine, or to migrate private state safely.
 | Immich (optional separate project) | Personal photos/videos; machine learning disabled | immich.xdadwal.in; owner setup complete |
 | Bambuddy (optional separate project) | Bambu Lab A1 mini management | Public HTTPS bambuddy.xdadwal.in; native login; loopback 8008 |
 | Maintainerr (optional separate project) | Media maintenance; LAN-only administration | maintainerr.xdadwal.in; loopback 6246 |
-| Kutt (optional separate project) | Editable short links and QR display; dedicated PostgreSQL | go.DOMAIN; LAN-only owner onboarding before public activation |
+| Kutt (optional separate project) | Editable short links and QR display; dedicated PostgreSQL | kutt.DOMAIN; LAN-only owner onboarding before public activation |
 | ntfy (optional separate project) | Authenticated phone notifications and host alerts | ntfy.xdadwal.in; loopback 2586 |
 | AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
 
