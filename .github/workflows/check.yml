@@ -30,6 +30,7 @@ jobs:
           scripts/bambuddy check --static
           scripts/ntfy check --static
           scripts/kutt check --static
+          scripts/orcaslicer check --static
   containers:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

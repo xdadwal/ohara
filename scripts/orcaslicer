@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""Operate the optional headless OrcaSlicer backend; never starts a print."""
+import argparse
+from pathlib import Path
+import subprocess
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts/lib'))
+import config
+import orcaslicer
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('command',choices=['check','prepare','up','stop','status'])
+    p.add_argument('--static',action='store_true')
+    a = p.parse_args()
+    if a.static and a.command != 'check':
+        p.error('--static is only for check')
+    c = config.load(ROOT/'.env')
+    if a.command == 'check':
+        orcaslicer.check(c,ROOT,static=a.static)
+    elif a.command == 'prepare':
+        orcaslicer.prepare(c,ROOT)
+    elif a.command == 'up':
+        orcaslicer.check(c,ROOT)
+        orcaslicer.compose(c,ROOT,['up','-d','--wait','--wait-timeout','180'])
+    elif a.command == 'stop':
+        orcaslicer.compose(c,ROOT,['stop'])
+    else:
+        print(orcaslicer.compose(c,ROOT,['ps'],capture=True))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError,OSError,RuntimeError,subprocess.TimeoutExpired) as error:
+        print('Ohara OrcaSlicer: '+str(error),file=sys.stderr)
+        sys.exit(1)

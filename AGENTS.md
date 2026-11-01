@@ -144,7 +144,7 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   loopback-only and use scripts/bambuddy-proxy with the owner-ready guard.
   Preserve other LAN-only admin routes and the dedicated SQLite/archive directory. Owner/printer access codes stay in its UI;
   never assume credentials or start/queue a print during deployment. Use bridge
-  networking and manual printer IP; do not enable virtual printers, slicer
+  networking and manual printer IP; do not enable virtual printers, additional unapproved slicer
   sidecars, shared authentication, host networking or Docker socket access.
 - For existing media accounts, use `scripts/media-setup --storage-only` for storage
   policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
@@ -189,3 +189,7 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   public reachability separately. One does not establish the others.
 - Commit feature work, push its feature branch, and open a PR unless opted out.
   Never merge or rewrite Git history without authorization.
+
+- Optional owner-approved headless OrcaSlicer uses scripts/orcaslicer and
+  docs/orcaslicer.md. Keep it private on Bambuddy’s bridge, with independent
+  state and resource limits. Owner UI enables slicing; never start/queue prints.
