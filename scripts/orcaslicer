@@ -12,7 +12,7 @@ import orcaslicer
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',choices=['check','prepare','up','stop','status'])
+    p.add_argument('command',choices=['check','prepare','up','stop','status','configure'])
     p.add_argument('--static',action='store_true')
     a = p.parse_args()
     if a.static and a.command != 'check':
@@ -20,6 +20,8 @@ def main():
     c = config.load(ROOT/'.env')
     if a.command == 'check':
         orcaslicer.check(c,ROOT,static=a.static)
+    elif a.command == 'configure':
+        orcaslicer.configure(c,ROOT)
     elif a.command == 'prepare':
         orcaslicer.prepare(c,ROOT)
     elif a.command == 'up':

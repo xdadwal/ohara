@@ -39,6 +39,23 @@ In the existing owner session at https://bambuddy.DOMAIN, open Settings → Slic
 - Use Slicer API: enabled.
 - OrcaSlicer sidecar URL: `http://orcaslicer:3000`.
 
+Alternatively, an agent can apply exactly these three fields through native owner
+login. Fill the optional BAMBUDDY_USERNAME and BAMBUDDY_PASSWORD entries in the
+private root .env with the existing owner login (never in chat), then run:
+
+```sh
+scripts/orcaslicer configure
+```
+
+The helper validates private-file permissions, uses the local authenticated API,
+backs up only the previous three fields in local/bambuddy-backups/*-slicer/slicer.json,
+and verifies persisted values. It never creates/resets accounts or forwards
+owner credentials to containers/Homepage. Missing login or MFA requirements stop
+configuration; complete MFA in the UI instead. Remove these optional entries
+when no longer needed. Other lifecycle commands do not require them. For rollback,
+use the owner UI to restore the three values from that private backup; preserve
+all other settings and accounts.
+
 These settings persist in Bambuddy's existing database. Do not use localhost:
 it refers to the Bambuddy container. The existing Homepage Read Status key cannot
 change settings; never broaden it or edit the live SQLite database to bypass login.

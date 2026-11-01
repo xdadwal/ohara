@@ -24,10 +24,12 @@ class OrcaSlicerTests(unittest.TestCase):
 
     def test_no_private_credentials_in_child_environment(self):
         c = config.load(ROOT/'.env.example')
-        with patch.dict(os.environ,{'NTFY_PASSWORD':'never-forward','COMPOSE_FILE':'untrusted.yaml'}), patch.object(orcaslicer.runtime,'run') as run:
+        with patch.dict(os.environ,{'NTFY_PASSWORD':'never-forward','BAMBUDDY_PASSWORD':'owner-secret','BAMBUDDY_USERNAME':'owner','COMPOSE_FILE':'untrusted.yaml'}), patch.object(orcaslicer.runtime,'run') as run:
             orcaslicer.compose(c,ROOT,['config'])
         env = run.call_args.kwargs['env']
         self.assertNotIn('NTFY_PASSWORD',env)
+        self.assertNotIn('BAMBUDDY_PASSWORD',env)
+        self.assertNotIn('BAMBUDDY_USERNAME',env)
         self.assertNotIn('COMPOSE_FILE',env)
         self.assertIn('/dev/null',run.call_args.args[0])
 
@@ -39,3 +41,20 @@ class OrcaSlicerTests(unittest.TestCase):
             c = config.load(ROOT/'.env.example') | {'BAMBUDDY_ROOT':str(base)}
             with self.assertRaisesRegex(ValueError,'symlink'):
                 orcaslicer.storage(c)
+
+    def test_configure_updates_only_approved_fields(self):
+        import credentials
+        import media
+        c = config.load(ROOT/'.env.example')
+        before = {'preferred_slicer':'bambu_studio','use_slicer_api':False,
+                  'orcaslicer_api_url':'','unrelated':'preserve'}
+        desired = {'preferred_slicer':'orcaslicer','use_slicer_api':True,
+                   'orcaslicer_api_url':'http://orcaslicer:3000'}
+        with tempfile.TemporaryDirectory() as d, patch.object(orcaslicer,'check'), patch.object(credentials,'read',return_value={'BAMBUDDY_USERNAME':'owner','BAMBUDDY_PASSWORD':'existing'}), patch.object(media,'Client') as client:
+            api = client.return_value
+            api.headers = {}
+            api.call.side_effect = [{'access_token':'session'},before,{},before|desired]
+            orcaslicer.configure(c,Path(d))
+            self.assertEqual(api.call.call_args_list[2].args,('/api/v1/settings/',desired))
+            self.assertEqual(api.call.call_args_list[2].kwargs,{'method':'PUT'})
+            self.assertEqual(api.headers['Authorization'],'Bearer session')

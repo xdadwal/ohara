@@ -73,3 +73,33 @@ def prepare(c,root):
     bambuddy.require_storage(c)
     host.ensure_directory(storage(c),int(c['RUN_UID']),int(c['RUN_GID']),0o700)
     check(c,root)
+
+
+def configure(c, root):
+    """Use native owner login and update only the three approved slicer fields."""
+    import credentials
+    import media
+    check(c,root)
+    values = credentials.read(root/'.env',credentials.BAMBUDDY_OWNER_KEYS,
+        ignored=config.KEYS | (credentials.ALL_KEYS-credentials.BAMBUDDY_OWNER_KEYS),
+        minimum_lengths={'BAMBUDDY_USERNAME':1,'BAMBUDDY_PASSWORD':1})
+    api = media.Client('http://127.0.0.1:8008')
+    login = api.call('/api/v1/auth/login',{
+        'username':values['BAMBUDDY_USERNAME'],'password':values['BAMBUDDY_PASSWORD']})
+    token = login.get('access_token')
+    if not token:
+        raise ValueError('Native login did not issue a session; complete any required MFA in the owner UI')
+    api.headers['Authorization'] = 'Bearer '+token
+    desired = {'preferred_slicer':'orcaslicer','use_slicer_api':True,
+               'orcaslicer_api_url':'http://orcaslicer:3000'}
+    before = api.call('/api/v1/settings/')
+    if any(before.get(k) != v for k,v in desired.items()):
+        import datetime
+        backup = root/'local/bambuddy-backups'/datetime.datetime.now().strftime('%Y%m%d-%H%M%S-slicer')
+        backup.mkdir(parents=True,mode=0o700)
+        config.create_file(backup/'slicer.json',json.dumps({k:before.get(k) for k in desired}))
+        api.call('/api/v1/settings/',desired,method='PUT')
+    after = api.call('/api/v1/settings/')
+    if any(after.get(k) != v for k,v in desired.items()):
+        raise ValueError('Bambuddy did not persist the requested slicer settings')
+    print('Bambuddy OrcaSlicer settings verified; no slice or print was dispatched')
