@@ -143,3 +143,5 @@ subscription and systemd alerts for service outages, disk disconnects and recove
 
 Optional URL shortening uses [Kutt with independent PostgreSQL](docs/kutt.md).
 Run its separate lifecycle helper; the main stack does not automatically start it.
+
+Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](docs/orcaslicer.md).

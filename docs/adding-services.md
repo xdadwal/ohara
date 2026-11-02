@@ -65,6 +65,16 @@ exception where technically valid; retain the normal default and reject empty
 or unsupported values. Preserve the supplied value and existing account state.
 Do not ask for approval again for the exception already authorized.
 
+Before implementation, check which setup actions the service allows through API
+keys versus an authenticated owner session. Tell the owner early about any manual
+UI step or existing-login requirement, with exact settings and values. Prefer a
+small documented owner UI step over collecting another account password when it
+completes setup. Never broaden an existing read-only integration key by inference;
+some APIs reject keys for administrative settings regardless of scope. For example,
+Bambuddy's general settings require owner-session authentication: its Homepage
+Read Status key cannot enable a slicer sidecar. Offer native owner login through
+private inputs only when the owner wants the agent to apply those settings.
+
 Test `sudo -n` before assuming privileged access. `sudo -v` in the operator's
 terminal may not authenticate the agent's separate terminal/session; do not send
 someone through repeated refreshes that cannot work. Prepare and test the exact

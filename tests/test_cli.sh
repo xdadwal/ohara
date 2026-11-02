@@ -10,6 +10,7 @@ for command in setup check up status tls media-setup tailscale adguard immich; d
 done
 (cd /; "$TASK_TMP/scripts/maintainerr" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/bambuddy" --help >/dev/null)
+(cd /; "$TASK_TMP/scripts/orcaslicer" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/ntfy" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/kutt" --help >/dev/null)
 (cd /; "$TASK_TMP/scripts/kutt-proxy" --help >/dev/null)

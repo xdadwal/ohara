@@ -314,3 +314,5 @@ for [Kutt remote first-owner creation](kutt.md#remote-owner-creation-through-exi
 Keep public owner creation denied; do not enable Serve/Funnel or change client DNS.
 DB/JWT inputs and backend readiness remain prerequisites; enable normal public
 HTTPS login only after the owner is created and native credentials are verified.
+
+Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).

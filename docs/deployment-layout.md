@@ -9,6 +9,7 @@ ignored/private. The scripts resolve their repository root themselves.
 | Eleven-app main stack | `compose/stack.yaml` | `versions/stack.env` | `scripts/check`, `scripts/up`, `scripts/status` |
 | LAN DNS | `compose/adguard.yaml` | `versions/adguard.env` | `scripts/adguard` |
 | Photos | `compose/immich.yaml` | `versions/immich.env` | `scripts/immich` |
+| Headless slicing | `compose/orcaslicer.yaml` | `versions/orcaslicer.env` | `scripts/orcaslicer` |
 | Printer management | `compose/bambuddy.yaml` | `versions/bambuddy.env` | `scripts/bambuddy` |
 | Media maintenance | `compose/maintainerr.yaml` | `versions/maintainerr.env` | `scripts/maintainerr` |
 | Notifications | `compose/ntfy.yaml` | `versions/ntfy.env` | `scripts/ntfy` |

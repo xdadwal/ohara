@@ -499,3 +499,5 @@ alert configuration after startup to include both containers and the HTTPS route
 Existing-state recovery retains secret files, PostgreSQL state, account/short-code
 identity and reviewed pins. See the guide for exact commands, private backup,
 explicitly authorized restore, verification and scoped rollback.
+
+Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).

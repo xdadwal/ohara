@@ -106,7 +106,8 @@ both integrations. The public DNS alias needs no update for LAN clients.
 3. Verify connected status and camera where supported. The diagnostic bridge
    warning is automatic for discovery/Virtual Printer features; it does not mean
    a working manual-IP connection is broken. No host networking, Virtual Printer
-   listeners or server-side slicer sidecars are enabled by this setup.
+   listeners are enabled. Optional owner-approved headless slicing is documented
+   in [orcaslicer.md](orcaslicer.md).
 4. For archive metadata, verify a microSD card and the current upstream A1-family
    file-on-card workflow. Missing printer-side files can leave thumbnails or
    filament metadata unavailable. Printing, heating/motion and automation are
