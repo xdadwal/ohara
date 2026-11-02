@@ -193,3 +193,8 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - Optional owner-approved headless OrcaSlicer uses scripts/orcaslicer and
   docs/orcaslicer.md. Keep it private on Bambuddy’s bridge, with independent
   state and resource limits. Owner UI enables slicing; never start/queue prints.
+
+- For future integrations, identify API-key versus owner-session restrictions
+  before implementation. Explain required owner UI steps early with exact values;
+  prefer a short documented UI step over collecting another account password.
+  Never broaden read-only keys by inference. See docs/adding-services.md.

@@ -88,8 +88,8 @@ docker exec CONTAINER_ID python -c 'import urllib.request; print(urllib.request.
 In the UI, slice a small owner-selected model for the actual A1 mini profile,
 review the result/preview and settings. Actual slicing and printer dispatch are
 separate checks: deployment must not start or queue a print. Health alone does
-not prove model compatibility or successful slicing. Owner UI activation and a
-representative model slice remain pending until explicitly verified.
+not prove model compatibility or successful slicing. The owner confirmed UI activation on 2026-11-03. A representative model slice
+remains pending until explicitly verified.
 
 Before upgrades, review both Bambuddy and sidecar releases, architecture and CLI
 compatibility; update the matching digest in a PR, take Bambuddy's supported
@@ -110,8 +110,8 @@ Sources: [upstream sidecar](https://github.com/maziggy/bambuddy/tree/v1.2.5.7/sl
 On 2026-11-01 the release-matched image was pulled and the production backend
 started independently, with UID/GID 1000:1000, a 2 GiB memory limit and no host
 port bindings. Health from the existing Bambuddy container reported OrcaSlicer
-2.4.2 and accessible data storage. Existing Bambuddy was not recreated. Owner
-UI activation and an actual model slice are pending; no printer operation was
+2.4.2 and accessible data storage. Existing Bambuddy was not recreated. The owner
+confirmed UI activation on 2026-11-03; an actual model slice remains unverified. No printer operation was
 performed. All 255 repository unit tests, setup/CLI/static checks and the full main-stack
 disposable smoke suite passed; these do not establish
 fresh Linux provisioning or public reachability of a new endpoint.
