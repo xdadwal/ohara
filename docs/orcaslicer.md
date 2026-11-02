@@ -64,6 +64,23 @@ slicing. Advanced painting/model editing still needs desktop OrcaSlicer.
 Bambu-authored/MakerWorld 3MFs may hit documented Orca CLI compatibility problems.
 No Bambu cloud login or Bambu Studio sidecar is enabled.
 
+## Upload, slice, then print
+
+The Print upload action expects an already sliced file; enabling a sidecar does
+not make it automatically slice project .3mf uploads. For an unsliced model:
+
+1. Upload the .3mf through Bambuddy File Manager (not the Print upload action).
+2. Use the file's Slice action, available in its action/menu controls.
+3. Select the actual A1 mini printer, nozzle, filament and process profiles.
+4. Run Slice and review the resulting .gcode.3mf and its preview/settings.
+5. Use Print on that generated file only when the owner is ready to print.
+
+If Slice opens desktop OrcaSlicer, recheck Use Slicer API. If it reports an error,
+record the exact slicing message separately from Print upload rejection; Bambu-
+authored projects may encounter Orca CLI compatibility issues. A healthy sidecar
+alone does not prove that a particular project can be sliced. Never rename an
+unsliced .3mf to .gcode.3mf as a workaround.
+
 ## Verification, upgrades and recovery
 
 ```sh
