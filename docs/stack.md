@@ -116,3 +116,5 @@ Kutt public mode allows authenticated regular-user link operations and public
 redirects while restricting the admin panel/forms and privileged API aliases to
 the LAN. The shared login page remains public; registration/anonymous creation
 remain disabled. See [user provisioning and activation](kutt.md#regular-users-and-lan-only-administration).
+
+Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).

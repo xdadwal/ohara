@@ -203,3 +203,9 @@ See [Kutt setup, persistence and recovery](kutt.md).
 An explicit owner-approved `KUTT_ALLOW_SHORT_DB_PASSWORD=true` exception permits
 a nonempty shorter Kutt DB password only. Default minimum and JWT validation
 remain unchanged; see [Kutt exception and recovery](kutt.md#explicit-database-password-exception).
+
+Optional existing Bambuddy owner inputs BAMBUDDY_USERNAME and BAMBUDDY_PASSWORD
+are used only by `scripts/orcaslicer configure` for native local login. Keep them
+in root .env (0600), never chat or container environments; no first-owner creation,
+password reset or MFA bypass is performed. See [OrcaSlicer setup](orcaslicer.md).
+They may be removed after configuration; normal startup uses neither input.

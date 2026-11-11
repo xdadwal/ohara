@@ -1,0 +1,47 @@
+# Optional headless slicing backend; reached only through Bambuddy.
+name: ohara-orcaslicer
+services:
+  orcaslicer:
+    image: ${ORCASLICER_IMAGE:?Run scripts/orcaslicer check --static}
+    platform: linux/amd64
+    user: "${RUN_UID}:${RUN_GID}"
+    working_dir: /tmp
+    restart: unless-stopped
+    init: true
+    # The upstream image's relative Node entrypoint assumes /app, while the
+    # slicer child must inherit a writable CWD to create its CLI log.
+    command: ["node", "/app/dist/index.js"]
+    cpus: 2
+    mem_limit: 2g
+    pids_limit: 256
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATA_PATH: /app/data
+      HOME: /tmp
+      XDG_RUNTIME_DIR: /run/user/${RUN_UID}
+      MAX_MODEL_UPLOAD_MB: "128"
+    volumes:
+      - type: bind
+        source: ${ORCASLICER_ROOT}
+        target: /app/data
+        bind: {create_host_path: false}
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=512m,mode=1777
+      - /run/user/${RUN_UID}:rw,nosuid,nodev,noexec,size=16m,mode=0700,uid=${RUN_UID},gid=${RUN_GID}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    networks: [bambuddy]
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:3000/health]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  bambuddy:
+    external: true
+    name: ohara-bambuddy_default
