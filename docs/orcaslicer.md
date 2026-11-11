@@ -27,11 +27,17 @@ Bambuddy must already have created its owned `ohara-bambuddy_default` bridge.
 The helper validates that bridge rather than creating a new one. The sidecar
 joins it with the DNS name `orcaslicer`; no host ports are published. It runs
 with the configured unprivileged UID/GID, all capabilities dropped, no-new-privileges,
-a 2 GiB memory limit, two CPUs and a 256-process limit. Uploads are bounded to
-128 MB; temporary files have a 512 MiB tmpfs. Complex models can exceed these
-limits; review capacity before deliberately raising them. State persists in the
-separate directory; the container root filesystem is writable for upstream
-compatibility. No Docker socket, printer devices or other host state is mounted.
+a 2 GiB memory limit, two CPUs and a 256-process limit. Its working directory is
+`/tmp`, with a private `/run/user/UID` tmpfs directory. This
+is required by the upstream OrcaSlicer CLI: without a writable CWD it tries to
+create its default `00000.log` at `/` and aborts. Do not remove these settings.
+The Node entrypoint is set to an absolute path because the image's normal
+relative command assumes `/app`.
+Uploads are bounded to 128 MB; temporary files have a 512 MiB tmpfs. Complex
+models can exceed these limits; review capacity before deliberately raising
+them. State persists in the separate directory; the container root filesystem
+is writable for upstream compatibility. No Docker socket, printer devices or
+other host state is mounted.
 
 In the existing owner session at https://bambuddy.DOMAIN, open Settings → Slicer:
 

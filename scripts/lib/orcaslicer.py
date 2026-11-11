@@ -49,13 +49,16 @@ def check(c, root, *, static=False):
             or model.get('networks',{}).get('bambuddy',{}).get('name') != 'ohara-bambuddy_default'
             or not model['networks']['bambuddy'].get('external')
             or s['user'] != c['RUN_UID']+':'+c['RUN_GID']
+            or s.get('working_dir') != '/tmp'
+            or s.get('command') != ['node','/app/dist/index.js']
+            or s.get('environment',{}).get('XDG_RUNTIME_DIR') != '/run/user/'+c['RUN_UID']
             or s.get('cap_drop') != ['ALL'] or s.get('cap_add')
             or 'no-new-privileges:true' not in s.get('security_opt', [])
             or len(s.get('volumes',[])) != 1
             or s['volumes'][0]['source'] != str(storage(c))
             or s['volumes'][0]['target'] != '/app/data'
             or s['volumes'][0].get('bind',{}).get('create_host_path',False)):
-        raise ValueError('OrcaSlicer must retain private networking, dedicated storage and non-root isolation')
+        raise ValueError('OrcaSlicer must retain a writable runtime directory, private networking, dedicated storage and non-root isolation')
     if not static:
         bambuddy.require_storage(c)
         path = storage(c)

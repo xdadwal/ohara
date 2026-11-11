@@ -17,6 +17,11 @@ class OrcaSlicerTests(unittest.TestCase):
         c = config.load(ROOT/'.env.example')
         orcaslicer.check(c,ROOT,static=True)
         model = json.loads(orcaslicer.compose(c,ROOT,['config','--format','json'],capture=True))
+        self.assertEqual(model['services']['orcaslicer']['working_dir'],'/tmp')
+        self.assertEqual(model['services']['orcaslicer']['command'],['node','/app/dist/index.js'])
+        self.assertEqual(model['services']['orcaslicer']['environment']['XDG_RUNTIME_DIR'],'/run/user/1000')
+        self.assertIn('/run/user/1000:rw,nosuid,nodev,noexec,size=16m,mode=0700,uid=1000,gid=1000',
+                      model['services']['orcaslicer']['tmpfs'])
         model['services']['orcaslicer']['ports'] = [{'target':3000,'published':'3003','host_ip':'0.0.0.0'}]
         with patch.object(orcaslicer,'compose',return_value=json.dumps(model)):
             with self.assertRaisesRegex(ValueError,'private networking'):
