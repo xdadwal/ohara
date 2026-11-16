@@ -94,7 +94,7 @@ static or disposable check.
 | NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Not started |
 | AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Not started |
 | MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Not started |
-| OST-01 | OpenSpeedTest digest refresh | P1 | Not started |
+| OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |
 | JF-01 | Jellyfin 12.2 to 12.4 | P2 | Not started |
 | SO-01 | Sonarr base-image refresh | P2 | Not started |
 | PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Not started |

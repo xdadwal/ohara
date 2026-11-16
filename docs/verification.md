@@ -437,3 +437,12 @@ The real-container smoke verifies v2.8.0 startup, password/CSRF login, signed
 session access, existing media/resource widgets, the OpenSpeedTest link, private
 backend behavior, Nginx TLS routing, and a 35 MiB upload. No production container
 was recreated in this preparation step.
+
+### OpenSpeedTest digest refresh preparation (2026-11-17)
+
+Re-resolved the mutable `openspeedtest/latest` tag and replaced the 2025 snapshot
+with its current OCI index digest. The index provides linux/amd64 and linux/arm64
+images. The disposable eleven-application smoke uses this exact pin and verifies
+startup, the public speed-test route, iframe/link compatibility through Homepage,
+and a 35 MiB proxy upload. This is a dependency/base-image refresh; no production
+container was recreated.
