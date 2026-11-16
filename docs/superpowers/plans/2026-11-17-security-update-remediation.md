@@ -91,7 +91,7 @@ static or disposable check.
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Prepared; live application pending |
 | IM-01 | Immich release-matched update | P1 | Awaiting owner backup decision |
-| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Not started |
+| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Prepared; live application pending |
 | AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Not started |
 | MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Not started |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |

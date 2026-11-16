@@ -252,13 +252,16 @@ than 72 UTF-8 bytes are always rejected. No other service's policy is weakened.
 The username does not imply administrator privileges: the existing regular role
 and topic permissions are preserved.
 
-ntfy v2.35.0 has no username-rename CLI. The explicit helper stops ntfy, backs up
-its auth database/private server config under `/var/backups/ohara/ntfy-account-*`,
-renames only the existing username while retaining its ID/related records, and
-updates its declarative password hash/ACL username. The supported server startup
-provisions the new password. It verifies authentication and unchanged ID/role;
-failure restores the original auth state. Ambiguous accounts or an unreviewed
-schema/release are refused. Cached messages are not rewritten or deleted.
+ntfy v2.35.0 and the reviewed v2.38.1 release have no username-rename CLI. The
+explicit helper stops ntfy, backs up its auth database/private server config under
+`/var/backups/ohara/ntfy-account-*`, renames only the existing username while
+retaining its ID/related records, and updates its declarative password hash/ACL
+username. The supported server startup provisions the new password. It verifies
+authentication and unchanged ID/role; failure restores the original auth state.
+Ambiguous accounts or an unreviewed schema/release are refused. Cached messages
+are not rewritten or deleted. The v2.38.1 review confirmed that the helper's
+direct `user.user` rename remains valid and preserves the account ID and related
+rows; future releases stay blocked until separately reviewed.
 
 ```sh
 sudo systemctl stop ohara-alerts.timer ohara-alerts.service

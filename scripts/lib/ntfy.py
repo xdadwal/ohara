@@ -18,6 +18,7 @@ import runtime
 TOPIC = 'ohara-alerts'
 USER = 'admin'
 BASE = 'http://127.0.0.1:2586'
+ROTATE_REVIEWED_VERSIONS = {'v2.35.0', 'v2.38.1'}
 
 
 def settings(c):
@@ -238,6 +239,11 @@ def rename_database(db, old='ohara', new='admin'):
     raise ValueError('Ambiguous ntfy account state; preserve both accounts and inspect')
 
 
+def rotate_reviewed(image):
+    tag = image.split(':', 1)[1].split('@', 1)[0] if ':' in image else ''
+    return tag in ROTATE_REVIEWED_VERSIONS
+
+
 def rotate_account(c,root):
     """Explicit owner-authorized offline rename/password update, with rollback."""
     import bcrypt
@@ -251,7 +257,7 @@ def rotate_account(c,root):
             raise ValueError('Pause ohara-alerts.timer and its worker before account rotation')
     secret=password(root)
     storage(c)
-    if not images(root)['NTFY_IMAGE'].startswith('binwiederhier/ntfy:v2.35.0@'):
+    if not rotate_reviewed(images(root)['NTFY_IMAGE']):
         raise ValueError('Offline rename requires review against this ntfy version')
     _,base,_,_=settings(c)
     server=base/'config/server.yml';database=base/'data/auth.db'

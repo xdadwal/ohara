@@ -143,6 +143,12 @@ class AlertTests(unittest.TestCase):
 
 
 class AccountRotationTests(unittest.TestCase):
+    def test_offline_rename_guard_accepts_only_reviewed_releases(self):
+        self.assertTrue(ntfy.rotate_reviewed('binwiederhier/ntfy:v2.35.0@sha256:' + 'a'*64))
+        self.assertTrue(ntfy.rotate_reviewed('binwiederhier/ntfy:v2.38.1@sha256:' + 'a'*64))
+        self.assertFalse(ntfy.rotate_reviewed('binwiederhier/ntfy:v2.39.0@sha256:' + 'a'*64))
+        self.assertFalse(ntfy.rotate_reviewed('unexpected'))
+
     def test_offline_rename_preserves_account_identity_and_related_state(self):
         import sqlite3
         db=sqlite3.connect(':memory:')
