@@ -11,6 +11,8 @@ treated as permanent package-manager or registry state.
 **Owner direction (2026-11-17):** proceed with the one-by-one remediation plan,
 but **do not upgrade the Seerr image**. Keep the separately approved public-route
 containment for Seerr unless the owner later gives new instructions.
+Schedule host package changes last unless preparation of another item finds a
+verified dependency that requires applying H-01 earlier.
 
 ## Goal and scope
 
@@ -84,7 +86,7 @@ static or disposable check.
 | ID | Scope | Priority | State |
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
-| H-01 | Host security packages and reboot | P0 | Not started |
+| H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
 | SE-01 | Seerr public-route containment | P0 | Not started |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Not started |
@@ -113,6 +115,14 @@ static or disposable check.
 Docker Engine `29.9.3`, and the current Debian security candidates for zlib,
 expat, CA certificates, containerd, Compose, and Tailscale. Re-resolve all
 candidates on the maintenance day.
+
+**Scheduling (owner direction, 2026-11-17):** perform this after the application
+and optional-project items unless a reviewed target image or runtime requirement
+depends on a newer host package, an active incident requires earlier patching, or
+the owner changes the order. During each earlier item, record whether it has such
+a dependency. If one is found, pause that item and obtain explicit owner approval
+before moving H-01 forward. The audit found no such dependency for the planned
+application updates.
 
 Prerequisites: owner-approved reboot window, verified fallback LAN/SSH path,
 known storage mount state, and no mid-flight application remediation.
@@ -495,23 +505,24 @@ separate explicit owner risk acceptance and is not treated as stable remediation
 
 1. Merge this tracker.
 2. SE-01: contain the public Seerr route.
-3. H-01: patch host packages and reboot.
-4. HP-01: update Homepage.
-5. OST-01: refresh OpenSpeedTest.
-6. IM-01: update release-matched Immich after the owner's backup decision.
-7. NT-01: update ntfy.
-8. AG-01: update AdGuard Home.
-9. MT-01: update Maintainerr.
-10. JF-01: update Jellyfin and refresh its theme.
-11. SO-01: refresh Sonarr.
-12. PR-01: update Prowlarr.
-13. LI-01: update Lidarr.
-14. QB-01: update qBittorrent.
-15. RA-01: migrate Radarr.
-16. BB-01: update Bambuddy/OrcaSlicer together.
-17. KU-01: refresh Kutt PostgreSQL.
-18. Keep BZ-01 contained and monitor for a fixed stable Bazarr release.
-19. Do not execute SE-02 under the current owner direction.
+3. HP-01: update Homepage.
+4. OST-01: refresh OpenSpeedTest.
+5. IM-01: update release-matched Immich after the owner's backup decision.
+6. NT-01: update ntfy.
+7. AG-01: update AdGuard Home.
+8. MT-01: update Maintainerr.
+9. JF-01: update Jellyfin and refresh its theme.
+10. SO-01: refresh Sonarr.
+11. PR-01: update Prowlarr.
+12. LI-01: update Lidarr.
+13. QB-01: update qBittorrent.
+14. RA-01: migrate Radarr.
+15. BB-01: update Bambuddy/OrcaSlicer together.
+16. KU-01: refresh Kutt PostgreSQL.
+17. Keep BZ-01 contained and monitor for a fixed stable Bazarr release.
+18. Do not execute SE-02 under the current owner direction.
+19. H-01: patch host packages and reboot in the final maintenance window, unless
+    an earlier reviewed item found a verified host dependency.
 
 ## Completion evidence
 
