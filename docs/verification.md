@@ -423,3 +423,17 @@ Both hosted CI runs for 5c21a89 passed: pull_request run 39831104313 and push ru
 immich-containers. The 152 local tests and required checks had already passed.
 The previous Compose serialization CI blocker is resolved. This follow-up changes
 only documentation; whitespace validation passes. PR #21 remains unmerged.
+
+### Homepage v2.8.0 security-update preparation (2026-11-17)
+
+Re-resolved the official `ghcr.io/gethomepage/homepage:v2.8.0` OCI index and
+verified linux/amd64 and linux/arm64 manifests before pinning its index digest.
+The update includes the upstream v2.6.0 authentication-bypass fix while retaining
+the existing private authentication inputs and dashboard configuration policy.
+
+All 257 Python tests, setup/CLI/static checks, the main-stack static check, Git
+whitespace validation, and the full disposable eleven-application smoke pass.
+The real-container smoke verifies v2.8.0 startup, password/CSRF login, signed
+session access, existing media/resource widgets, the OpenSpeedTest link, private
+backend behavior, Nginx TLS routing, and a 35 MiB upload. No production container
+was recreated in this preparation step.

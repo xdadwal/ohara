@@ -13,7 +13,10 @@
   authentication and a proxy rate limit on password attempts.
 - Homepage was selected on 2026-10-15: gethomepage/homepage v2.5.0, pinned by
   digest, non-root, loopback port 3002. Start with service links, no Docker socket
-  or API keys. Seed config only when absent and preserve operator edits.
+  or API keys. Seed config only when absent and preserve operator edits. On
+  2026-11-17 the reviewed pin moves to v2.8.0 so the deployment includes the
+  upstream v2.6.0 authentication-bypass fix; configuration and credential
+  handling remain unchanged.
 - Immich will run on the same machine, as confirmed by the user, in a separate
   Compose project. Hostname is confirmed as immich.xdadwal.in. Storage, hardware capacity and
   backup destination remain to be configured. See immich-next.md.
