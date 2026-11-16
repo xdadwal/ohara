@@ -461,3 +461,13 @@ and the helper continues to change only `user.user` so IDs, ACLs, tokens, prefs
 and cached messages remain attached to the same account. Future releases remain
 refused until reviewed. No production ntfy container, account, timer, or route
 was changed during preparation.
+
+### AdGuard Home v0.107.80 security-update preparation (2026-11-17)
+
+Re-resolved the official v0.107.80 OCI index and verified linux/amd64 and
+linux/arm64 before pinning it. Upstream's configuration schema remains version 34,
+so the seeded private configuration and existing-state preservation behavior are
+unchanged. The disposable AdGuard fixture runs the exact pin and verifies non-root
+startup, protected control API, UDP/TCP rewrites, IPv6 responses, filtering,
+encrypted upstream resolution, and restart persistence. No production DNS service,
+configuration, client setting, or router setting was changed.

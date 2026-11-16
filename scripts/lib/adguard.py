@@ -34,7 +34,7 @@ def initial_config(c, password_hash):
                    {service+'.'+c['DOMAIN'] for service in
                     ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'immich', 'maintainerr', 'bambuddy', 'ntfy')} | {c.get('KUTT_HOST','kutt.'+c['DOMAIN'])})
     return {
-        'schema_version': 34,  # Pinned AdGuard v0.107.79 schema.
+        'schema_version': 34,  # Unchanged in pinned AdGuard v0.107.80.
         'http': {'address': '0.0.0.0:3000'},
         'users': [{'name': 'admin', 'password': password_hash}],
         'dns': {
