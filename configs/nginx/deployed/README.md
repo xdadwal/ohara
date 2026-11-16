@@ -10,7 +10,9 @@ other LAN routes retain their existing restrictions.
 - `ohara.conf`: wildcard HTTPS, portfolio apex, Homepage at ohara.xdadwal.in,
   Seerr/Jellyfin/OpenSpeedTest/Navidrome, IPv4/IPv6, localhost redirects and local TLS.
   Jellyfin is at tv.xdadwal.in; Navidrome is at music.xdadwal.in. The dedicated
-  music HTTP redirect and HTTPS route suppress URL-bearing access/error logs.
+  music HTTP redirect and HTTPS route suppress URL-bearing access/error logs. The
+  Seerr HTTPS route denies normalized `/imageproxy` path-equivalence variants
+  while Seerr remains on the owner-selected vulnerable image.
 - `ohara-immich.conf`: separate public photo HTTPS route, promoted from LAN-only
   onboarding on 2026-10-22 after the operator confirmed owner setup and the API
   reported initialized/onboarded. Uses the existing wildcard certificate and
