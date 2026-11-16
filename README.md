@@ -120,6 +120,8 @@ and verification. No additional .env credentials or Compose service are needed.
 
 Start with [AGENTS.md](AGENTS.md), [decisions](docs/decisions.md), and
 [the approved implementation plan](docs/superpowers/plans/2026-10-15-ohara-setup.md).
+The current approved one-by-one security maintenance checklist is
+[security update remediation](docs/superpowers/plans/2026-11-17-security-update-remediation.md).
 
 ```sh
 python3 -m unittest discover -s tests -v
