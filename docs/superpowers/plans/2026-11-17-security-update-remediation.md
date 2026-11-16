@@ -93,7 +93,7 @@ static or disposable check.
 | IM-01 | Immich release-matched update | P1 | Awaiting owner backup decision |
 | NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Prepared; live application pending |
 | AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Prepared; live application pending |
-| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Not started |
+| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Prepared; live application pending |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |
 | JF-01 | Jellyfin 12.2 to 12.4 | P2 | Not started |
 | SO-01 | Sonarr base-image refresh | P2 | Not started |
