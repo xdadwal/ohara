@@ -49,7 +49,7 @@ Compose output. Widget API calls use internal Docker addresses; no extra public
 ports or Docker socket are needed.
 
 Jellyfin shows movie/series/episode counts and Now Playing, with usernames and
-playback controls hidden. Its version 2 widget matches the pinned Jellyfin 12.2.
+playback controls hidden. Its version 2 widget matches the pinned Jellyfin 12.4.
 Seerr shows pending requests, processing requests and issues. Everyone with access
 to the dashboard can see these widgets' information.
 
