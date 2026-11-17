@@ -494,3 +494,13 @@ first-owner setup, Movies/TV libraries, persistent Abyss overlay generation agai
 the changed image pin, media APIs, Nginx TLS routing, and playback-related service
 connections. No production Jellyfin server, database, libraries, theme state, or
 plugins were changed.
+
+### Sonarr base-image refresh preparation (2026-11-17)
+
+Re-resolved LinuxServer's current Sonarr `latest` index and verified linux/amd64
+and linux/arm64 manifests. Its image label remains Sonarr `4.0.20.3014` while the
+build advances to `ls5` (created 2026-11-14), making this a base-image/dependency
+refresh rather than an application upgrade. The disposable eleven-application smoke
+runs the exact pin and verifies startup, Sonarr configuration preservation, API
+connectivity, download-client setup, quality profile behavior, and rerun safety.
+No production Sonarr container or database was changed.
