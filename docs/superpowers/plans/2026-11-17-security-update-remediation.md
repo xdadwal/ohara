@@ -100,7 +100,7 @@ static or disposable check.
 | PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Prepared; live application pending |
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Prepared; live application pending |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Prepared; live application pending |
-| RA-01 | Radarr 6 to 7 migration | P2 | Not started |
+| RA-01 | Radarr 6 to 7 migration | P2 | Prepared; live migration pending |
 | BB-01 | Bambuddy + matching OrcaSlicer | P3 | Not started |
 | KU-01 | Kutt PostgreSQL same-version refresh | P3 | Not started |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
