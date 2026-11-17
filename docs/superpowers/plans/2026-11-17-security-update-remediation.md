@@ -98,7 +98,7 @@ static or disposable check.
 | JF-01 | Jellyfin 12.2 to 12.4 | P2 | Prepared; live application pending |
 | SO-01 | Sonarr base-image refresh | P2 | Prepared; live application pending |
 | PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Prepared; live application pending |
-| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Not started |
+| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Prepared; live application pending |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Not started |
 | RA-01 | Radarr 6 to 7 migration | P2 | Not started |
 | BB-01 | Bambuddy + matching OrcaSlicer | P3 | Not started |
