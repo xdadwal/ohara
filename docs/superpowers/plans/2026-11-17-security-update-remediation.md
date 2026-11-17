@@ -102,7 +102,7 @@ static or disposable check.
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Prepared; live application pending |
 | RA-01 | Radarr 6 to 7 migration | P2 | Prepared; live migration pending |
 | BB-01 | Bambuddy + matching OrcaSlicer | P3 | Prepared; live application pending |
-| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Not started |
+| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Prepared; live application pending |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
 | CB-01 | Certbot 4.0.0 | Monitor | Current |
