@@ -504,3 +504,16 @@ refresh rather than an application upgrade. The disposable eleven-application sm
 runs the exact pin and verifies startup, Sonarr configuration preservation, API
 connectivity, download-client setup, quality profile behavior, and rerun safety.
 No production Sonarr container or database was changed.
+
+### Prowlarr v2.7.0 update preparation (2026-11-17)
+
+Reviewed the v2.7.0.5723 release notes, including its allowed-hosts fix and
+dependency updates. Re-resolved LinuxServer's current `latest` index and verified
+linux/amd64 and linux/arm64; its label is `2.7.0.5723-ls168`. Upstream v3.0.2 was
+published after the original audit, but no corresponding LinuxServer image tag was
+available at this check, so it is not substituted blindly.
+
+The disposable eleven-application smoke runs the exact pin and verifies Prowlarr
+startup, preserved/chosen indexers, application connections to Radarr/Sonarr/Lidarr,
+qBittorrent integration, rerun preservation, Nginx TLS routing, and private ports.
+No production Prowlarr container, database, or indexer definitions were changed.
