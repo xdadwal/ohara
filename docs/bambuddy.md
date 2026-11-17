@@ -1,6 +1,6 @@
 # Bambuddy for the A1 mini
 
-Optional independent project `ohara-bambuddy`, using official `1.2.5.7` pinned by
+Optional independent project `ohara-bambuddy`, using official `1.3.1` pinned by
 multi-architecture digest in `versions/bambuddy.env`. The owner's A1 mini is in
 LAN-only mode and was confirmed connected through manual IP/bridge networking.
 
@@ -147,9 +147,9 @@ independent backup or proven restore. No external backup destination/restore tes
 is implemented. To retire the service, stop it and deliberately remove only its
 proxy/card/rewrite, preserving data. Do not delete state to repair a connection.
 
-References: [release](https://github.com/maziggy/bambuddy/releases/tag/v1.2.5.7),
-[release Compose](https://github.com/maziggy/bambuddy/blob/v1.2.5.7/docker-compose.yml),
-[proxy-aware login limiter](https://github.com/maziggy/bambuddy/blob/v1.2.5.7/backend/app/api/routes/auth.py).
+References: [release](https://github.com/maziggy/bambuddy/releases/tag/v1.3.1),
+[release Compose](https://github.com/maziggy/bambuddy/blob/v1.3.1/docker-compose.yml),
+[proxy-aware login limiter](https://github.com/maziggy/bambuddy/blob/v1.3.1/backend/app/api/routes/auth.py).
 
 
 ### Bambuddy printer status
