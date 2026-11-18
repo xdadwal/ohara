@@ -750,3 +750,26 @@ Requiem for a Dream (2000) with `POST /Items/RemoteSearch/Apply/{id}`; each now
 has TMDb/IMDb IDs, overview, genres and artwork. Two older stand-up items without
 a provider match were left unchanged. The cause of the old container's resolver
 failure was not determined.
+
+### Prowlarr explicit stable tag (2026-11-18)
+
+Upstream Prowlarr's newest non-prerelease release is v3.0.2.5780 and LinuxServer's
+newest non-prerelease build is `3.0.2.5780-ls169`. `docker buildx imagetools
+inspect` resolves both `lscr.io/linuxserver/prowlarr:3.0.2.5780-ls169` and
+`:latest` to index digest `sha256:45117ba8…`, the digest already pinned and
+running. Only the tag text of `PROWLARR_IMAGE` changed. `scripts/check --static`
+and the repository tests pass. The container has not been recreated with the new
+reference; that happens on the next `scripts/up`. The owner separately confirmed
+ntfy phone delivery, an Immich upload and an OpenSpeedTest run.
+
+### Explicit version tags for all pins (2026-11-18)
+
+`docker buildx imagetools inspect` confirmed that each versioned tag resolves to
+the digest already pinned and running: Radarr `7.0.3.10918-ls328`, Sonarr
+`4.0.20.3014-ls5`, Lidarr `3.1.6.5079-ls48`, qBittorrent `5.3.0_v2.1.2-ls487`,
+Bazarr `v1.6.2-ls368`, OpenSpeedTest `v2.0.8` and Valkey `9.1.3`. Only tag text
+changed in `versions/stack.env` and `versions/immich.env`; no pin uses `latest`
+or a major-only tag any more. `scripts/check --static`, `scripts/immich check
+--static` and the repository tests pass. Not applied live: the changed references
+make Compose recreate these containers on the next `scripts/up` and
+`sudo scripts/immich up`.

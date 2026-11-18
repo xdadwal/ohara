@@ -97,7 +97,7 @@ static or disposable check.
 | OST-01 | OpenSpeedTest digest refresh | P1 | Applied live; browser test pending |
 | JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; API state verified; owner confirmed playback |
 | SO-01 | Sonarr base-image refresh | P2 | Applied live; API state verified; owner confirmed queue |
-| PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch; API state verified; v3.0.2 retained pending owner review |
+| PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch; API state verified; owner kept latest stable v3.0.2, now pinned by explicit version tag |
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; API state verified |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent state and seeding policy verified |
 | RA-01 | Radarr 6 to 7 migration | P2 | Applied live; migrated API state verified; search/request flow not exercised |
@@ -621,7 +621,29 @@ Remaining acceptance:
 - owner phone: arrival of the 19:08 IST ntfy test notification;
 - owner browser: an OpenSpeedTest run, Bambuddy `.3mf` slicing, and an Immich
   upload/download round trip;
-- owner decision: keep Prowlarr v3.0.2 or roll back to the verified v2.7 digest.
+
+The owner also confirmed ntfy phone delivery, an Immich upload and an
+OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
+deferred BZ-01 because Bazarr is LAN-only.
+
+Prowlarr pin correction: upstream's latest stable release on 2026-11-18 is
+v3.0.2.5780, the version already running. `PROWLARR_IMAGE` now uses the explicit
+`3.0.2.5780-ls169` tag with the unchanged digest `sha256:45117…`, so the pin text
+states the version it runs. The image content is identical, but Compose treats
+the changed reference as a new configuration and recreates the Prowlarr container
+on the next `scripts/up`; that restart has not been applied. Verify afterwards
+with `scripts/status` and Prowlarr's indexer/application sync. Roll back by
+reverting the pin text.
+
+The same correction was then applied to every other pin that used a floating
+tag, each with its digest unchanged and the versioned tag confirmed to resolve to
+that digest: Radarr `7.0.3.10918-ls328`, Sonarr `4.0.20.3014-ls5`, Lidarr
+`3.1.6.5079-ls48`, qBittorrent `5.3.0_v2.1.2-ls487`, Bazarr `v1.6.2-ls368`,
+OpenSpeedTest `v2.0.8`, and Immich's Valkey `9.1.3` (previously the `9` major
+tag). No version changes. The next `scripts/up` recreates those seven main-stack
+containers and the next `sudo scripts/immich up` recreates Valkey; neither has
+been applied. Check for active playback, imports and downloads first, and verify
+qBittorrent torrent state afterwards.
 
 H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
 still published only v1.6.3 beta builds.
