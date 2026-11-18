@@ -825,5 +825,6 @@ flag was refused by input validation and changed nothing. Afterwards all three
 containers are healthy, `valkey_version` is 9.1.3, ping and statistics answer and
 the HTTPS route returns 200.
 
-Not verified: a real LAN device, a client on the public Internet, and a request
-made inside Jellyfin by a remote user.
+Owner report (2026-11-18), not an agent-run check: verified on the local network
+and the public Internet that Seerr loads on the LAN, is refused from outside, and
+that a request made inside Jellyfin from outside still reaches Seerr.

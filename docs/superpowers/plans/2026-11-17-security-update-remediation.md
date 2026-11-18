@@ -87,7 +87,7 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, applied live; owner external/Jellyfin check pending |
+| SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, applied live; owner verified LAN, external 403 and remote Jellyfin requests |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
 | IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner confirmed login; upload/download round trip not reported |
@@ -616,8 +616,7 @@ redownloaded. See [media recovery guidance](../../media.md).
 
 Remaining acceptance:
 
-- external client: Seerr and the LAN-only admin hosts return 403 from outside,
-  and a request made inside Jellyfin still reaches Seerr.
+- none for the applied items; see the release record below.
 
 The owner also confirmed ntfy phone delivery, an Immich upload and an
 OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
@@ -685,8 +684,9 @@ was downloading and the Radarr/Sonarr queues were empty.
   the existing database password) recreated only Valkey on its `9.1.3`
   reference. All three containers are healthy, ping and statistics answer, and
   the HTTPS route returns 200.
-- **Still to confirm by the owner:** Seerr loads from a real LAN device, returns
-  403 on mobile data, and a request made inside Jellyfin on mobile data reaches
-  Seerr. The Tailscale-source check is a real-host check, not an Internet one.
+- **Owner acceptance (2026-11-18):** the owner verified on the local network and
+  on the public Internet that Seerr loads from a LAN device, returns 403 from
+  outside, and that a request made inside Jellyfin from outside reaches Seerr.
+  SE-01 is closed.
 - The owner confirmed Bambuddy login and slicing. H-01 is the only unstarted
   remediation item; BZ-01 is deferred by the owner.
