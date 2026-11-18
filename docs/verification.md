@@ -585,3 +585,16 @@ disposable pinned Homepage widget check still verifies custom headers, expected
 status fields, and browser credential exclusion.
 No production Bambuddy/OrcaSlicer container, database, settings, archive, or
 slicer state was changed.
+
+### Kutt PostgreSQL same-version digest refresh preparation (2026-11-17)
+
+The Kutt application remains v3.2.6. Docker's `postgres:17.11-alpine3.24` tag was
+rebuilt from October base images to November base images without changing the
+PostgreSQL version. Re-resolved the current multi-architecture OCI index and
+verified linux/amd64 and linux/arm64 manifests before pinning it.
+
+The disposable Kutt fixture runs both the unchanged application pin and refreshed
+database image, then verifies PostgreSQL health, application health/startup, owner
+setup state, native API behavior, persistent links/users, TLS proxy behavior,
+LAN-only administration, and public-user route policy. No production Kutt or
+PostgreSQL container, database volume, JWT secret, users, or links was changed.
