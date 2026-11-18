@@ -85,6 +85,15 @@ def compose(c, root, args, *, capture=False, timeout=60):
                        capture=capture, timeout=timeout, env=env)
 
 
+def stop(c, root, *, allow_dns_outage=False):
+    if not allow_dns_outage:
+        raise ValueError(
+            'Refusing to stop active LAN DNS; deploy/verify a fallback resolver '
+            'and rerun scripts/adguard stop --allow-dns-outage for an approved window')
+    compose(c, root, ['stop'])
+    print('DNS stopped for the explicitly approved outage window; restore with scripts/adguard up and verify from a LAN client.')
+
+
 def check(c, root):
     settings(c)
     model = json.loads(compose(c, root, ['config', '--format', 'json'], capture=True))

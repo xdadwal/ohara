@@ -106,7 +106,18 @@ rotate the password or change existing rewrites. Use the dashboard for changes,
 including Filters → DNS rewrites. Update the private `.env` after password changes.
 An IP/subnet change also requires reviewing dashboard allowlists and rewrites.
 
-Back up conf and work privately with the service stopped for a consistent copy;
+AdGuard is active LAN DNS. Its default stop command refuses an outage. Do not stop
+it as part of an unrelated update batch. First deploy and verify a fallback
+resolver, obtain owner approval for the interruption window, announce it to LAN
+users, and stop only AdGuard with:
+
+```sh
+scripts/adguard stop --allow-dns-outage
+```
+
+Before resuming updates, restore immediately with `scripts/adguard up`, then verify
+UDP/TCP queries from a separate LAN client. Back up conf and work privately with
+the service stopped during that approved window for a consistent copy;
 include the private credential input in the existing encrypted backup procedure.
 Do not commit configuration or query logs. For rollback, first restore the prior
 DHCP/client DNS settings and renew leases, then `scripts/adguard stop`.

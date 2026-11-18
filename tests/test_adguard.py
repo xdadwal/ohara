@@ -109,6 +109,15 @@ class AdguardTests(unittest.TestCase):
         with patch.object(adguard.runtime, 'docker_prefix', return_value=['docker']):
             adguard.check(self.settings(), ROOT)
 
+    def test_stop_requires_explicit_dns_outage_approval(self):
+        c = self.settings()
+        with patch.object(adguard, 'compose') as compose:
+            with self.assertRaisesRegex(ValueError, 'Refusing to stop active LAN DNS'):
+                adguard.stop(c, ROOT)
+            compose.assert_not_called()
+            adguard.stop(c, ROOT, allow_dns_outage=True)
+            compose.assert_called_once_with(c, ROOT, ['stop'])
+
 
 if __name__ == '__main__':
     unittest.main()

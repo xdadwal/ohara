@@ -625,3 +625,38 @@ and a byte-identical PNG upload/download round trip. This does not migrate or
 back up production data. Independent production backup/restore testing remains
 deferred by the owner; live migration still requires the explicit backup/risk
 decision and maintenance window from the remediation plan.
+
+### 2026-11-18 production rollout status and corrections
+
+The merged main-stack pins were applied after the required Jellyfin theme refresh.
+`scripts/check` and `scripts/up` completed, and `scripts/status` subsequently
+reported all eleven main-stack containers running and reachable; Homepage and
+Jellyfin reported healthy. Container inspection confirms Homepage 2.8.0, Jellyfin
+12.4, Sonarr `4.0.20.3014-ls5`, Lidarr `3.1.6.5079-ls48`, qBittorrent
+`5.3.0_v2.1.2-ls487`, Radarr `7.0.3.10918-ls328`, and OpenSpeedTest
+`1.30.6-alpine`. The Seerr image remains intentionally unchanged at v3.5.2.
+
+Prowlarr was deployed by its recorded digest and runs `3.0.2.5780-ls169`. This
+exposed a preparation error: earlier text incorrectly associated that digest with
+v2.7.0-ls168. Direct image inspection proves digest `sha256:45117…` is
+v3.0.2-ls169, while digest `sha256:666078…` is v2.7.0-ls168. The v3.0.2 container
+is retained and its `/ping` endpoint returns `OK`; documentation/tracker are
+corrected. Full indexer/sync and public/LAN acceptance remain pending.
+
+ntfy 2.38.1, Maintainerr, Bambuddy 1.3.1, and the matched OrcaSlicer sidecar were
+restored/updated through their helpers. Helper status checks pass; ntfy
+authenticated publishing accepts a test notification, while phone delivery remains
+owner confirmation. The optional-state backup remains available for rollback.
+
+An unintended DNS outage occurred when AdGuard was stopped for a consistent
+backup. The owner manually restored the unchanged v0.107.79 service; authenticated
+API and DNS status then passed. While preparing the safety correction, a later
+`scripts/adguard up` used the merged pin and recreated AdGuard as v0.107.80; this
+was not the intended deferral sequence and is recorded as part of the incident.
+The running service now reports authenticated API and DNS status, and host-local
+UDP/TCP queries return answers. The default `scripts/adguard stop` now refuses an
+outage and requires `--allow-dns-outage`; this guard is repository safety, not
+evidence that a fallback resolver has been deployed. A separate LAN client must
+verify UDP/TCP queries before closure. Kutt remains unchanged pending the
+root-required documented backup. Seerr's installed Nginx route and host packages
+also remain pending.
