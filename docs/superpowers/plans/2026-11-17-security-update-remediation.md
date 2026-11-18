@@ -619,7 +619,6 @@ Remaining acceptance:
 - root on the host: install the LAN-only Seerr baseline (see below);
 - external client: Seerr and the LAN-only admin hosts return 403 from outside,
   and a request made inside Jellyfin still reaches Seerr;
-- owner phone: arrival of the 19:08 IST ntfy test notification;
 
 The owner also confirmed ntfy phone delivery, an Immich upload and an
 OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
@@ -656,3 +655,30 @@ Exact apply, verification and rollback commands are in
 
 H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
 still published only v1.6.3 beta builds.
+
+## 2026-11-18 explicit-tag release
+
+PRs #54, #55 and #56 were merged with owner approval, which also authorized the
+production release. Before applying, nothing was playing in Jellyfin, no torrent
+was downloading and the Radarr/Sonarr queues were empty.
+
+- **Applied:** `scripts/check` then `scripts/up` at 14:39 UTC recreated Radarr,
+  Sonarr, Prowlarr, Lidarr, qBittorrent, Bazarr and OpenSpeedTest on their
+  explicitly tagged references with unchanged digests. Homepage, Jellyfin, Seerr
+  and Navidrome were not recreated. Afterwards `scripts/status` reports all
+  eleven containers reachable; versions, library counts, root folders, indexers,
+  Prowlarr application sync, the 48 torrents with their categories and states,
+  the 240-minute seeding policy and disabled completed-download removal are
+  unchanged, with no health issues. Lidarr's queue repopulated to its previous
+  13 records about two minutes after start.
+- **Pending root:** the session has no root access. Two steps remain, to be run
+  from the repository root on `master`:
+  1. Seerr LAN-only Nginx baseline, using the commands in
+     [LAN services](../../lan-services.md#seerr-lan-only-since-2026-11-18). Until
+     then the installed `ohara.conf` differs from the baseline and Seerr stays
+     public with the `/imageproxy` denial.
+  2. `sudo scripts/immich up` then `scripts/immich status`, which recreates only
+     Valkey on its `9.1.3` reference (same digest). The running container still
+     uses the `9` reference.
+- The owner confirmed Bambuddy login and slicing. H-01 is the only unstarted
+  remediation item; BZ-01 is deferred by the owner.

@@ -794,3 +794,16 @@ server, and added the `$ohara_lan_allowed` guard ahead of the existing
   commands are run.
 - Not verified: a real LAN client, a real external client, and a remote request
   through Jellyfin Enhanced with the public route closed.
+
+### Explicit-tag production release (2026-11-18)
+
+Real host, with owner approval after PRs #54-#56 merged. `scripts/check` and
+`scripts/up` recreated seven main-stack containers at 14:39 UTC; `docker inspect`
+shows each on its versioned reference with the previously pinned digest.
+`scripts/status` reports all eleven containers running and reachable. Read-only
+API checks before and after match: Radarr 29 movies, Sonarr 6 series, Lidarr 2
+artists, Prowlarr 3 indexers and three applications, qBittorrent 48 torrents
+(43 stopped, 3 stalled, 2 queued uploads) with unchanged categories and seeding
+policy, and no health issues. Not applied for lack of root: the Seerr LAN-only
+Nginx baseline and the Valkey recreation through `sudo scripts/immich up`. No
+external or LAN-client check was run for this release.
