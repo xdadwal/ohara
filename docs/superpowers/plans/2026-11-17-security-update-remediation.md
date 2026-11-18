@@ -635,5 +635,15 @@ on the next `scripts/up`; that restart has not been applied. Verify afterwards
 with `scripts/status` and Prowlarr's indexer/application sync. Roll back by
 reverting the pin text.
 
+The same correction was then applied to every other pin that used a floating
+tag, each with its digest unchanged and the versioned tag confirmed to resolve to
+that digest: Radarr `7.0.3.10918-ls328`, Sonarr `4.0.20.3014-ls5`, Lidarr
+`3.1.6.5079-ls48`, qBittorrent `5.3.0_v2.1.2-ls487`, Bazarr `v1.6.2-ls368`,
+OpenSpeedTest `v2.0.8`, and Immich's Valkey `9.1.3` (previously the `9` major
+tag). No version changes. The next `scripts/up` recreates those seven main-stack
+containers and the next `sudo scripts/immich up` recreates Valkey; neither has
+been applied. Check for active playback, imports and downloads first, and verify
+qBittorrent torrent state afterwards.
+
 H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
 still published only v1.6.3 beta builds.
