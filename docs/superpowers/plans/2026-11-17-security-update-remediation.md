@@ -87,22 +87,22 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Prepared; live application pending |
+| SE-01 | Seerr public-route containment | P0 | Merged; installed-route application pending sudo |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
-| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Prepared; live application pending |
-| IM-01 | Immich release-matched update | P1 | Prepared; live application awaits owner backup decision |
-| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Prepared; live application pending |
-| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Prepared; live application pending |
-| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Prepared; live application pending |
-| OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |
-| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Prepared; live application pending |
-| SO-01 | Sonarr base-image refresh | P2 | Prepared; live application pending |
-| PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Prepared; live application pending |
-| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Prepared; live application pending |
-| QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Prepared; live application pending |
-| RA-01 | Radarr 6 to 7 migration | P2 | Prepared; live migration pending |
-| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Prepared; live application pending |
-| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Prepared; live application pending |
+| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; functional checks pending |
+| IM-01 | Immich release-matched update | P1 | Merged; live application awaits owner backup decision |
+| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Applied live; phone delivery pending owner confirmation |
+| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Applied live after an unsafe restart; separate-LAN verification pending |
+| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Applied live; connection/rule checks pending |
+| OST-01 | OpenSpeedTest digest refresh | P1 | Applied live; browser test pending |
+| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; browser/playback checks pending |
+| SO-01 | Sonarr base-image refresh | P2 | Applied live; app-state checks pending |
+| PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch |
+| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; app-state checks pending |
+| QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent/seeding checks pending |
+| RA-01 | Radarr 6 to 7 migration | P2 | Applied live; production migration checks pending |
+| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; owner UI/slicing checks pending |
+| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Merged; live application pending root backup |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
 | CB-01 | Certbot 4.0.0 | Monitor | Current |
@@ -395,12 +395,16 @@ changed state unexpectedly.
 
 ## PR-01 — Prowlarr update
 
-Update `PROWLARR_IMAGE` from 2.6.5.5623 to reviewed 2.7.0.5723. Back up
-config/database and privately record indexer/sync targets. Apply through `scripts/up`.
+The deployed digest is LinuxServer Prowlarr `3.0.2.5780-ls169`, not the originally
+described `2.7.0.5723-ls168`. The original preparation conflated the previously
+recorded v2.7 digest with a newly resolved `latest` index digest. The deployed
+digest is immutable and was re-inspected after the mismatch: digest `sha256:45117…`
+maps to v3.0.2-ls169, while digest `sha256:666078…` maps to v2.7.0-ls168.
 
-Verify private UI access, preserved indexer definitions and health, sync to
-Radarr/Sonarr/Lidarr, and no credential leakage in logs. Roll back by reverting the
-pin and restoring state only if required.
+Keep the deployed v3.0.2 pin unless the owner requests rollback. Verify private UI
+access, preserved indexer definitions and health, sync to Radarr/Sonarr/Lidarr, and
+no credential leakage in logs. Roll back by reverting to the separately verified
+v2.7 digest and restoring state only if required.
 
 ## LI-01 — Lidarr update
 
@@ -537,3 +541,26 @@ For every applied item, record:
 - public/LAN reachability results where applicable;
 - rollback result or reason rollback was not needed;
 - remaining limitations or explicit owner deferral.
+
+## 2026-11-18 live-rollout incident
+
+During the approved production rollout, a consistent-backup step stopped active
+LAN DNS. AdGuard was incorrectly grouped with unrelated optional services. Its
+default stop path now refuses an outage unless
+`scripts/adguard stop --allow-dns-outage` is run after fallback DNS has been
+deployed/verified and the window approved. The owner restored AdGuard manually;
+the old v0.107.79 service and configuration were preserved, and AG-01 remains
+temporarily deferred. While preparing this correction, a subsequent
+`scripts/adguard up` used the merged v0.107.80 pin and recreated the service;
+that update was not the intended next step and violated the new deferral rule.
+The host now runs v0.107.80 with existing state, authenticated API and DNS status
+pass, and host-local UDP/TCP queries succeed. It must still be treated as part of
+the incident; a separate LAN client must verify UDP/TCP DNS before closure.
+
+Post-deploy verification also found Prowlarr running v3.0.2.5780-ls169 while
+preparation text said v2.7.0.5723-ls168. The immutable deployed digest was
+inspected directly and maps to v3.0.2; the old v2.7 release uses a different
+digest. Root cause was conflating a prior handoff digest with a newly resolved
+`latest` digest without checking the new digest's image label. The deployed
+v3.0.2 digest is retained for owner review, with rollback to the separately
+verified v2.7 digest available.
