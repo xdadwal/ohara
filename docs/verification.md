@@ -598,3 +598,30 @@ database image, then verifies PostgreSQL health, application health/startup, own
 setup state, native API behavior, persistent links/users, TLS proxy behavior,
 LAN-only administration, and public-user route policy. No production Kutt or
 PostgreSQL container, database volume, JWT secret, users, or links was changed.
+
+### Immich v3.4.1 / Valkey 9.1.3 preparation (2026-11-17)
+
+Compared Ohara's adapted three-service model with the official v3.4.1 release
+Compose. The server and Immich PostgreSQL dependency pins were re-resolved. The
+server uses its verified linux/amd64 manifest digest because Compose 5.6
+intermittently rejects this GHCR image's manifest-list digest; upstream also
+publishes arm64, but it is not pinned for this host. The official release still
+referenced a Valkey 9.1.2 snapshot, so Ohara deliberately advances only the cache
+dependency to the compatible Valkey 9.1.3 security release that fixes
+GHSA-f4q9-j22m-xqq9. The Immich-specific PostgreSQL image and database data path
+remain unchanged.
+
+Reviewed v3.4.0's security batch (shared-link visibility, upload/update permission
+checks, template escaping, partner timeline scope, OAuth cookie state, symlink
+handling, and CSP hardening) and v3.4.1's shared-link performance/bug fixes. The
+v3.4.1 user-creation form still permits blank passwords when OAuth is enabled and
+still exposes the required-password-change control used by the invite-only
+onboarding guide.
+
+The disposable Immich fixture runs the prepared server, Valkey 9.1.3, and unchanged
+Immich PostgreSQL image. It verifies all three services healthy, ping, owner
+signup/login, machine-learning-disabled policy, invite-only registration default,
+and a byte-identical PNG upload/download round trip. This does not migrate or
+back up production data. Independent production backup/restore testing remains
+deferred by the owner; live migration still requires the explicit backup/risk
+decision and maintenance window from the remediation plan.

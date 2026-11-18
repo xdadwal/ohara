@@ -2,9 +2,12 @@
 
 Immich is implemented as the independent `ohara-immich` Compose project in
 `compose/immich.yaml`. It is optional: the main setup/up/status commands never
-start it. The release is v3.3.5, with immutable images in `versions/immich.env`
-matching the official release Compose dependencies. PostgreSQL and Valkey run in
-containers with no published ports. Only Immich publishes `127.0.0.1:2283`.
+start it. The repository's reviewed target is v3.4.1 with immutable images in
+`versions/immich.env`; production had not yet been recreated onto that prepared
+pin at the time this paragraph was updated. The server/database pins match the
+official release files, while Valkey is deliberately advanced to the 9.1.3
+security release. PostgreSQL and Valkey run in containers with no published
+ports. Only Immich publishes `127.0.0.1:2283`.
 The production instance was started privately on 2026-10-22 after the operator
 supplied the database password. All three containers are healthy. The operator completed owner onboarding;
 the initialized/onboarded state was verified and public HTTPS is now active,
@@ -224,7 +227,8 @@ References: [official installation](https://docs.immich.app/install/docker-compo
 [requirements](https://docs.immich.app/install/requirements/),
 [configuration file](https://docs.immich.app/install/config-file/),
 [reverse proxy](https://docs.immich.app/administration/reverse-proxy/),
-[release v3.3.5](https://github.com/immich-app/immich/releases/tag/v3.3.5).
+[release v3.4.1](https://github.com/immich-app/immich/releases/tag/v3.4.1),
+[Valkey 9.1.3 security release](https://github.com/valkey-io/valkey/releases/tag/9.1.3).
 
 ## Invite-only Google OAuth
 
