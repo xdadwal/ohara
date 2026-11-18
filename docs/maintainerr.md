@@ -1,6 +1,6 @@
 # Maintainerr
 
-Maintainerr 3.31.0 is an optional media-maintenance service for Jellyfin, Seerr,
+Maintainerr 3.32.0 is an optional media-maintenance service for Jellyfin, Seerr,
 Radarr and Sonarr. It runs as the independent `ohara-maintainerr` Compose project
 on the existing `ohara_default` network. The eleven main applications and optional
 Immich/AdGuard projects retain their lifecycles. The official release image is

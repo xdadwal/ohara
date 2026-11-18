@@ -471,3 +471,12 @@ unchanged. The disposable AdGuard fixture runs the exact pin and verifies non-ro
 startup, protected control API, UDP/TCP rewrites, IPv6 responses, filtering,
 encrypted upstream resolution, and restart persistence. No production DNS service,
 configuration, client setting, or router setting was changed.
+
+### Maintainerr v3.32.0 dependency-security preparation (2026-11-17)
+
+Re-resolved the official v3.32.0 OCI index and verified linux/amd64 and
+linux/arm64 before pinning it. The disposable Maintainerr fixture runs the exact
+image and verifies non-root startup, readiness, state persistence after container
+recreation, disabled telemetry, and the deliberate absence of media mounts, rules,
+collections, and destructive actions. No production Maintainerr container, private
+state, connections, rules, or route was changed.
