@@ -64,7 +64,7 @@ fail before writing a private config or restarting a container.
    is their approval to join. Choose an appropriate storage quota in GiB for the
    shared disk; do not grant administrator access for an ordinary user.
 3. Leave Password and Confirm password blank. OAuth makes those fields optional
-   in the deployed v3.3.5 form. Turn off Require password change on login, then
+   in the reviewed v3.4.1 form. Turn off Require password change on login, then
    create the account. No temporary password needs to be generated or sent.
 4. Share `https://immich.xdadwal.in` with the approved person through your normal
    channel. They choose Sign in with Google and select the exact account you
@@ -115,5 +115,5 @@ requires the owner; never claim success from mocked or disposable credentials.
 References: [Immich OAuth](https://docs.immich.app/administration/oauth/),
 [Google OIDC](https://developers.google.com/identity/openid-connect/openid-connect),
 [Google audience rules](https://support.google.com/cloud/answer/15549945),
-[pinned user creation form](https://github.com/immich-app/immich/blob/v3.3.5/web/src/routes/admin/users/%28list%29/new/%2Bpage.svelte),
+[pinned user creation form](https://github.com/immich-app/immich/blob/v3.4.1/web/src/routes/admin/users/%28list%29/new/%2Bpage.svelte),
 [Google sign-in setup](https://codelabs.developers.google.com/codelabs/sign-in-with-google-button).
