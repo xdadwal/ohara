@@ -101,7 +101,7 @@ static or disposable check.
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; API state verified |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent state and seeding policy verified |
 | RA-01 | Radarr 6 to 7 migration | P2 | Applied live; migrated API state verified; search/request flow not exercised |
-| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner confirmed login; slicing check not reported |
+| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner confirmed login and slicing |
 | KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner confirmed login |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
@@ -620,8 +620,6 @@ Remaining acceptance:
 - external client: Seerr and the LAN-only admin hosts return 403 from outside,
   and a request made inside Jellyfin still reaches Seerr;
 - owner phone: arrival of the 19:08 IST ntfy test notification;
-- owner browser: an OpenSpeedTest run, Bambuddy `.3mf` slicing, and an Immich
-  upload/download round trip;
 
 The owner also confirmed ntfy phone delivery, an Immich upload and an
 OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
