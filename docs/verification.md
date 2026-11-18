@@ -842,3 +842,43 @@ the host's Tailscale address. The kernel package generated its initramfs and
 GRUB entries; the host still runs 6.12.111 until rebooted. Not done: the Docker
 upgrade and the reboot, which wait for an owner window. No external client check
 was run.
+
+### H-01 Docker upgrade, reboot and post-reboot verification (2026-11-18)
+
+Real host. With the owner's approval of the DNS outage, docker-ce, docker-ce-cli
+and docker-ce-rootless-extras were upgraded to 5:29.10.0 at 22:55 IST after
+confirming no playback, download or Radarr/Sonarr queue activity; all 21
+containers and every helper status returned within about a minute. The host was
+then rebooted and came up at 22:58:48 IST.
+
+Checked at 23:10 IST after the owner reconnected:
+
+- Kernel 6.12.117+deb13-amd64; nginx 1.26.3-3+deb13u10, Docker 29.10.0, zlib1g,
+  libexpat1 and ca-certificates at their targets; containerd.io 2.4.2-2,
+  Compose plugin 5.6.0 and Tailscale 1.104.1 unchanged as intended.
+- `systemctl --failed` lists nothing. nginx, docker, containerd, tailscaled, ssh
+  and `ohara-media.service` are active; the alert, storage-watchdog and Certbot
+  timers are scheduled and the watchdog's last run exited 0.
+- `/mnt/disks/wd-500`, `/mnt/disks/crucial-240` and the mergerfs pool at
+  `/ohara/mnt` are mounted with their top-level directories present.
+- 21 containers running, none exited, unhealthy or restarting; `scripts/status`
+  reports all eleven main-stack services reachable; Immich, AdGuard, Maintainerr,
+  ntfy, Kutt and Bambuddy helper statuses pass; OrcaSlicer is healthy and
+  `scripts/jellyfin-theme check` passes.
+- Application state through existing keys: Radarr 30 movies, Sonarr 6 series,
+  Lidarr 2 artists, Prowlarr 3 indexers, all without health issues and with
+  accessible root folders; qBittorrent 49 torrents in the same states as before
+  with the 240-minute limit; Jellyfin 12.4.0 with nine plugins; Immich 3.4.1
+  with Google-only login; Seerr 3.5.2.
+- Nginx: installed files equal the baseline; from the LAN address twelve hosts
+  answer and `/imageproxy` returns 404; from the Tailscale address Seerr and
+  three LAN-only hosts return 403 while public hosts answer.
+- AdGuard answers UDP and TCP on 192.168.1.101 only, blocks a filtered domain
+  and serves the local rewrite. No container publishes a non-loopback port
+  except DNS.
+- Tailscale is connected with Tailscale SSH, DNS acceptance, route acceptance,
+  advertised routes and exit node all off and no Serve configuration.
+- Jellyfin logs no name-resolution failure since boot.
+
+Not verified here: external Internet reachability, playback, a LAN device other
+than the host, and phone notification delivery after the reboot.

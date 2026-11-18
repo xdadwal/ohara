@@ -86,7 +86,7 @@ static or disposable check.
 | ID | Scope | Priority | State |
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
-| H-01 | Host security packages and reboot | P0 | In progress: libraries, Nginx, kernel package and Docker installed 2026-11-18; reboot issued, post-reboot verification pending |
+| H-01 | Host security packages and reboot | P0 | Complete for the owner-selected security scope (2026-11-18): libraries, Nginx, kernel and Docker upgraded, host rebooted and verified; other packages deliberately skipped |
 | SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, applied live; owner verified LAN, external 403 and remote Jellyfin requests |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
@@ -725,7 +725,7 @@ nginx-common 1.26.3-3+deb13u9, linux-image-amd64 6.12.111-1 (running
 | 2 | nginx, nginx-common 1.26.3-3+deb13u10 | Installed; Nginx restarted at 22:08:57 IST. `nginx -t` passes, installed configs equal the baseline, public routes answer, Seerr and a LAN-only host return 403 from a non-LAN source. |
 | 3 | linux-image-amd64 6.12.117-1 | Installed with initramfs and GRUB entries. 6.12.111 and 6.12.107 remain bootable. Still running 6.12.111 until the reboot. |
 | 4 | docker-ce, docker-ce-cli, docker-ce-rootless-extras 5:29.10.0 | Installed 22:55-22:56 IST with owner approval of the DNS outage. Docker and `ohara-media.service` restarted; all 21 containers returned within about a minute, `scripts/status` and every helper status pass, and AdGuard answers UDP and TCP. containerd.io and the Compose plugin are unchanged. |
-| 5 | `sudo reboot` | **Issued about 23:00 IST; post-reboot verification not yet recorded.** First full reboot with the media pool; use the post-reboot verification list in the H-01 section. |
+| 5 | `sudo reboot` | Done; the host booted at 22:58:48 IST on 6.12.117+deb13-amd64 and every post-reboot check passes (see the verification record). First full reboot with the media pool: both USB branches and `/ohara/mnt` mounted and `ohara-media.service` started the media stack unaided. |
 
 Rollback: reinstall a recorded version with
 `sudo apt-get install <package>=<version>` while it remains in the archive or
