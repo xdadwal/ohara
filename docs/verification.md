@@ -750,3 +750,14 @@ Requiem for a Dream (2000) with `POST /Items/RemoteSearch/Apply/{id}`; each now
 has TMDb/IMDb IDs, overview, genres and artwork. Two older stand-up items without
 a provider match were left unchanged. The cause of the old container's resolver
 failure was not determined.
+
+### Prowlarr explicit stable tag (2026-11-18)
+
+Upstream Prowlarr's newest non-prerelease release is v3.0.2.5780 and LinuxServer's
+newest non-prerelease build is `3.0.2.5780-ls169`. `docker buildx imagetools
+inspect` resolves both `lscr.io/linuxserver/prowlarr:3.0.2.5780-ls169` and
+`:latest` to index digest `sha256:45117ba8…`, the digest already pinned and
+running. Only the tag text of `PROWLARR_IMAGE` changed. `scripts/check --static`
+and the repository tests pass. The container has not been recreated with the new
+reference; that happens on the next `scripts/up`. The owner separately confirmed
+ntfy phone delivery, an Immich upload and an OpenSpeedTest run.
