@@ -563,3 +563,25 @@ Seerr integration, rerun preservation, private ports, and Nginx TLS routing.
 This fresh-container check does not prove migration of the production v6 database.
 No production Radarr container, database, profiles, indexers, or movie records
 was changed.
+
+### Bambuddy/OrcaSlicer v1.3.1 matched preparation (2026-11-17)
+
+Reviewed the upstream v1.3.0 and v1.3.1 release paths together. v1.3.0 closes
+three dependency advisories, applies broad database/queue/archive fixes, changes
+some API responses, and adds automatic database tables/columns. v1.3.1 fixes a
+SQLite camera-view CPU issue and other release follow-ups. The release explicitly
+requires updating the slicer sidecar together with Bambuddy for the new OrcaSlicer
+2.5.0 backend.
+
+Re-resolved Bambuddy v1.3.1 as a linux/amd64 and linux/arm64 OCI index and the
+exact `bambuddy-1.3.1` sidecar as the reviewed linux/amd64 manifest required by
+the existing x86-64 policy. The disposable Bambuddy fixture verifies v1.3.1
+startup, health, non-root operation, fresh setup state, SQLite persistence,
+container recreation, and exact Docker-gateway proxy trust with spoofed-header
+rejection. No account, printer, job, or print was created. The sidecar's health
+and OrcaSlicer 2.5.0 version were then checked in a separate isolated linux/amd64
+container with writable private state; no model was uploaded or sliced. The
+disposable pinned Homepage widget check still verifies custom headers, expected
+status fields, and browser credential exclusion.
+No production Bambuddy/OrcaSlicer container, database, settings, archive, or
+slicer state was changed.
