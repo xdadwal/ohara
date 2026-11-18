@@ -530,3 +530,18 @@ startup, private networking, root-folder policy, indexer synchronization from
 Prowlarr, qBittorrent connectivity, media setup rerun preservation, Nginx TLS
 routing, and no automatic music acquisition. No production Lidarr container,
 database, artists, root folders, or indexer definitions were changed.
+
+### qBittorrent v5.3.0 security-update preparation (2026-11-17)
+
+Reviewed the official v5.3.0 release notes. Relevant fixes include WebUI
+authentication bypass through `X-Forwarded-For` spoofing, rejecting unauthenticated
+tracker announces, SMTP injection handling, HTTPS dynamic DNS, and IPv6 filter
+parsing. Re-resolved LinuxServer's current `latest` index and verified linux/amd64
+and linux/arm64; its label is `5.3.0_v2.1.2-ls487`.
+
+The disposable eleven-application smoke runs the exact pin and verifies qBittorrent
+startup, native password login, protected API access, category/save-path policy,
+the approved stop-after-240-minutes seeding behavior with file preservation,
+Arr download-client connectivity, media setup rerun safety, private ports, and
+Nginx TLS routing. No production qBittorrent container, config, BT_backup state,
+torrents, or seeding policy was changed.
