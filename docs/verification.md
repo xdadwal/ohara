@@ -773,3 +773,24 @@ or a major-only tag any more. `scripts/check --static`, `scripts/immich check
 --static` and the repository tests pass. Not applied live: the changed references
 make Compose recreate these containers on the next `scripts/up` and
 `sudo scripts/immich up`.
+
+### Seerr LAN-only containment preparation (2026-11-18)
+
+The owner chose to restrict the whole Seerr host to LAN sources. The deployed
+baseline `configs/nginx/deployed/ohara.conf` gained a dedicated guarded HTTP
+server for `seerr.xdadwal.in`, removed that name from the shared ACME/redirect
+server, and added the `$ohara_lan_allowed` guard ahead of the existing
+`/imageproxy` denial in the HTTPS server. The reusable template is unchanged.
+
+- Unit: `python3 -m unittest tests.test_proxy` (11 tests) covers the guard order,
+  both Seerr servers, and equivalence of every other route with the template.
+- Disposable: `python3 tests/smoke_lan_proxy.py` loads the three actual baseline
+  files in an offline Nginx container. An allowed source gets 200 for `/discover`,
+  301 on HTTP and 404 for six `/imageproxy` variants; a disallowed source gets 403
+  on HTTP and HTTPS for `/`, `/discover`, `/api/v1/status` and the same variants,
+  with and without forged forwarding headers. Six public routes still return 200.
+- Real host: **not applied.** No root access in this session; the installed file
+  is unchanged and now differs from the repository baseline until the documented
+  commands are run.
+- Not verified: a real LAN client, a real external client, and a remote request
+  through Jellyfin Enhanced with the public route closed.

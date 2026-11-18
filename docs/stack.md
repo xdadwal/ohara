@@ -15,7 +15,7 @@ persistent read-only overlay; see [theme operations](jellyfin-theme.md).
 | Component | Role | Configured access |
 |---|---|---|
 | Homepage | Password-protected dashboard | HOMEPAGE_HOST (default xdadwal.in); loopback 3002 |
-| Seerr | Discover/request movies and series | https://seerr.xdadwal.in; loopback 5055 |
+| Seerr | Discover/request movies and series | https://seerr.xdadwal.in, LAN-only on this host; loopback 5055 |
 | Jellyfin | Movie/series libraries and playback | https://tv.xdadwal.in; loopback 8096 |
 | OpenSpeedTest | On-demand browser speed test, linked from Homepage | https://speed.xdadwal.in; loopback 3000 |
 | Radarr | Movie acquisition/import | Private loopback 7878 |

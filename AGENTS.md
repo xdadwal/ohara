@@ -128,6 +128,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
   LAN-only administration subdomains for these and the other internal services
   are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.
+  On this host the owner also made the Seerr site LAN-only (2026-11-18) and
+  skipped its image upgrade; do not reopen it publicly or drop the /imageproxy
+  denial without an explicit owner decision. Remote requests go through Jellyfin.
   A future NAS/multiple-node topology is discussed, not implemented; these services
   run in the current Compose stack, with a future acquisition node intended.
 - This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
