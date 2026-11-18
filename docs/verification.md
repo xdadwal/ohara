@@ -669,3 +669,84 @@ Kutt backup then succeeded before the application/database recreation.
 `sudo scripts/kutt status` reports Kutt/PostgreSQL healthy, the restricted
 database role, and existing owner setup. Native owner login and external HTTPS
 acceptance remain pending.
+
+### 2026-11-18 host-side post-rollout verification
+
+Scope: read-only real-host checks at about 13:00 UTC. Hostname checks used
+`curl --resolve HOST:443:127.0.0.1`, so they exercise the installed Nginx
+configuration but are **not** external or separate-LAN reachability evidence.
+Application checks used loopback backends and existing private keys through
+`scripts/lib/credentials.py`; no value was printed and no setting was changed.
+
+- **Pins and Nginx:** every running container's image digest equals its pin in
+  `versions/`; installed `ohara*.conf` files are identical to
+  `configs/nginx/deployed/`; `systemctl --failed` lists nothing; the alert,
+  storage-watchdog and Certbot timers are scheduled; `/ohara/mnt` is mounted.
+- **Seerr containment:** 404 for `/imageproxy`, trailing slash, a real-shaped
+  `/imageproxy/tmdb/...` path, upper case, duplicate slash, percent-encoded
+  letters, `/./`, `/foo/../`, `/foo/%2e%2e/`, a query string and `%2f` forms.
+  `/;/imageproxy/...` is forwarded but Seerr answers with its login redirect, not
+  the image proxy. `/login` and `/api/v1/status` still return 200.
+- **Radarr 7.0.3.10918:** 29 movies (26 with files), root folder accessible,
+  six quality profiles, no health issues, empty queue, two indexers.
+- **Sonarr 4.0.20.3014:** six series, 146 episode files, three indexers, no
+  health issues; the owner confirmed the existing queue.
+- **Lidarr 3.1.6.5079:** two artists, 136 track files, two indexers, no health
+  issues.
+- **Prowlarr 3.0.2.5780:** three indexers, none in failure status, applications
+  for Radarr, Sonarr and Lidarr present. A short post-restart rate-limit cleared.
+- **qBittorrent 5.3.0:** 48 torrents, none missing files or errored, categories
+  and save paths intact, 240-minute seeding limit enabled, ratio and inactivity
+  limits disabled. Completed-download removal remains disabled in Radarr, Sonarr
+  and Lidarr.
+- **Jellyfin 12.4.0:** six users, nine plugins active including Intro Skipper,
+  Enhanced and LetterboxdSync, `scripts/jellyfin-theme check` passes, no active
+  playback. Libraries are Movies, Stand-ups, TV Shows and Collections; the owner
+  confirmed no Music library is needed.
+- **ntfy 2.38.1:** anonymous read of `ohara-alerts` returns 403 and account
+  signup is refused as not enabled.
+- **AdGuard 0.107.80:** host-local UDP and TCP answers, a blocked domain returns
+  `0.0.0.0`, the local rewrite resolves, and DNS listens only on the LAN address.
+- **Maintainerr 3.32.0:** database readiness passes and no removal activity is
+  logged since restart; the owner confirmed its two collections.
+- **Kutt:** both containers healthy; the application reconnected after
+  PostgreSQL was recreated and `/login` returns 200.
+- **Bambuddy 1.3.1 / OrcaSlicer:** both healthy; MQTT reconnected to the printer.
+- **Homepage 2.8.0:** unauthenticated `/` and `/api/services` redirect to sign-in.
+
+**Immich v3.4.1 found applied.** `docker inspect` shows the server and Valkey
+containers created at 12:35 UTC by a session that did not update the records.
+Server logs show three migrations succeeding and v3.4.1 added to the upgrade
+history. No backup decision or pre-upgrade backup is recorded and none was found
+under `local/`. The owner accepted the applied state subject to functional
+checks. Verified: `scripts/immich status`, ping, server v3.4.1, Valkey 9.1.3,
+PostgreSQL container not recreated, `/data` directories present, 141 photos and
+35 videos reported for one user, unauthenticated API calls return 401, the
+managed configuration still has OAuth enabled with `autoRegister=false`, password
+login and machine learning disabled, the Homepage key is refused outside
+`server.statistics`, and `immich.xdadwal.in` serves through Nginx. Not verified:
+Google login, timeline rendering, upload/download round trip and jobs, which need
+the owner's browser.
+
+Not done here: external and separate-LAN checks, browser logins, playback, a
+speed test, slicing, phone delivery, and any search or download.
+
+### 2026-11-18 owner confirmations and Jellyfin metadata repair
+
+The owner confirmed AdGuard works for LAN clients, Seerr is reachable from the
+public Internet, service logins work, and Jellyfin media plays. These are owner
+reports, not agent-run checks. `scripts/ntfy test` published a notification at
+19:08 IST that the server accepted; phone arrival awaits the owner. External
+`/imageproxy` denial, LAN-only denial from outside, an OpenSpeedTest run,
+Bambuddy slicing and an Immich upload/download round trip are not yet reported.
+
+Jellyfin logs from 2026-11-16 to 16:44 IST on 2026-11-18 show about 600 daily
+`Resource temporarily unavailable` failures for `api.themoviedb.org` and
+`www.omdbapi.com` in the previous container. The recreated 12.4 container
+resolves both and logs no such failure. Movies imported in that window kept an
+empty provider match and a non-replacing refresh did not re-match them. The exact
+TMDb result was applied to The Batman (2022), Pride & Prejudice (2005) and
+Requiem for a Dream (2000) with `POST /Items/RemoteSearch/Apply/{id}`; each now
+has TMDb/IMDb IDs, overview, genres and artwork. Two older stand-up items without
+a provider match were left unchanged. The cause of the old container's resolver
+failure was not determined.
