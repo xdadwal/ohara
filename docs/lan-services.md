@@ -60,14 +60,56 @@ if someone supplies a matching Host/SNI or forged forwarding headers. This does
 not require publishing their names in public DNS or forwarding additional ports.
 
 Disposable check: `python3 tests/smoke_lan_proxy.py` runs both actual baseline
-files against fixture backends/certificates, checks all eight LAN-only routes, HTTP-to-HTTPS
-redirects, rejected sources and spoofed headers, plus all six existing public
-routes. It does not certify a real LAN client's routing or public reachability.
+files against fixture backends/certificates, checks all eight LAN-only routes and the
+LAN-only Seerr route, HTTP-to-HTTPS redirects, rejected sources and spoofed headers,
+plus the six public routes. It does not certify a real LAN client's routing or public reachability.
 
 For rollback, restore the previous LAN file (or move the newly introduced file
 outside `/etc/nginx/conf.d`), then `sudo nginx -t` and reload Nginx. Keep Homepage
 cards/DNS rewrites aligned manually. SSH tunnels to loopback backends remain
 available. Never expose backend ports or DNS directly to the Internet.
+
+## Seerr (LAN-only since 2026-11-18)
+
+The owner restricted `https://seerr.xdadwal.in` to the same LAN sources because
+Seerr stays on an image affected by an unauthenticated image-proxy flaw. Unlike
+the eight admin hosts, its route lives in `configs/nginx/deployed/ohara.conf`
+and reuses `$ohara_lan_allowed` from `ohara-lan.conf`; both files must be
+installed. The `/imageproxy` denial is kept for LAN clients. The reusable
+template for other hosts is unchanged and still public.
+
+Remote users keep requesting through Jellyfin: Jellyfin Enhanced and the
+Homepage widget reach Seerr server-side at `http://seerr:5055`, not through this
+route. Direct browser links to the Seerr site only work on the LAN. LAN clients
+need `seerr.DOMAIN` to resolve to the host's LAN address; this host's AdGuard
+already returns 192.168.1.101 for it. Tailscale and IPv6 LAN clients are not
+allowed, as with the admin hosts.
+
+Apply on this host as root, from the repository root:
+
+```sh
+sudo install -d -m 700 /var/backups/ohara
+backup=/var/backups/ohara/ohara.conf.$(date +%Y%m%d-%H%M%S)
+sudo cp -p /etc/nginx/conf.d/ohara.conf "$backup"
+sudo cmp configs/nginx/deployed/ohara-lan.conf /etc/nginx/conf.d/ohara-lan.conf
+sudo install -m 644 -o root -g root configs/nginx/deployed/ohara.conf /etc/nginx/conf.d/ohara.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+If `nginx -t` fails, restore before doing anything else:
+
+```sh
+sudo cp -p "$backup" /etc/nginx/conf.d/ohara.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Verify from a LAN device that the Seerr site loads and logs in; from a device on
+mobile data that `https://seerr.xdadwal.in/` returns 403 and that a request made
+inside Jellyfin still reaches Seerr; and on the host that
+`cmp configs/nginx/deployed/ohara.conf /etc/nginx/conf.d/ohara.conf` is silent.
+Disposable coverage is `python3 tests/smoke_lan_proxy.py`. To make Seerr public
+again, restore the backup (or revert this change in the baseline and reinstall),
+then test and reload; keep the `/imageproxy` denial while the image is unchanged.
 
 Maintainerr has no native login; its entire UI/API is administrator access. The
 LAN source restriction is required on every path, including database downloads.

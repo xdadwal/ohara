@@ -87,7 +87,7 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Applied live; host-side variants verified; owner confirmed Seerr works from the public Internet; external `/imageproxy` 404 check pending |
+| SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, prepared but not yet installed |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
 | IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner confirmed login; upload/download round trip not reported |
@@ -101,7 +101,7 @@ static or disposable check.
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; API state verified |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent state and seeding policy verified |
 | RA-01 | Radarr 6 to 7 migration | P2 | Applied live; migrated API state verified; search/request flow not exercised |
-| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner confirmed login; slicing check not reported |
+| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner confirmed login and slicing |
 | KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner confirmed login |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
@@ -616,11 +616,10 @@ redownloaded. See [media recovery guidance](../../media.md).
 
 Remaining acceptance:
 
-- external client: `/imageproxy` returns 404 from outside, and LAN-only hosts
-  refuse a non-LAN client;
+- root on the host: install the LAN-only Seerr baseline (see below);
+- external client: Seerr and the LAN-only admin hosts return 403 from outside,
+  and a request made inside Jellyfin still reaches Seerr;
 - owner phone: arrival of the 19:08 IST ntfy test notification;
-- owner browser: an OpenSpeedTest run, Bambuddy `.3mf` slicing, and an Immich
-  upload/download round trip;
 
 The owner also confirmed ntfy phone delivery, an Immich upload and an
 OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
@@ -644,6 +643,16 @@ tag). No version changes. The next `scripts/up` recreates those seven main-stack
 containers and the next `sudo scripts/immich up` recreates Valkey; neither has
 been applied. Check for active playback, imports and downloads first, and verify
 qBittorrent torrent state afterwards.
+
+SE-01 full-host containment (owner decision, 2026-11-18): the owner chose the
+plan's preferred option and made the Seerr host LAN-only. The deployed baseline
+now guards Seerr's HTTP and HTTPS servers with `$ohara_lan_allowed` and keeps the
+`/imageproxy` denial for LAN clients. Remote requests continue through Jellyfin
+Enhanced, which reaches Seerr server-side. Unit tests and the disposable Nginx
+smoke test pass. **Not installed:** this session has no root access, so
+`/etc/nginx/conf.d/ohara.conf` still serves Seerr publicly with the path denial.
+Exact apply, verification and rollback commands are in
+[LAN services](../../lan-services.md#seerr-lan-only-since-2026-11-18).
 
 H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
 still published only v1.6.3 beta builds.

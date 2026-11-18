@@ -34,6 +34,25 @@ class ProxyTests(unittest.TestCase):
             else:
                 self.assertIn('return 301 https://$host$request_uri;', block)
             deployed = deployed.replace(block, '')
+        # Host-specific owner decision: Seerr is LAN-only here, while the reusable
+        # template keeps the public route with its image-proxy denial. Remove
+        # exactly that difference before comparing the remaining policy.
+        guard = '    if ($ohara_lan_allowed = 0) { return 403; }\n'
+        seerr = [block for block in blocks if 'server_name seerr.xdadwal.in;' in block]
+        self.assertEqual(len(seerr), 2)
+        for block in seerr:
+            self.assertEqual(block.count(guard), 1)
+            if 'listen 443 ssl;' in block:
+                deployed = deployed.replace(block, block.replace(guard, ''))
+            else:
+                self.assertEqual(block.split(), ('server { listen 80; listen [::]:80; server_name seerr.xdadwal.in; '
+                                                 '# Reject before redirects, including callers supplying forged forwarding headers. '
+                                                 'if ($ohara_lan_allowed = 0) { return 403; } '
+                                                 'return 301 https://$host$request_uri; }').split())
+                deployed = deployed.replace(block, '')
+        shared = 'server_name ohara.xdadwal.in xdadwal.in files.xdadwal.in speed.xdadwal.in tv.xdadwal.in;'
+        self.assertEqual(deployed.count(shared), 1)
+        deployed = deployed.replace(shared, shared[:-1]+' seerr.xdadwal.in;')
         def normalize(text):
             # Localhost uses certificates that fresh hosts do not yet have.
             # Ignore only these two explicit host-specific blocks and harmless
@@ -76,6 +95,23 @@ class ProxyTests(unittest.TestCase):
             self.assertIn(denial, text)
             self.assertLess(text.index(raw_guard), text.index(denial))
             self.assertLess(text.index(denial), text.index('proxy_pass http://127.0.0.1:5055;'))
+
+    def test_deployed_seerr_route_is_lan_only(self):
+        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        lan = (ROOT/'configs/nginx/deployed/ohara-lan.conf').read_text()
+        guard = 'if ($ohara_lan_allowed = 0) { return 403; }'
+        self.assertIn('geo $ohara_lan_allowed {', lan)
+        servers = [block for block in deployed.split('\nserver {') if 'server_name seerr.xdadwal.in;' in block]
+        self.assertEqual(len(servers), 2)
+        for block in servers:
+            self.assertIn(guard, block)
+            for later in ('return 301', 'proxy_pass', '$request_uri ~*'):
+                if later in block:
+                    self.assertLess(block.index(guard), block.index(later))
+        # The shared ACME/redirect server must not also answer for Seerr.
+        shared = [block for block in deployed.split('\nserver {') if 'acme-challenge' in block]
+        self.assertTrue(shared)
+        self.assertFalse(any('seerr.xdadwal.in' in block for block in shared))
 
     def test_invalid_candidate_restores_previous_file(self):
         with tempfile.TemporaryDirectory() as directory:

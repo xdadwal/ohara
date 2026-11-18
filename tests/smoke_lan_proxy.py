@@ -68,15 +68,23 @@ def main():
                 for tls in (False, True):
                     assert status(hostname, '127.0.0.2', tls) == '403', hostname+' external source accepted'
                     assert status(hostname, '127.0.0.2', tls, True) == '403', hostname+' forged header bypass'
-            for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in', 'bambuddy.xdadwal.in'):
+            for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in', 'bambuddy.xdadwal.in'):
                 assert status(hostname, '127.0.0.2', True) == '200', 'Existing public route changed: '+hostname
             assert status('bambuddy.xdadwal.in', '127.0.0.2', False) == '301'
-            assert status('seerr.xdadwal.in', '127.0.0.2', True, path='/discover') == '200'
-            for path in ('/imageproxy', '/imageproxy/', '/imageproxy//example',
-                         '/imageproxy/%2e%2e', '/ImageProxy/example',
-                         '/public/%2e%2e/imageproxy/x'):
-                code = status('seerr.xdadwal.in', '127.0.0.2', True, path=path)
+            # Seerr is LAN-only on this host; the image-proxy denial stays for LAN clients.
+            imageproxy = ('/imageproxy', '/imageproxy/', '/imageproxy//example',
+                          '/imageproxy/%2e%2e', '/ImageProxy/example',
+                          '/public/%2e%2e/imageproxy/x')
+            assert status('seerr.xdadwal.in', '127.0.0.1', True, path='/discover') == '200'
+            assert status('seerr.xdadwal.in', '127.0.0.1', False) == '301'
+            for path in imageproxy:
+                code = status('seerr.xdadwal.in', '127.0.0.1', True, path=path)
                 assert code == '404', f'Seerr containment returned {code} for {path}'
+            for tls in (False, True):
+                for path in ('/', '/discover', '/api/v1/status')+imageproxy:
+                    for forged in (False, True):
+                        code = status('seerr.xdadwal.in', '127.0.0.2', tls, forged, path=path)
+                        assert code == '403', f'Seerr external source got {code} for {path}'
             runtime.run(docker+['stop', name])
             onboarding = bambuddy_proxy.render(ROOT)
             onboarding = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', onboarding)
@@ -92,7 +100,7 @@ def main():
             for tls in (False, True):
                 assert status('bambuddy.xdadwal.in', '127.0.0.2', tls) == '403'
                 assert status('bambuddy.xdadwal.in', '127.0.0.2', tls, True) == '403'
-            print('PASS: eight admin proxies remain LAN-only; seven public routes preserved; Bambuddy public and fresh LAN-only onboarding modes verified.')
+            print('PASS: eight admin proxies and Seerr are LAN-only; six public routes preserved; Bambuddy public and fresh LAN-only onboarding modes verified.')
         finally:
             runtime.run(docker+['rm', '-f', name])
 

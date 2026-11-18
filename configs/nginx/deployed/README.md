@@ -12,7 +12,12 @@ other LAN routes retain their existing restrictions.
   Jellyfin is at tv.xdadwal.in; Navidrome is at music.xdadwal.in. The dedicated
   music HTTP redirect and HTTPS route suppress URL-bearing access/error logs. The
   Seerr HTTPS route denies normalized `/imageproxy` path-equivalence variants
-  while Seerr remains on the owner-selected vulnerable image.
+  while Seerr remains on the owner-selected vulnerable image. Since 2026-11-18
+  the owner also restricts the whole Seerr host, HTTP and HTTPS, to the LAN
+  sources allowed by `$ohara_lan_allowed`. That variable is defined in
+  `ohara-lan.conf`, so `ohara.conf` no longer validates without it: install
+  `ohara-lan.conf` first on a rebuild. The reusable `../https.template` keeps a
+  public Seerr route for other hosts.
 - `ohara-immich.conf`: separate public photo HTTPS route, promoted from LAN-only
   onboarding on 2026-10-22 after the operator confirmed owner setup and the API
   reported initialized/onboarded. Uses the existing wildcard certificate and
