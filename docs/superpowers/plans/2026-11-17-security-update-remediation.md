@@ -87,7 +87,7 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Merged; installed-route application pending sudo |
+| SE-01 | Seerr public-route containment | P0 | Applied live; external client check pending |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; functional checks pending |
 | IM-01 | Immich release-matched update | P1 | Merged; live application awaits owner backup decision |
@@ -102,7 +102,7 @@ static or disposable check.
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent/seeding checks pending |
 | RA-01 | Radarr 6 to 7 migration | P2 | Applied live; production migration checks pending |
 | BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; owner UI/slicing checks pending |
-| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Merged; live application pending root backup |
+| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner login check pending |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
 | CB-01 | Certbot 4.0.0 | Monitor | Current |
@@ -564,3 +564,12 @@ digest. Root cause was conflating a prior handoff digest with a newly resolved
 `latest` digest without checking the new digest's image label. The deployed
 v3.0.2 digest is retained for owner review, with rollback to the separately
 verified v2.7 digest available.
+
+Root access subsequently enabled SE-01 and KU-01. The installed Nginx route was
+backed up, replaced with the reviewed baseline, validated, and reloaded. The
+public-edge check returned 404 for normal, case-variant, duplicate-slash, and
+encoded `/imageproxy` paths; adjacent Homepage, OpenSpeedTest and Jellyfin routes
+remained reachable. The documented root-required Kutt backup succeeded before
+Kutt/PostgreSQL recreation; helper status reports both containers healthy, the
+restricted database role, and existing owner setup. Native owner login and
+external HTTPS acceptance remain pending.

@@ -660,3 +660,12 @@ evidence that a fallback resolver has been deployed. A separate LAN client must
 verify UDP/TCP queries before closure. Kutt remains unchanged pending the
 root-required documented backup. Seerr's installed Nginx route and host packages
 also remain pending.
+
+With root access, the installed Nginx baseline was backed up, replaced, validated,
+and reloaded. Local public-edge checks returned 404 for `/imageproxy`,
+`/imageproxy/`, duplicate-slash, encoded, and case-variant paths; adjacent
+Homepage, OpenSpeedTest and Jellyfin routes remained reachable. The documented
+Kutt backup then succeeded before the application/database recreation.
+`sudo scripts/kutt status` reports Kutt/PostgreSQL healthy, the restricted
+database role, and existing owner setup. Native owner login and external HTTPS
+acceptance remain pending.
