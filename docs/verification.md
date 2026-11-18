@@ -804,6 +804,26 @@ shows each on its versioned reference with the previously pinned digest.
 API checks before and after match: Radarr 29 movies, Sonarr 6 series, Lidarr 2
 artists, Prowlarr 3 indexers and three applications, qBittorrent 48 torrents
 (43 stopped, 3 stalled, 2 queued uploads) with unchanged categories and seeding
-policy, and no health issues. Not applied for lack of root: the Seerr LAN-only
-Nginx baseline and the Valkey recreation through `sudo scripts/immich up`. No
-external or LAN-client check was run for this release.
+policy, and no health issues.
+
+With root access supplied by the owner, the Seerr LAN-only baseline was then
+installed at 20:14 IST: backup at `/var/backups/ohara/ohara.conf.20261118-201432`,
+`nginx -t` passed before and after, Nginx reloaded, and `cmp` against the
+repository baseline is silent. Real-host checks with `curl --resolve`: from
+192.168.1.101 Seerr returns 307 for `/`, 200 for `/login` and `/api/v1/status`,
+404 for `/imageproxy/...` and 301 on HTTP; from the host's Tailscale address
+(not in the allowlist) `/`, `/login`, `/api/v1/status` and `/imageproxy/...`
+return 403 on HTTPS, `/` returns 403 on HTTP, and forged `X-Forwarded-For` and
+`X-Real-IP` headers still get 403. From that same source Homepage, Jellyfin,
+OpenSpeedTest, Navidrome, Immich, Kutt, ntfy and Bambuddy still answer and
+`radarr.xdadwal.in` returns 403. Inside the Jellyfin and Homepage containers
+`http://seerr:5055/api/v1/status` succeeds.
+
+`sudo scripts/immich --allow-short-db-password up` recreated only Valkey on the
+`9.1.3` reference with the same digest; the first attempt without the documented
+flag was refused by input validation and changed nothing. Afterwards all three
+containers are healthy, `valkey_version` is 9.1.3, ping and statistics answer and
+the HTTPS route returns 200.
+
+Not verified: a real LAN device, a client on the public Internet, and a request
+made inside Jellyfin by a remote user.
