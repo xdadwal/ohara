@@ -730,3 +730,23 @@ the owner's browser.
 
 Not done here: external and separate-LAN checks, browser logins, playback, a
 speed test, slicing, phone delivery, and any search or download.
+
+### 2026-11-18 owner confirmations and Jellyfin metadata repair
+
+The owner confirmed AdGuard works for LAN clients, Seerr is reachable from the
+public Internet, service logins work, and Jellyfin media plays. These are owner
+reports, not agent-run checks. `scripts/ntfy test` published a notification at
+19:08 IST that the server accepted; phone arrival awaits the owner. External
+`/imageproxy` denial, LAN-only denial from outside, an OpenSpeedTest run,
+Bambuddy slicing and an Immich upload/download round trip are not yet reported.
+
+Jellyfin logs from 2026-11-16 to 16:44 IST on 2026-11-18 show about 600 daily
+`Resource temporarily unavailable` failures for `api.themoviedb.org` and
+`www.omdbapi.com` in the previous container. The recreated 12.4 container
+resolves both and logs no such failure. Movies imported in that window kept an
+empty provider match and a non-replacing refresh did not re-match them. The exact
+TMDb result was applied to The Batman (2022), Pride & Prejudice (2005) and
+Requiem for a Dream (2000) with `POST /Items/RemoteSearch/Apply/{id}`; each now
+has TMDb/IMDb IDs, overview, genres and artwork. Two older stand-up items without
+a provider match were left unchanged. The cause of the old container's resolver
+failure was not determined.

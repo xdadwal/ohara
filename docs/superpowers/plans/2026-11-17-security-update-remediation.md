@@ -87,22 +87,22 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Applied live; host-side variants verified; external client check pending |
+| SE-01 | Seerr public-route containment | P0 | Applied live; host-side variants verified; owner confirmed Seerr works from the public Internet; external `/imageproxy` 404 check pending |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
-| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner browser login/widget checks pending |
-| IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner Google login/upload checks pending |
+| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
+| IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner confirmed login; upload/download round trip not reported |
 | NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Applied live; authentication policy verified; phone delivery pending owner confirmation |
-| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Applied live after an unsafe restart; host-local DNS verified; separate-LAN verification pending |
+| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Applied live after an unsafe restart; host-local DNS verified; owner confirmed AdGuard works; incident closed |
 | MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Applied live; owner confirmed existing collections/rules |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Applied live; browser test pending |
-| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; API state verified; browser/playback checks pending |
+| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; API state verified; owner confirmed playback |
 | SO-01 | Sonarr base-image refresh | P2 | Applied live; API state verified; owner confirmed queue |
 | PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch; API state verified; v3.0.2 retained pending owner review |
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; API state verified |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent state and seeding policy verified |
 | RA-01 | Radarr 6 to 7 migration | P2 | Applied live; migrated API state verified; search/request flow not exercised |
-| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner UI/slicing checks pending |
-| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner login check pending |
+| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner confirmed login; slicing check not reported |
+| KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner confirmed login |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
 | CB-01 | Certbot 4.0.0 | Monitor | Current |
@@ -600,14 +600,28 @@ reachability evidence. Details are in the
 - Owner statements on 2026-11-18: Jellyfin needs no Music library, the Sonarr
   queue is expected, and the Maintainerr collections/rules are expected.
 
-Remaining acceptance, none of which can be done from the host:
+Owner confirmations received later on 2026-11-18: AdGuard works for LAN clients
+(this closes the DNS incident), Seerr is reachable from the public Internet,
+service logins work, and Jellyfin media plays. A test notification was published
+with `scripts/ntfy test` at 19:08 IST and accepted by the server.
 
-- external client: SE-01 `/imageproxy` denial and LAN-only route denial;
-- separate LAN client: AdGuard UDP/TCP resolution, which closes the incident;
-- owner browser: Homepage good/bad password and cookies, Immich Google login with
-  a small upload/download, Kutt owner login, Bambuddy UI and `.3mf` slicing,
-  Jellyfin playback/transcoding, an OpenSpeedTest run;
-- owner phone: ntfy delivery;
+Jellyfin metadata repair (same day): movies imported between 2026-11-16 and the
+12.4 recreation had no provider match because the previous container could not
+resolve `api.themoviedb.org` or `www.omdbapi.com`. The fault predates this
+rollout and ended when the container was recreated. An ordinary refresh did not
+re-match them, so the exact TMDb matches for The Batman (2022), Pride &
+Prejudice (2005) and Requiem for a Dream (2000) were applied through Jellyfin's
+remote-search API, equivalent to Identify in the UI. No file was changed or
+redownloaded. See [media recovery guidance](../../media.md).
+
+Remaining acceptance:
+
+- external client: `/imageproxy` returns 404 from outside, and LAN-only hosts
+  refuse a non-LAN client;
+- owner phone: arrival of the 19:08 IST ntfy test notification;
+- owner browser: an OpenSpeedTest run, Bambuddy `.3mf` slicing, and an Immich
+  upload/download round trip;
 - owner decision: keep Prowlarr v3.0.2 or roll back to the verified v2.7 digest.
 
-H-01 remains unstarted and BZ-01 remains blocked on a fixed stable release.
+H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
+still published only v1.6.3 beta builds.
