@@ -517,3 +517,16 @@ The disposable eleven-application smoke runs the exact pin and verifies Prowlarr
 startup, preserved/chosen indexers, application connections to Radarr/Sonarr/Lidarr,
 qBittorrent integration, rerun preservation, Nginx TLS routing, and private ports.
 No production Prowlarr container, database, or indexer definitions were changed.
+
+### Lidarr v3.1.6 update preparation (2026-11-17)
+
+Reviewed the v3.1.6.5079 release notes, including hostname/allowed-hosts handling,
+qBittorrent compatibility, dependency updates, import fixes, and safeguards against
+unwanted missing-album searches. Re-resolved LinuxServer's current `latest` index
+and verified linux/amd64 and linux/arm64; its label is `3.1.6.5079-ls48`.
+
+The disposable eleven-application smoke runs the exact pin and verifies Lidarr
+startup, private networking, root-folder policy, indexer synchronization from
+Prowlarr, qBittorrent connectivity, media setup rerun preservation, Nginx TLS
+routing, and no automatic music acquisition. No production Lidarr container,
+database, artists, root folders, or indexer definitions were changed.
