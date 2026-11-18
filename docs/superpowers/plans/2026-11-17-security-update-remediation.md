@@ -96,7 +96,7 @@ static or disposable check.
 | MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Prepared; live application pending |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |
 | JF-01 | Jellyfin 12.2 to 12.4 | P2 | Prepared; live application pending |
-| SO-01 | Sonarr base-image refresh | P2 | Not started |
+| SO-01 | Sonarr base-image refresh | P2 | Prepared; live application pending |
 | PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Not started |
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Not started |
 | QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Not started |
