@@ -49,15 +49,16 @@ def main():
                                 '--retry-max-time', '30', '--max-time', '5',
                                 'http://127.0.0.1:18081/'], timeout=40)
 
-            def status(hostname, interface, tls, forged=False):
+            def status(hostname, interface, tls, forged=False, path='/'):
                 port = '443' if tls else '80'
                 command = docker+['exec', name, 'curl', '--noproxy', '*', '-ksS',
                                   '--max-time', '5', '--interface', interface,
+                                  '--path-as-is',
                                   '--resolve', hostname+':'+port+':127.0.0.1',
                                   '-o', '/dev/null', '-w', '%{http_code}']
                 if forged:
                     command += ['-H', 'X-Forwarded-For: 192.168.1.5', '-H', 'X-Real-IP: 192.168.1.5']
-                command += [('https' if tls else 'http')+'://'+hostname+'/']
+                command += [('https' if tls else 'http')+'://'+hostname+path]
                 return runtime.run(command, capture=True).strip()
 
             for service in NAMES:
@@ -70,6 +71,12 @@ def main():
             for hostname in ('xdadwal.in', 'ohara.xdadwal.in', 'tv.xdadwal.in', 'seerr.xdadwal.in', 'speed.xdadwal.in', 'music.xdadwal.in', 'bambuddy.xdadwal.in'):
                 assert status(hostname, '127.0.0.2', True) == '200', 'Existing public route changed: '+hostname
             assert status('bambuddy.xdadwal.in', '127.0.0.2', False) == '301'
+            assert status('seerr.xdadwal.in', '127.0.0.2', True, path='/discover') == '200'
+            for path in ('/imageproxy', '/imageproxy/', '/imageproxy//example',
+                         '/imageproxy/%2e%2e', '/ImageProxy/example',
+                         '/public/%2e%2e/imageproxy/x'):
+                code = status('seerr.xdadwal.in', '127.0.0.2', True, path=path)
+                assert code == '404', f'Seerr containment returned {code} for {path}'
             runtime.run(docker+['stop', name])
             onboarding = bambuddy_proxy.render(ROOT)
             onboarding = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', onboarding)

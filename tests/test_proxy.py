@@ -66,6 +66,17 @@ class ProxyTests(unittest.TestCase):
         self.assertIn('proxy_set_header X-Real-IP $remote_addr;', text)
         self.assertNotIn('$proxy_add_x_forwarded_for', text)
 
+    def test_seerr_imageproxy_is_denied_in_generic_and_deployed_routes(self):
+        generic = proxy.render(config.load(ROOT / '.env.example'), ROOT, https=True)
+        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        raw_guard = 'if ($request_uri ~* "^/imageproxy(?:/|$|\\?)") {\n        return 404;\n    }'
+        denial = "location ~* ^/imageproxy(?:/|$) {\n        return 404;\n    }"
+        for text in (generic, deployed):
+            self.assertIn(raw_guard, text)
+            self.assertIn(denial, text)
+            self.assertLess(text.index(raw_guard), text.index(denial))
+            self.assertLess(text.index(denial), text.index('proxy_pass http://127.0.0.1:5055;'))
+
     def test_invalid_candidate_restores_previous_file(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / 'ohara.conf'

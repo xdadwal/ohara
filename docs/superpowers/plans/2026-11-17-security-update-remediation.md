@@ -87,7 +87,7 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Not started |
+| SE-01 | Seerr public-route containment | P0 | Prepared; live application pending |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Not started |
 | IM-01 | Immich release-matched update | P1 | Awaiting owner backup decision |
