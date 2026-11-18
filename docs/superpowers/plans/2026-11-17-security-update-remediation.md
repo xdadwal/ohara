@@ -95,7 +95,7 @@ static or disposable check.
 | AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Prepared; live application pending |
 | MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Prepared; live application pending |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Prepared; live application pending |
-| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Not started |
+| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Prepared; live application pending |
 | SO-01 | Sonarr base-image refresh | P2 | Not started |
 | PR-01 | Prowlarr 2.6.5 to 2.7.0 | P2 | Not started |
 | LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Not started |

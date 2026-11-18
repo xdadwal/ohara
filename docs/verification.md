@@ -480,3 +480,17 @@ image and verifies non-root startup, readiness, state persistence after containe
 recreation, disabled telemetry, and the deliberate absence of media mounts, rules,
 collections, and destructive actions. No production Maintainerr container, private
 state, connections, rules, or route was changed.
+
+### Jellyfin v12.4 update preparation (2026-11-17)
+
+Reviewed the intervening v12.3 and v12.4 release notes. Both are minor bug-fix
+releases; v12.3 fixes subtitle/probe crashes and v12.4 updates the .NET runtime.
+Upstream continues to recommend a full backup before upgrade. Re-resolved the
+official v12.4 manifest list and verified linux/amd64 and linux/arm64 before
+pinning its index digest.
+
+The disposable eleven-application smoke runs the exact image and verifies startup,
+first-owner setup, Movies/TV libraries, persistent Abyss overlay generation against
+the changed image pin, media APIs, Nginx TLS routing, and playback-related service
+connections. No production Jellyfin server, database, libraries, theme state, or
+plugins were changed.
