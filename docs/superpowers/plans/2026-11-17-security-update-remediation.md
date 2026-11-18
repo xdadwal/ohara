@@ -87,21 +87,21 @@ static or disposable check.
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
 | H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Applied live; external client check pending |
+| SE-01 | Seerr public-route containment | P0 | Applied live; host-side variants verified; external client check pending |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
-| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; functional checks pending |
-| IM-01 | Immich release-matched update | P1 | Merged; live application awaits owner backup decision |
-| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Applied live; phone delivery pending owner confirmation |
-| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Applied live after an unsafe restart; separate-LAN verification pending |
-| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Applied live; connection/rule checks pending |
+| HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner browser login/widget checks pending |
+| IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner Google login/upload checks pending |
+| NT-01 | ntfy 2.35.0 to 2.38.1 | P1 | Applied live; authentication policy verified; phone delivery pending owner confirmation |
+| AG-01 | AdGuard Home 0.107.79 to 0.107.80 | P1 | Applied live after an unsafe restart; host-local DNS verified; separate-LAN verification pending |
+| MT-01 | Maintainerr 3.31.0 to 3.32.0 | P1 | Applied live; owner confirmed existing collections/rules |
 | OST-01 | OpenSpeedTest digest refresh | P1 | Applied live; browser test pending |
-| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; browser/playback checks pending |
-| SO-01 | Sonarr base-image refresh | P2 | Applied live; app-state checks pending |
-| PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch |
-| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; app-state checks pending |
-| QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent/seeding checks pending |
-| RA-01 | Radarr 6 to 7 migration | P2 | Applied live; production migration checks pending |
-| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; owner UI/slicing checks pending |
+| JF-01 | Jellyfin 12.2 to 12.4 | P2 | Applied live with theme refresh; API state verified; browser/playback checks pending |
+| SO-01 | Sonarr base-image refresh | P2 | Applied live; API state verified; owner confirmed queue |
+| PR-01 | Prowlarr 2.6.5 to 3.0.2 | P2 | Applied live; corrected target after digest-label mismatch; API state verified; v3.0.2 retained pending owner review |
+| LI-01 | Lidarr 3.1.0 to 3.1.6 | P2 | Applied live; API state verified |
+| QB-01 | qBittorrent 5.2.4 to 5.3.0 | P2 | Applied live; torrent state and seeding policy verified |
+| RA-01 | Radarr 6 to 7 migration | P2 | Applied live; migrated API state verified; search/request flow not exercised |
+| BB-01 | Bambuddy + matching OrcaSlicer | P3 | Applied live; health and printer reconnect verified; owner UI/slicing checks pending |
 | KU-01 | Kutt PostgreSQL same-version refresh | P3 | Applied live after documented backup; owner login check pending |
 | BZ-01 | Bazarr containment/release monitoring | P1 | Blocked on fixed stable |
 | NV-01 | Navidrome 0.64.2 | Monitor | Current |
@@ -549,8 +549,8 @@ LAN DNS. AdGuard was incorrectly grouped with unrelated optional services. Its
 default stop path now refuses an outage unless
 `scripts/adguard stop --allow-dns-outage` is run after fallback DNS has been
 deployed/verified and the window approved. The owner restored AdGuard manually;
-the old v0.107.79 service and configuration were preserved, and AG-01 remains
-temporarily deferred. While preparing this correction, a subsequent
+the old v0.107.79 service and configuration were preserved, and AG-01 was to
+remain temporarily deferred. While preparing this correction, a subsequent
 `scripts/adguard up` used the merged v0.107.80 pin and recreated the service;
 that update was not the intended next step and violated the new deferral rule.
 The host now runs v0.107.80 with existing state, authenticated API and DNS status
@@ -573,3 +573,41 @@ remained reachable. The documented root-required Kutt backup succeeded before
 Kutt/PostgreSQL recreation; helper status reports both containers healthy, the
 restricted database role, and existing owner setup. Native owner login and
 external HTTPS acceptance remain pending.
+
+## 2026-11-18 host-side verification
+
+Read-only checks were run from the host at about 13:00 UTC after PR #53. They
+used loopback backends, existing private application keys read through the
+documented credential loader, and local Nginx with the public hostnames resolved
+to the host itself. They are real-host checks, not external or separate-LAN
+reachability evidence. Details are in the
+[verification record](../../verification.md).
+
+- All 21 running containers use the digests pinned under `versions/`; the seven
+  installed `/etc/nginx/conf.d/ohara*.conf` files equal `configs/nginx/deployed/`.
+- **IM-01 was found already applied.** The Immich server and Valkey containers
+  were recreated at 12:35 UTC, after PR #53 merged, by an unrecorded session.
+  Three database migrations ran and v3.4.1 was added to the upgrade history. No
+  owner backup decision, pre-upgrade dump or library copy was recorded, and none
+  was found under `local/`; treat rollback to the previous release as unavailable. The owner
+  accepted the applied state on 2026-11-18 subject to functional checks.
+  Host-side checks pass: ping, v3.4.1, Valkey 9.1.3, unchanged PostgreSQL
+  container, `/data` layout, Google-only invite-only login (`autoRegister=false`,
+  password login disabled), machine learning disabled, Homepage statistics key
+  still limited to `server.statistics`, and the HTTPS route. v3.4.1 bootstraps
+  its new built-in backup feature with no backend, repository or schedule;
+  independent backups remain deferred and are not implemented.
+- Owner statements on 2026-11-18: Jellyfin needs no Music library, the Sonarr
+  queue is expected, and the Maintainerr collections/rules are expected.
+
+Remaining acceptance, none of which can be done from the host:
+
+- external client: SE-01 `/imageproxy` denial and LAN-only route denial;
+- separate LAN client: AdGuard UDP/TCP resolution, which closes the incident;
+- owner browser: Homepage good/bad password and cookies, Immich Google login with
+  a small upload/download, Kutt owner login, Bambuddy UI and `.3mf` slicing,
+  Jellyfin playback/transcoding, an OpenSpeedTest run;
+- owner phone: ntfy delivery;
+- owner decision: keep Prowlarr v3.0.2 or roll back to the verified v2.7 digest.
+
+H-01 remains unstarted and BZ-01 remains blocked on a fixed stable release.
