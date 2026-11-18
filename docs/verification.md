@@ -446,3 +446,18 @@ images. The disposable eleven-application smoke uses this exact pin and verifies
 startup, the public speed-test route, iframe/link compatibility through Homepage,
 and a 35 MiB proxy upload. This is a dependency/base-image refresh; no production
 container was recreated.
+
+### ntfy v2.38.1 security-update preparation (2026-11-17)
+
+Re-resolved the official v2.38.1 manifest list and verified linux/amd64 and
+linux/arm64 before pinning its index digest. The disposable ntfy fixture runs the
+exact pin and verifies non-root startup, anonymous read/write denial, scoped ACLs,
+authenticated publish/read, persistent cache state, native Homepage widget proxying,
+and browser credential exclusion.
+
+The offline account-rename guard was separately reviewed against v2.38.1. Its
+SQLite user table still uses the stable `id` primary key and `user` name column,
+and the helper continues to change only `user.user` so IDs, ACLs, tokens, prefs
+and cached messages remain attached to the same account. Future releases remain
+refused until reviewed. No production ntfy container, account, timer, or route
+was changed during preparation.
