@@ -545,3 +545,21 @@ the approved stop-after-240-minutes seeding behavior with file preservation,
 Arr download-client connectivity, media setup rerun safety, private ports, and
 Nginx TLS routing. No production qBittorrent container, config, BT_backup state,
 torrents, or seeding policy was changed.
+
+### Radarr v7.0.3 major-upgrade preparation (2026-11-17)
+
+Reviewed the v7.0.0 through v7.0.3 release paths. Important v7 changes include
+.NET 10, FluentMigrator updates, batched/lower-memory media-info migration, a
+wildcard allowed-hosts fix, qBittorrent duplicate-release handling, Postgres
+credential log protection, ImageSharp decoder restrictions, and .NET runtime
+updates through 10.0.15. The release path provides no supported in-container
+self-update; Docker deployments must replace the image.
+
+Re-resolved LinuxServer's current `latest` index and verified linux/amd64 and
+linux/arm64; its label is `7.0.3.10918-ls328`. The disposable eleven-application
+smoke runs the exact pin and verifies startup, API setup, root folders, quality
+profile/custom-format behavior, qBittorrent connectivity, Prowlarr synchronization,
+Seerr integration, rerun preservation, private ports, and Nginx TLS routing.
+This fresh-container check does not prove migration of the production v6 database.
+No production Radarr container, database, profiles, indexers, or movie records
+was changed.
