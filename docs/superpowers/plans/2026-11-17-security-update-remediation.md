@@ -86,7 +86,7 @@ static or disposable check.
 | ID | Scope | Priority | State |
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
-| H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
+| H-01 | Host security packages and reboot | P0 | In progress: libraries, Nginx and kernel package installed 2026-11-18; Docker upgrade and reboot pending an owner window |
 | SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, applied live; owner verified LAN, external 403 and remote Jellyfin requests |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
@@ -690,3 +690,44 @@ was downloading and the Radarr/Sonarr queues were empty.
   SE-01 is closed.
 - The owner confirmed Bambuddy login and slicing. H-01 is the only unstarted
   remediation item; BZ-01 is deferred by the owner.
+
+## 2026-11-18 H-01 progress (owner-scoped selective upgrade)
+
+The owner narrowed H-01 to packages with a reviewed security reason for the
+server stack and approved applying them in order of disruption, reboot last.
+Each group is installed by name with
+`sudo NEEDRESTART_MODE=l apt-get install --only-upgrade <packages>` after
+`sudo apt-get update`; `full-upgrade` is **not** used on this host for H-01.
+
+Deliberately skipped by the owner, still shown as upgradable (about 68
+packages): `docker-compose-plugin` 5.6.0, `tailscale` 1.104.1, `containerd.io`
+2.4.2-2, `docker-buildx-plugin` 0.38.0 and `tzdata` (no security reason found),
+and the desktop/tool packages on this headless host (Firefox ESR, LibreOffice,
+WebKitGTK, ImageMagick, libheif, libjxl, OpenEXR, NSS, brotli, bind9 client
+tools, an Apache library package, vim, apt). No `apt-mark hold` is set, so a
+plain `apt upgrade` or `full-upgrade` would install them; do not run one without
+a new owner decision.
+
+Before starting, the stopped `ohara-pihole-1` and `ohara-copyparty-1` containers
+from retired services were removed with `docker rm` at the owner's request.
+Their bind-mounted data under `/ohara/pihole`, `/ohara/copyparty`, `/ohara/files`
+and `local/copyparty.conf` was not touched.
+
+Pre-change versions (rollback reference, 22:08 IST): ca-certificates 20250419,
+zlib1g 1:1.3.dfsg+really1.3.1-1+b1, libexpat1 2.8.3-1~deb13u1, nginx and
+nginx-common 1.26.3-3+deb13u9, linux-image-amd64 6.12.111-1 (running
+6.12.111+deb13-amd64), docker-ce, docker-ce-cli and docker-ce-rootless-extras
+5:29.9.1-1~debian.13~trixie.
+
+| Step | Packages | Result |
+|---|---|---|
+| 1 | ca-certificates 20250419+deb13u1, zlib1g 1:1.3.dfsg+really1.3.1-1+deb13u1, libexpat1 2.9.0-1~deb13u1 | Installed. No service restarted; running processes use the old libraries until steps 4 and 5. |
+| 2 | nginx, nginx-common 1.26.3-3+deb13u10 | Installed; Nginx restarted at 22:08:57 IST. `nginx -t` passes, installed configs equal the baseline, public routes answer, Seerr and a LAN-only host return 403 from a non-LAN source. |
+| 3 | linux-image-amd64 6.12.117-1 | Installed with initramfs and GRUB entries. 6.12.111 and 6.12.107 remain bootable. Still running 6.12.111 until the reboot. |
+| 4 | docker-ce, docker-ce-cli, docker-ce-rootless-extras 5:29.10.0 | **Pending.** Restarts every container, including AdGuard DNS. |
+| 5 | `sudo reboot` | **Pending.** First full reboot with the media pool; use the post-reboot verification list in the H-01 section. |
+
+Rollback: reinstall a recorded version with
+`sudo apt-get install <package>=<version>` while it remains in the archive or
+`/var/cache/apt/archives`; for a bad kernel, choose 6.12.111 under "Advanced
+options" in the GRUB menu at the local console.

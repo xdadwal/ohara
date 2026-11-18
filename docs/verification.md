@@ -828,3 +828,17 @@ the HTTPS route returns 200.
 Owner report (2026-11-18), not an agent-run check: verified on the local network
 and the public Internet that Seerr loads on the LAN, is refused from outside, and
 that a request made inside Jellyfin from outside still reaches Seerr.
+
+### H-01 selective host upgrade, steps 1-3 (2026-11-18)
+
+Real host. After `apt-get update`, three groups were installed by name with
+`NEEDRESTART_MODE=l`: ca-certificates/zlib1g/libexpat1, nginx/nginx-common, and
+linux-image-amd64. `dpkg-query` shows each at its target version and installed.
+Service start times confirm only Nginx restarted (22:08:57 IST); Docker and all
+21 containers kept running. After the Nginx upgrade `nginx -t` passes, the
+installed configuration files equal `configs/nginx/deployed/`, eleven routes
+answer from the LAN address, and Seerr and `radarr.xdadwal.in` return 403 from
+the host's Tailscale address. The kernel package generated its initramfs and
+GRUB entries; the host still runs 6.12.111 until rebooted. Not done: the Docker
+upgrade and the reboot, which wait for an owner window. No external client check
+was run.
