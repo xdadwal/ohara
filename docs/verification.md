@@ -932,8 +932,9 @@ then `sudo sshd -t && sudo systemctl reload ssh`. `sshd -T` reports both options
 `no` with public-key authentication on, and a password-only attempt against
 192.168.1.101 is refused with `Permission denied (publickey)`. The existing key
 session stayed connected. `/etc/ssh/sshd_config`, `authorized_keys`, host keys,
-root login and X11 forwarding settings were not changed. Not verified here: a
-key login from each owner device. Roll back by removing the drop-in and reloading
+root login and X11 forwarding settings were not changed. The owner then
+confirmed a key login from the phone over Tailscale, the one device that had
+used a password; other devices already used keys. Roll back by removing the drop-in and reloading
 `ssh`; the local console still accepts the account password.
 
 The policy was then added to the repository as
