@@ -916,3 +916,22 @@ is left installed. Roll back with
 `sudo systemctl enable --now avahi-daemon.socket avahi-daemon.service`.
 Non-loopback listeners are now SSH 22, Nginx 80/443, AdGuard DNS on
 192.168.1.101:53 and Tailscale only.
+
+### SSH restricted to key authentication (2026-11-19)
+
+Owner decision from the security review, after the owner added a key for the one
+device that still used a password. Installed root-owned
+`/etc/ssh/sshd_config.d/90-ohara-keys-only.conf` (mode 644) containing:
+
+```
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+```
+
+then `sudo sshd -t && sudo systemctl reload ssh`. `sshd -T` reports both options
+`no` with public-key authentication on, and a password-only attempt against
+192.168.1.101 is refused with `Permission denied (publickey)`. The existing key
+session stayed connected. `/etc/ssh/sshd_config`, `authorized_keys`, host keys,
+root login and X11 forwarding settings were not changed. Not verified here: a
+key login from each owner device. Roll back by removing the drop-in and reloading
+`ssh`; the local console still accepts the account password.
