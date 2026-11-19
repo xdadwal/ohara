@@ -935,3 +935,11 @@ session stayed connected. `/etc/ssh/sshd_config`, `authorized_keys`, host keys,
 root login and X11 forwarding settings were not changed. Not verified here: a
 key login from each owner device. Roll back by removing the drop-in and reloading
 `ssh`; the local console still accepts the account password.
+
+The policy was then added to the repository as
+`configs/ssh/90-ohara-keys-only.conf` with the procedure under "Optional host
+hardening" in [agent setup](agent-setup.md), which also covers the Samba and
+Avahi shutdowns. The template was reinstalled over the hand-written file;
+`sshd -t` passed, SSH reloaded, `cmp` against the template is silent, and the
+password-only attempt is still refused. `tests/test_host_hardening.py` checks
+the template's two directives and the documented commands.

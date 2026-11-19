@@ -254,6 +254,75 @@ physical lid-close/network test separately; setting these values does not
 disable desktop idle suspension or low-battery actions. Preserve other power
 settings, and do not globally mask sleep targets.
 
+## Optional host hardening
+
+These are deliberate owner choices for the current host, applied on 2026-11-19
+after a read-only security review. Ordinary setup installs none of them. On
+another machine, inspect first and apply only what its owner approves.
+
+### Key-only SSH
+
+Prerequisite: every device the owner uses already logs in with a key. Check which
+methods are in use before changing anything, and keep an existing key session
+open until the test passes:
+
+```sh
+sudo journalctl -u ssh --since "-30d" --no-pager -q | grep -oE "Accepted (publickey|password) for [a-z]+ from [0-9a-f.:]+" | sort | uniq -c
+grep -cvE '^\s*(#|$)' ~/.ssh/authorized_keys
+grep -n '^Include' /etc/ssh/sshd_config
+```
+
+A device that still shows `Accepted password` needs its public key appended to
+`~/.ssh/authorized_keys` and a successful key login first. The `Include` line for
+`/etc/ssh/sshd_config.d/*.conf` must appear before any `PasswordAuthentication`
+setting in the main file, because sshd uses the first value it reads. Then:
+
+```sh
+sudo install -m 644 -o root -g root configs/ssh/90-ohara-keys-only.conf /etc/ssh/sshd_config.d/90-ohara-keys-only.conf
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T | grep -iE '^(passwordauthentication|kbdinteractiveauthentication|pubkeyauthentication) '
+ssh -o BatchMode=yes -o PubkeyAuthentication=no -o PreferredAuthentications=password,keyboard-interactive HOST_USER@HOST_LAN_IP true
+cmp configs/ssh/90-ohara-keys-only.conf /etc/ssh/sshd_config.d/90-ohara-keys-only.conf
+```
+
+Expected: both password options report `no`, the last `ssh` fails with
+`Permission denied (publickey)`, and `cmp` is silent. If `sshd -t` fails, remove
+the installed file before reloading. Confirm a key login from a second terminal
+and from each owner device, including over Tailscale, before closing the original
+session. The template does not change `authorized_keys`, host keys, root login or
+forwarding options, and never generates keys. Roll back with
+`sudo rm /etc/ssh/sshd_config.d/90-ohara-keys-only.conf && sudo systemctl reload ssh`;
+the local console keeps accepting the account password.
+
+### Unused network services
+
+This host had Samba and Avahi listening on every interface although Ohara uses
+neither. Discover what is actually exposed and in use before disabling anything:
+
+```sh
+sudo ss -ltnup | grep -vE '127\.0\.0\.|\[::1\]'
+sudo smbstatus -b; sudo smbstatus -S
+grep -E 'cifs|smb' /etc/fstab
+```
+
+With no SMB sessions, shares or mounts in use, the owner approved:
+
+```sh
+sudo systemctl disable --now smbd.service nmbd.service winbind.service
+sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service
+```
+
+Disable Avahi's socket together with its service, otherwise socket activation
+restarts it. Verify that the units are `inactive` and `disabled` and that nothing
+listens on 137-139, 445 or UDP 5353; on this host the remaining non-loopback
+listeners are SSH 22, Nginx 80/443, AdGuard DNS on the LAN address and Tailscale.
+Packages, `/etc/samba/smb.conf` and the `winbind` entries in `/etc/nsswitch.conf`
+are left in place. Do not disable these on a machine that shares files or
+printers. Roll back with `sudo systemctl enable --now` on the same units.
+
+This does not add a host firewall; the owner relies on the router for Internet
+filtering, so any new listener is reachable from the LAN.
+
 ## Setup completion and persistence checklist
 
 The main setup installs host dependencies (including bpytop), prepares storage
