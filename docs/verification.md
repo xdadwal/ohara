@@ -882,3 +882,22 @@ Checked at 23:10 IST after the owner reconnected:
 
 Not verified here: external Internet reachability, playback, a LAN device other
 than the host, and phone notification delivery after the reboot.
+
+### Samba disabled on the host (2026-11-19)
+
+Owner decision after a read-only security review: Samba is not used by Ohara and
+was listening on every interface (139/445 TCP, 137/138 UDP) with guest mapping.
+`smbstatus` showed no sessions or open shares and `/etc/fstab` has no CIFS mount.
+Applied on the real host:
+
+```sh
+sudo systemctl disable --now smbd.service nmbd.service winbind.service
+```
+
+Afterwards the three units are inactive and disabled, `ss -ltnup` shows no
+listener on 137-139 or 445, and local user lookup still works. Packages,
+`/etc/samba/smb.conf` and the `winbind` entries in `/etc/nsswitch.conf` were left
+unchanged. Roll back with `sudo systemctl enable --now smbd nmbd winbind`. Ohara
+setup does not install or manage Samba; this is host hardening specific to this
+machine. Remaining non-loopback listeners: SSH 22, Nginx 80/443, AdGuard DNS on
+192.168.1.101:53, Tailscale, and Avahi mDNS 5353.
