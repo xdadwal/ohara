@@ -901,3 +901,18 @@ unchanged. Roll back with `sudo systemctl enable --now smbd nmbd winbind`. Ohara
 setup does not install or manage Samba; this is host hardening specific to this
 machine. Remaining non-loopback listeners: SSH 22, Nginx 80/443, AdGuard DNS on
 192.168.1.101:53, Tailscale, and Avahi mDNS 5353.
+
+### Avahi disabled on the host (2026-11-19)
+
+Owner decision from the same review: mDNS discovery is not used by Ohara.
+Applied on the real host:
+
+```sh
+sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service
+```
+
+Both units are inactive and disabled and nothing listens on UDP 5353. The package
+is left installed. Roll back with
+`sudo systemctl enable --now avahi-daemon.socket avahi-daemon.service`.
+Non-loopback listeners are now SSH 22, Nginx 80/443, AdGuard DNS on
+192.168.1.101:53 and Tailscale only.
