@@ -86,8 +86,8 @@ static or disposable check.
 | ID | Scope | Priority | State |
 |---|---|---:|---|
 | P-00 | This plan/tracking document | Foundation | Complete when merged |
-| H-01 | Host security packages and reboot | P0 | Scheduled last by owner; escalate only for a verified dependency |
-| SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, prepared but not yet installed |
+| H-01 | Host security packages and reboot | P0 | Complete for the owner-selected security scope (2026-11-18): libraries, Nginx, kernel and Docker upgraded, host rebooted and verified; other packages deliberately skipped |
+| SE-01 | Seerr public-route containment | P0 | Path denial applied live and verified host-side; owner then chose full-host LAN-only containment, applied live; owner verified LAN, external 403 and remote Jellyfin requests |
 | SE-02 | Seerr image upgrade | P0 | **Owner skipped; do not prepare or apply** |
 | HP-01 | Homepage 2.5.0 to 2.8.0 | P0 | Applied live; unauthenticated redirect verified; owner confirmed login |
 | IM-01 | Immich release-matched update | P1 | Applied live without a recorded backup or backup decision; host-side checks pass; owner confirmed login; upload/download round trip not reported |
@@ -616,10 +616,7 @@ redownloaded. See [media recovery guidance](../../media.md).
 
 Remaining acceptance:
 
-- root on the host: install the LAN-only Seerr baseline (see below);
-- external client: Seerr and the LAN-only admin hosts return 403 from outside,
-  and a request made inside Jellyfin still reaches Seerr;
-- owner phone: arrival of the 19:08 IST ntfy test notification;
+- none for the applied items; see the release record below.
 
 The owner also confirmed ntfy phone delivery, an Immich upload and an
 OpenSpeedTest run, decided to keep Prowlarr on the latest stable release, and
@@ -649,10 +646,88 @@ plan's preferred option and made the Seerr host LAN-only. The deployed baseline
 now guards Seerr's HTTP and HTTPS servers with `$ohara_lan_allowed` and keeps the
 `/imageproxy` denial for LAN clients. Remote requests continue through Jellyfin
 Enhanced, which reaches Seerr server-side. Unit tests and the disposable Nginx
-smoke test pass. **Not installed:** this session has no root access, so
-`/etc/nginx/conf.d/ohara.conf` still serves Seerr publicly with the path denial.
+smoke test pass. It was installed later the same day; see the release record
+below.
 Exact apply, verification and rollback commands are in
 [LAN services](../../lan-services.md#seerr-lan-only-since-2026-11-18).
 
 H-01 remains unstarted and BZ-01 remains blocked: on 2026-11-18 upstream Bazarr
 still published only v1.6.3 beta builds.
+
+## 2026-11-18 explicit-tag release
+
+PRs #54, #55 and #56 were merged with owner approval, which also authorized the
+production release. Before applying, nothing was playing in Jellyfin, no torrent
+was downloading and the Radarr/Sonarr queues were empty.
+
+- **Applied:** `scripts/check` then `scripts/up` at 14:39 UTC recreated Radarr,
+  Sonarr, Prowlarr, Lidarr, qBittorrent, Bazarr and OpenSpeedTest on their
+  explicitly tagged references with unchanged digests. Homepage, Jellyfin, Seerr
+  and Navidrome were not recreated. Afterwards `scripts/status` reports all
+  eleven containers reachable; versions, library counts, root folders, indexers,
+  Prowlarr application sync, the 48 torrents with their categories and states,
+  the 240-minute seeding policy and disabled completed-download removal are
+  unchanged, with no health issues. Lidarr's queue repopulated to its previous
+  13 records about two minutes after start.
+- **Seerr LAN-only applied (20:14 IST):** the installed `ohara.conf` was backed
+  up to `/var/backups/ohara/ohara.conf.20261118-201432`, the installed
+  `ohara-lan.conf` was confirmed identical to the baseline, the new baseline was
+  installed, `nginx -t` passed and Nginx was reloaded. The installed file now
+  equals the repository baseline. From the host's LAN address Seerr returns
+  307/200, 301 on HTTP and 404 for `/imageproxy`; from the host's Tailscale
+  address, which is outside the allowlist, every Seerr path returns 403 on HTTP
+  and HTTPS including with forged forwarding headers. The other public routes
+  still answer and a LAN-only admin host still returns 403 from that source.
+  Jellyfin and Homepage still reach `http://seerr:5055` server-side.
+- **Valkey recreated:** `sudo scripts/immich --allow-short-db-password up` (the
+  flag is this host's documented owner exception; without it the helper refuses
+  the existing database password) recreated only Valkey on its `9.1.3`
+  reference. All three containers are healthy, ping and statistics answer, and
+  the HTTPS route returns 200.
+- **Owner acceptance (2026-11-18):** the owner verified on the local network and
+  on the public Internet that Seerr loads from a LAN device, returns 403 from
+  outside, and that a request made inside Jellyfin from outside reaches Seerr.
+  SE-01 is closed.
+- The owner confirmed Bambuddy login and slicing. H-01 is the only unstarted
+  remediation item; BZ-01 is deferred by the owner.
+
+## 2026-11-18 H-01 progress (owner-scoped selective upgrade)
+
+The owner narrowed H-01 to packages with a reviewed security reason for the
+server stack and approved applying them in order of disruption, reboot last.
+Each group is installed by name with
+`sudo NEEDRESTART_MODE=l apt-get install --only-upgrade <packages>` after
+`sudo apt-get update`; `full-upgrade` is **not** used on this host for H-01.
+
+Deliberately skipped by the owner, still shown as upgradable (about 68
+packages): `docker-compose-plugin` 5.6.0, `tailscale` 1.104.1, `containerd.io`
+2.4.2-2, `docker-buildx-plugin` 0.38.0 and `tzdata` (no security reason found),
+and the desktop/tool packages on this headless host (Firefox ESR, LibreOffice,
+WebKitGTK, ImageMagick, libheif, libjxl, OpenEXR, NSS, brotli, bind9 client
+tools, an Apache library package, vim, apt). No `apt-mark hold` is set, so a
+plain `apt upgrade` or `full-upgrade` would install them; do not run one without
+a new owner decision.
+
+Before starting, the stopped `ohara-pihole-1` and `ohara-copyparty-1` containers
+from retired services were removed with `docker rm` at the owner's request.
+Their bind-mounted data under `/ohara/pihole`, `/ohara/copyparty`, `/ohara/files`
+and `local/copyparty.conf` was not touched.
+
+Pre-change versions (rollback reference, 22:08 IST): ca-certificates 20250419,
+zlib1g 1:1.3.dfsg+really1.3.1-1+b1, libexpat1 2.8.3-1~deb13u1, nginx and
+nginx-common 1.26.3-3+deb13u9, linux-image-amd64 6.12.111-1 (running
+6.12.111+deb13-amd64), docker-ce, docker-ce-cli and docker-ce-rootless-extras
+5:29.9.1-1~debian.13~trixie.
+
+| Step | Packages | Result |
+|---|---|---|
+| 1 | ca-certificates 20250419+deb13u1, zlib1g 1:1.3.dfsg+really1.3.1-1+deb13u1, libexpat1 2.9.0-1~deb13u1 | Installed. No service restarted; running processes use the old libraries until steps 4 and 5. |
+| 2 | nginx, nginx-common 1.26.3-3+deb13u10 | Installed; Nginx restarted at 22:08:57 IST. `nginx -t` passes, installed configs equal the baseline, public routes answer, Seerr and a LAN-only host return 403 from a non-LAN source. |
+| 3 | linux-image-amd64 6.12.117-1 | Installed with initramfs and GRUB entries. 6.12.111 and 6.12.107 remain bootable. Still running 6.12.111 until the reboot. |
+| 4 | docker-ce, docker-ce-cli, docker-ce-rootless-extras 5:29.10.0 | Installed 22:55-22:56 IST with owner approval of the DNS outage. Docker and `ohara-media.service` restarted; all 21 containers returned within about a minute, `scripts/status` and every helper status pass, and AdGuard answers UDP and TCP. containerd.io and the Compose plugin are unchanged. |
+| 5 | `sudo reboot` | Done; the host booted at 22:58:48 IST on 6.12.117+deb13-amd64 and every post-reboot check passes (see the verification record). First full reboot with the media pool: both USB branches and `/ohara/mnt` mounted and `ohara-media.service` started the media stack unaided. |
+
+Rollback: reinstall a recorded version with
+`sudo apt-get install <package>=<version>` while it remains in the archive or
+`/var/cache/apt/archives`; for a bad kernel, choose 6.12.111 under "Advanced
+options" in the GRUB menu at the local console.

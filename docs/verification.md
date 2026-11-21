@@ -795,6 +795,156 @@ server, and added the `$ohara_lan_allowed` guard ahead of the existing
 - Not verified: a real LAN client, a real external client, and a remote request
   through Jellyfin Enhanced with the public route closed.
 
+### Explicit-tag production release (2026-11-18)
+
+Real host, with owner approval after PRs #54-#56 merged. `scripts/check` and
+`scripts/up` recreated seven main-stack containers at 14:39 UTC; `docker inspect`
+shows each on its versioned reference with the previously pinned digest.
+`scripts/status` reports all eleven containers running and reachable. Read-only
+API checks before and after match: Radarr 29 movies, Sonarr 6 series, Lidarr 2
+artists, Prowlarr 3 indexers and three applications, qBittorrent 48 torrents
+(43 stopped, 3 stalled, 2 queued uploads) with unchanged categories and seeding
+policy, and no health issues.
+
+With root access supplied by the owner, the Seerr LAN-only baseline was then
+installed at 20:14 IST: backup at `/var/backups/ohara/ohara.conf.20261118-201432`,
+`nginx -t` passed before and after, Nginx reloaded, and `cmp` against the
+repository baseline is silent. Real-host checks with `curl --resolve`: from
+192.168.1.101 Seerr returns 307 for `/`, 200 for `/login` and `/api/v1/status`,
+404 for `/imageproxy/...` and 301 on HTTP; from the host's Tailscale address
+(not in the allowlist) `/`, `/login`, `/api/v1/status` and `/imageproxy/...`
+return 403 on HTTPS, `/` returns 403 on HTTP, and forged `X-Forwarded-For` and
+`X-Real-IP` headers still get 403. From that same source Homepage, Jellyfin,
+OpenSpeedTest, Navidrome, Immich, Kutt, ntfy and Bambuddy still answer and
+`radarr.xdadwal.in` returns 403. Inside the Jellyfin and Homepage containers
+`http://seerr:5055/api/v1/status` succeeds.
+
+`sudo scripts/immich --allow-short-db-password up` recreated only Valkey on the
+`9.1.3` reference with the same digest; the first attempt without the documented
+flag was refused by input validation and changed nothing. Afterwards all three
+containers are healthy, `valkey_version` is 9.1.3, ping and statistics answer and
+the HTTPS route returns 200.
+
+Owner report (2026-11-18), not an agent-run check: verified on the local network
+and the public Internet that Seerr loads on the LAN, is refused from outside, and
+that a request made inside Jellyfin from outside still reaches Seerr.
+
+### H-01 selective host upgrade, steps 1-3 (2026-11-18)
+
+Real host. After `apt-get update`, three groups were installed by name with
+`NEEDRESTART_MODE=l`: ca-certificates/zlib1g/libexpat1, nginx/nginx-common, and
+linux-image-amd64. `dpkg-query` shows each at its target version and installed.
+Service start times confirm only Nginx restarted (22:08:57 IST); Docker and all
+21 containers kept running. After the Nginx upgrade `nginx -t` passes, the
+installed configuration files equal `configs/nginx/deployed/`, eleven routes
+answer from the LAN address, and Seerr and `radarr.xdadwal.in` return 403 from
+the host's Tailscale address. The kernel package generated its initramfs and
+GRUB entries; the host still runs 6.12.111 until rebooted. Not done: the Docker
+upgrade and the reboot, which wait for an owner window. No external client check
+was run.
+
+### H-01 Docker upgrade, reboot and post-reboot verification (2026-11-18)
+
+Real host. With the owner's approval of the DNS outage, docker-ce, docker-ce-cli
+and docker-ce-rootless-extras were upgraded to 5:29.10.0 at 22:55 IST after
+confirming no playback, download or Radarr/Sonarr queue activity; all 21
+containers and every helper status returned within about a minute. The host was
+then rebooted and came up at 22:58:48 IST.
+
+Checked at 23:10 IST after the owner reconnected:
+
+- Kernel 6.12.117+deb13-amd64; nginx 1.26.3-3+deb13u10, Docker 29.10.0, zlib1g,
+  libexpat1 and ca-certificates at their targets; containerd.io 2.4.2-2,
+  Compose plugin 5.6.0 and Tailscale 1.104.1 unchanged as intended.
+- `systemctl --failed` lists nothing. nginx, docker, containerd, tailscaled, ssh
+  and `ohara-media.service` are active; the alert, storage-watchdog and Certbot
+  timers are scheduled and the watchdog's last run exited 0.
+- `/mnt/disks/wd-500`, `/mnt/disks/crucial-240` and the mergerfs pool at
+  `/ohara/mnt` are mounted with their top-level directories present.
+- 21 containers running, none exited, unhealthy or restarting; `scripts/status`
+  reports all eleven main-stack services reachable; Immich, AdGuard, Maintainerr,
+  ntfy, Kutt and Bambuddy helper statuses pass; OrcaSlicer is healthy and
+  `scripts/jellyfin-theme check` passes.
+- Application state through existing keys: Radarr 30 movies, Sonarr 6 series,
+  Lidarr 2 artists, Prowlarr 3 indexers, all without health issues and with
+  accessible root folders; qBittorrent 49 torrents in the same states as before
+  with the 240-minute limit; Jellyfin 12.4.0 with nine plugins; Immich 3.4.1
+  with Google-only login; Seerr 3.5.2.
+- Nginx: installed files equal the baseline; from the LAN address twelve hosts
+  answer and `/imageproxy` returns 404; from the Tailscale address Seerr and
+  three LAN-only hosts return 403 while public hosts answer.
+- AdGuard answers UDP and TCP on 192.168.1.101 only, blocks a filtered domain
+  and serves the local rewrite. No container publishes a non-loopback port
+  except DNS.
+- Tailscale is connected with Tailscale SSH, DNS acceptance, route acceptance,
+  advertised routes and exit node all off and no Serve configuration.
+- Jellyfin logs no name-resolution failure since boot.
+
+Not verified here: external Internet reachability, playback, a LAN device other
+than the host, and phone notification delivery after the reboot.
+
+### Samba disabled on the host (2026-11-19)
+
+Owner decision after a read-only security review: Samba is not used by Ohara and
+was listening on every interface (139/445 TCP, 137/138 UDP) with guest mapping.
+`smbstatus` showed no sessions or open shares and `/etc/fstab` has no CIFS mount.
+Applied on the real host:
+
+```sh
+sudo systemctl disable --now smbd.service nmbd.service winbind.service
+```
+
+Afterwards the three units are inactive and disabled, `ss -ltnup` shows no
+listener on 137-139 or 445, and local user lookup still works. Packages,
+`/etc/samba/smb.conf` and the `winbind` entries in `/etc/nsswitch.conf` were left
+unchanged. Roll back with `sudo systemctl enable --now smbd nmbd winbind`. Ohara
+setup does not install or manage Samba; this is host hardening specific to this
+machine. Remaining non-loopback listeners: SSH 22, Nginx 80/443, AdGuard DNS on
+192.168.1.101:53, Tailscale, and Avahi mDNS 5353.
+
+### Avahi disabled on the host (2026-11-19)
+
+Owner decision from the same review: mDNS discovery is not used by Ohara.
+Applied on the real host:
+
+```sh
+sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service
+```
+
+Both units are inactive and disabled and nothing listens on UDP 5353. The package
+is left installed. Roll back with
+`sudo systemctl enable --now avahi-daemon.socket avahi-daemon.service`.
+Non-loopback listeners are now SSH 22, Nginx 80/443, AdGuard DNS on
+192.168.1.101:53 and Tailscale only.
+
+### SSH restricted to key authentication (2026-11-19)
+
+Owner decision from the security review, after the owner added a key for the one
+device that still used a password. Installed root-owned
+`/etc/ssh/sshd_config.d/90-ohara-keys-only.conf` (mode 644) containing:
+
+```
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+```
+
+then `sudo sshd -t && sudo systemctl reload ssh`. `sshd -T` reports both options
+`no` with public-key authentication on, and a password-only attempt against
+192.168.1.101 is refused with `Permission denied (publickey)`. The existing key
+session stayed connected. `/etc/ssh/sshd_config`, `authorized_keys`, host keys,
+root login and X11 forwarding settings were not changed. The owner then
+confirmed a key login from the phone over Tailscale, the one device that had
+used a password; other devices already used keys. Roll back by removing the drop-in and reloading
+`ssh`; the local console still accepts the account password.
+
+The policy was then added to the repository as
+`configs/ssh/90-ohara-keys-only.conf` with the procedure under "Optional host
+hardening" in [agent setup](agent-setup.md), which also covers the Samba and
+Avahi shutdowns. The template was reinstalled over the hand-written file;
+`sshd -t` passed, SSH reloaded, `cmp` against the template is silent, and the
+password-only attempt is still refused. `tests/test_host_hardening.py` checks
+the template's two directives and the documented commands.
+
 ### Bambuddy/OrcaSlicer 1.3.2 matched preparation (2026-11-21)
 
 Reason: on production 1.3.1 the Slice dialog showed "Failed to load presets.

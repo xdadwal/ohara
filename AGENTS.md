@@ -169,6 +169,11 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   acceptance, subnet routing, exit nodes, Serve or Funnel. Review existing
   client roles before changing preferences; restrict tailnet network policy to
   the intended SSH users/devices and port. No public SSH port forward.
+- This host uses key-only SSH (configs/ssh/90-ohara-keys-only.conf) and has
+  Samba and Avahi disabled by owner decision; follow "Optional host hardening"
+  in docs/agent-setup.md. Do not re-enable password login or those services,
+  and never install the SSH policy elsewhere before every owner device has a
+  verified key. There is no host firewall; keep new listeners on loopback.
 - Public DNS records are managed at GoDaddy. Optional AdGuard Home is explicitly
   approved for LAN DNS/filtering in the separate compose/adguard.yaml project;
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
