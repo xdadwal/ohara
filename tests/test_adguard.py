@@ -118,6 +118,51 @@ class AdguardTests(unittest.TestCase):
             adguard.stop(c, ROOT, allow_dns_outage=True)
             compose.assert_called_once_with(c, ROOT, ['stop'])
 
+    def test_fresh_config_uses_two_encrypted_providers(self):
+        dns = adguard.initial_config(self.settings(), 'hash')['dns']
+        self.assertEqual(dns['upstream_dns'], ['https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'])
+        self.assertEqual(dns['fallback_dns'], [])
+        self.assertIn('9.9.9.9', dns['bootstrap_dns'])
+
+    def run_upstreams(self, info, tested=None):
+        calls = []
+        state = dict(info)
+        def api(root, path, body=None):
+            calls.append((path, body))
+            if path == 'dns_info':
+                return dict(state)
+            if path == 'test_upstream_dns':
+                return tested if tested is not None else {u: 'OK' for u in body['upstream_dns']+body['bootstrap_dns']}
+            state.update(body)
+            return {}
+        with patch.object(adguard, 'api', side_effect=api):
+            return adguard.upstreams(self.settings(), ROOT), calls, state
+
+    def test_upstreams_adds_missing_entries_and_preserves_existing(self):
+        code, calls, state = self.run_upstreams({
+            'upstream_dns': ['https://owner.example/dns-query', 'https://dns.cloudflare.com/dns-query'],
+            'bootstrap_dns': ['1.1.1.1', '1.0.0.1'], 'fallback_dns': [], 'ratelimit': 20})
+        self.assertEqual(code, 0)
+        self.assertEqual(state['upstream_dns'], ['https://owner.example/dns-query',
+                         'https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'])
+        self.assertEqual(state['bootstrap_dns'], ['1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112'])
+        self.assertEqual(state['ratelimit'], 20)
+        posted = [body for path, body in calls if path == 'dns_config']
+        self.assertEqual([set(body) for body in posted], [{'upstream_dns', 'bootstrap_dns'}])
+
+    def test_upstreams_is_idempotent(self):
+        code, calls, _ = self.run_upstreams({'upstream_dns': list(adguard.UPSTREAMS),
+                                             'bootstrap_dns': list(adguard.BOOTSTRAP)})
+        self.assertEqual(code, 0)
+        self.assertEqual([path for path, _ in calls], ['dns_info'])
+
+    def test_upstreams_changes_nothing_when_a_test_fails_or_plaintext_exists(self):
+        info = {'upstream_dns': ['https://dns.cloudflare.com/dns-query'], 'bootstrap_dns': ['1.1.1.1', '1.0.0.1']}
+        with self.assertRaisesRegex(ValueError, 'nothing changed'):
+            self.run_upstreams(info, tested={'https://dns.quad9.net/dns-query': 'timeout'})
+        with self.assertRaisesRegex(ValueError, 'plaintext'):
+            self.run_upstreams(dict(info, upstream_dns=['8.8.8.8']))
+
 
 if __name__ == '__main__':
     unittest.main()

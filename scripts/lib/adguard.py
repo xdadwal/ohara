@@ -14,6 +14,12 @@ import host
 import runtime
 
 
+# Encrypted upstreams from two independent providers, so one provider's outage
+# does not stop LAN DNS. Plain addresses only resolve those resolver hostnames.
+UPSTREAMS = ('https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query')
+BOOTSTRAP = ('1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112')
+
+
 def settings(c):
     try:
         address = ipaddress.IPv4Address(c['ADGUARD_BIND_IP'])
@@ -40,8 +46,8 @@ def initial_config(c, password_hash):
         'dns': {
             'bind_hosts': ['0.0.0.0'], 'port': 1053,
             'allowed_clients': [network],
-            'upstream_dns': ['https://dns.cloudflare.com/dns-query'],
-            'bootstrap_dns': ['1.1.1.1', '1.0.0.1'],
+            'upstream_dns': list(UPSTREAMS),
+            'bootstrap_dns': list(BOOTSTRAP),
             'fallback_dns': [], 'use_private_ptr_resolvers': False,
             'hostsfile_enabled': False,
         },
@@ -150,6 +156,59 @@ def prepare(c, root):
     created = config.create_file(target, json.dumps(initial_config(c, hashed), indent=2)+'\n')
     if created and os.geteuid() == 0:
         os.chown(target, uid, gid)
+
+
+def api(root, path, body=None):
+    token = base64.b64encode(('admin:'+password(root)).encode()).decode()
+    headers = {'Authorization': 'Basic '+token}
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode()
+        headers['Content-Type'] = 'application/json'
+    request = urllib.request.Request('http://127.0.0.1:3003/control/'+path, data=data, headers=headers)
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(request, timeout=30) as response:
+        raw = response.read()
+    return json.loads(raw) if raw.strip() else {}
+
+
+def merged(existing, reviewed):
+    """Existing entries in their order, then any reviewed entry still missing."""
+    existing = list(existing or [])
+    return existing+[item for item in reviewed if item not in existing]
+
+
+def upstreams(c, root):
+    """Add the reviewed upstream/bootstrap entries to a running resolver.
+
+    Uses the live API, so DNS is not restarted. Owner-added entries, fallback
+    settings, accounts, rewrites and filters are left as they are.
+    """
+    try:
+        info = api(root, 'dns_info')
+        wanted = {'upstream_dns': merged(info.get('upstream_dns'), UPSTREAMS),
+                  'bootstrap_dns': merged(info.get('bootstrap_dns'), BOOTSTRAP)}
+        if all(info.get(key) == value for key, value in wanted.items()):
+            print('AdGuard upstreams already include the reviewed providers; nothing changed.')
+            return 0
+        if not all(u.startswith(('https://', 'tls://', 'quic://', 'h3://', 'sdns://', '[/', '#'))
+                   for u in wanted['upstream_dns']):
+            raise ValueError('Existing AdGuard upstreams include a plaintext resolver; review them in the dashboard')
+        tested = api(root, 'test_upstream_dns', dict(wanted, fallback_dns=info.get('fallback_dns') or [],
+                                                     private_upstream=info.get('local_ptr_upstreams') or []))
+        failed = sorted(name for name, result in tested.items() if result != 'OK')
+        if failed:
+            raise ValueError('AdGuard upstream test failed for '+', '.join(failed)+'; nothing changed')
+        api(root, 'dns_config', wanted)
+        applied = api(root, 'dns_info')
+    except (OSError, urllib.error.URLError):
+        print('AdGuard authenticated API unavailable; inspect the service locally.')
+        return 1
+    if any(applied.get(key) != value for key, value in wanted.items()):
+        raise ValueError('AdGuard did not report the requested upstreams; review the dashboard')
+    print('AdGuard upstreams: '+', '.join(applied['upstream_dns']))
+    print('Verify UDP/TCP queries from a LAN device.')
+    return 0
 
 
 def status(c, root):
