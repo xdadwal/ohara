@@ -50,8 +50,28 @@ ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101
 Open `http://localhost:3003`, username **admin**, using the supplied password.
 Use the actual SSH username/address for another host.
 
-Initial settings use Cloudflare DNS over HTTPS, with 1.1.1.1/1.0.0.1 only for
-bootstrap name resolution and no plaintext fallback upstream. The AdGuard DNS
+Initial settings use two independent DNS-over-HTTPS providers, Cloudflare
+(`https://dns.cloudflare.com/dns-query`) and Quad9 (`https://dns.quad9.net/dns-query`),
+so one provider's outage does not stop LAN DNS. Both are free and need no account.
+Quad9's default endpoint also blocks known malicious domains. 1.1.1.1/1.0.0.1 and
+9.9.9.9/149.112.112.112 are used only for bootstrap resolution of those two
+hostnames; there is no plaintext fallback upstream.
+
+An existing installation keeps its own settings on `up`. To add the reviewed
+providers to a running resolver without restarting DNS:
+
+```sh
+scripts/adguard upstreams
+scripts/adguard status
+```
+
+The command reads the private ADGUARD_PASSWORD, uses the loopback API, tests the
+resulting list first and changes nothing if any entry fails or an existing
+upstream is plaintext. It only appends missing entries: owner-added upstreams,
+fallback settings, accounts, rewrites and filters are preserved, and a second run
+reports no change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP.
+To undo it, remove the entry under Settings → DNS settings → Upstream DNS servers
+in the dashboard. The AdGuard DNS
 filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.

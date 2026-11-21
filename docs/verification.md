@@ -944,3 +944,79 @@ Avahi shutdowns. The template was reinstalled over the hand-written file;
 `sshd -t` passed, SSH reloaded, `cmp` against the template is silent, and the
 password-only attempt is still refused. `tests/test_host_hardening.py` checks
 the template's two directives and the documented commands.
+
+### Bambuddy/OrcaSlicer 1.3.2 matched preparation (2026-11-21)
+
+Reason: on production 1.3.1 the Slice dialog showed "Failed to load presets.
+Open Settings → Profiles to import them first." and the Profiles cloud list
+failed. The container log showed `AttributeError: 'NoneType' object has no
+attribute 'get'` at `slicer_presets.py:187` and `cloud.py:609`. Bambu Cloud
+returns `null` for a preset type the signed-in account has none of (upstream
+#3593). Importing profiles does not help; the fix is the upstream release.
+The upstream Git tag is spelled `v.1.3.2`; the image tags are `1.3.2` and
+`bambuddy-1.3.2`.
+
+- Reviewed: 1.3.2 release notes (no breaking API changes; tables/columns added
+  automatically) and the v1.3.1...v.1.3.2 deployment diff. The root Compose file
+  is unchanged; the sidecar Compose change only adds an optional host bind
+  address, which this private bridge-only deployment does not publish.
+- Re-resolved `bambuddy:1.3.2` as a linux/amd64 and linux/arm64 OCI index and
+  `orca-slicer-api:bambuddy-1.3.2` as a linux/amd64 manifest.
+- Offline image inspection: the pinned Bambuddy image reports `APP_VERSION`
+  1.3.2 and normalises null preset types in `services/bambu_cloud.py`
+  (`_slicer_settings_listing`); the pinned sidecar reports OrcaSlicer 2.5.0.
+- Disposable: `python3 tests/smoke_bambuddy.py` and
+  `python3 tests/smoke_bambuddy_widget.py` passed against the new pin. No
+  account, printer, job or print was created; no model was sliced.
+- Static: `python3 -m unittest discover -s tests` (260 tests),
+  `tests/test_setup.sh`, `tests/test_cli.sh` and `tests/static.sh` passed.
+- Real host: **applied 2026-11-21** from merged master (PR #58), with no print
+  activity in the preceding hour of logs. Both services were stopped and the
+  whole `/ohara/bambuddy` state (118 files, including the sidecar's
+  `orcaslicer/` directory) was copied to the private, ignored
+  `local/bambuddy-backups/20261121-113842-pre-1.3.2/`; this same-host copy is
+  not an independent backup. No sudo was needed on this host because the
+  operator account already has Docker access:
+
+  ```bash
+  scripts/orcaslicer stop
+  scripts/bambuddy stop
+  cp -a /ohara/bambuddy/. local/bambuddy-backups/<timestamp>-pre-1.3.2/
+  scripts/bambuddy up
+  scripts/orcaslicer up
+  scripts/bambuddy status
+  scripts/orcaslicer status
+  ```
+
+  Result: both containers healthy on the 1.3.2 digests, owner setup and
+  authentication preserved, sidecar reports OrcaSlicer 2.5.0, public HTTPS
+  returns 200 and an unauthenticated printer API call returns 401. No startup
+  errors were logged.
+
+  Rollback: revert both pins to the 1.3.1 digests and rerun the two `up`
+  commands; restore the stopped-state copy only under explicit recovery scope.
+- Not verified: cloud preset loading with the owner's Bambu Cloud sign-in, a
+  representative slice, printer MQTT reconnection after the restart.
+
+### AdGuard second encrypted upstream (2026-11-21)
+
+Reason: on 2026-11-21 from 16:57 to 19:45 IST every request to the only upstream,
+Cloudflare DoH, timed out (about 2,900 failed lookups in the container log), so
+uncached LAN lookups hung for 10–30 seconds. The WAN stayed up and the container
+did not restart; it recovered without intervention. The cause of the Cloudflare
+path failure was not determined. With a single upstream and no fallback, any such
+failure stops LAN DNS, so the owner approved adding Quad9 (default filtered
+endpoint) as a second DoH upstream.
+
+- Unit: `python3 -m unittest discover -s tests` covers the two-provider fresh
+  config, append-only merging, idempotence, and refusal on a failed upstream
+  test or an existing plaintext upstream.
+- Real host: **applied** with `scripts/adguard upstreams` after copying the
+  existing configuration to the private, ignored
+  `local/adguard-AdGuardHome.yaml.20261121-pre-quad9`. No restart (same container
+  start time, zero restarts). The installed `AdGuardHome.yaml` lists both
+  upstreams and four bootstrap addresses; `fallback_dns`, the LAN allowlist and
+  rate limit are unchanged. UDP and TCP queries to the bind address answered in
+  7–15 ms, the local rewrite still resolves, and no errors were logged.
+- Not verified: behaviour during a real single-provider outage, and queries from
+  a separate LAN client.

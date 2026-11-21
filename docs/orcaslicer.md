@@ -1,7 +1,7 @@
 # Headless OrcaSlicer for Bambuddy
 
 Optional `ohara-orcaslicer` project, using the upstream sidecar matched to
-Bambuddy 1.3.1 (OrcaSlicer 2.5.0), pinned in `versions/orcaslicer.env`.
+Bambuddy 1.3.2 (OrcaSlicer 2.5.0), pinned in `versions/orcaslicer.env`.
 Native Linux x86-64 only. It has no desktop/web UI or account login. Bambuddy's
 existing authenticated UI supplies the slicing controls. No new hostname,
 Homepage card, AdGuard rewrite, proxy or public port is needed.
@@ -125,7 +125,7 @@ all data. Revert the pin and restart only the backend for an image rollback;
 restore state only under explicit recovery scope. Do not stop or recreate
 Bambuddy to install/remove this backend.
 
-Sources: [upstream sidecar](https://github.com/maziggy/bambuddy/tree/v1.3.1/slicer-api),
+Sources: [upstream sidecar](https://github.com/maziggy/bambuddy/tree/v.1.3.2/slicer-api),
 [slicing guide](https://wiki.bambuddy.cool/features/slicer-api/).
 
 ## Verified on the current host
