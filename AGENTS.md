@@ -170,7 +170,8 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   client roles before changing preferences; restrict tailnet network policy to
   the intended SSH users/devices and port. No public SSH port forward.
 - This host uses key-only SSH (configs/ssh/90-ohara-keys-only.conf) and has
-  Samba and Avahi disabled by owner decision; follow "Optional host hardening"
+  Samba disabled and Avahi masked by owner decision (a merely disabled Avahi is
+  restarted by cups-browsed); follow "Optional host hardening"
   in docs/agent-setup.md. Do not re-enable password login or those services,
   and never install the SSH policy elsewhere before every owner device has a
   verified key. There is no host firewall; keep new listeners on loopback.

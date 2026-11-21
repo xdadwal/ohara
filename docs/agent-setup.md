@@ -309,16 +309,28 @@ With no SMB sessions, shares or mounts in use, the owner approved:
 
 ```sh
 sudo systemctl disable --now smbd.service nmbd.service winbind.service
-sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service
+sudo systemctl mask --now avahi-daemon.socket avahi-daemon.service
 ```
 
-Disable Avahi's socket together with its service, otherwise socket activation
-restarts it. Verify that the units are `inactive` and `disabled` and that nothing
-listens on 137-139, 445 or UDP 5353; on this host the remaining non-loopback
-listeners are SSH 22, Nginx 80/443, AdGuard DNS on the LAN address and Tailscale.
+Mask Avahi rather than only disabling it, and include its socket. A disabled unit
+can still be started as a dependency: on this host `cups-browsed.service` lists
+`Wants=avahi-daemon.service`, so the nightly logrotate restart of CUPS brought a
+merely disabled Avahi back within a day. Check for such dependants with
+`systemctl list-dependencies --reverse avahi-daemon.service`. Masking stops
+`cups-browsed` from discovering network printers automatically; CUPS itself and
+manually added printers are unaffected.
+
+Verify that the Samba units are `inactive` and `disabled`, the Avahi units are
+`inactive` and `masked`, and that nothing listens on 137-139, 445 or UDP 5353.
+Recheck Avahi after `sudo systemctl restart cups-browsed.service` and again the
+next day. On this host the remaining non-loopback listeners are SSH 22, Nginx
+80/443, AdGuard DNS on the LAN address and Tailscale.
 Packages, `/etc/samba/smb.conf` and the `winbind` entries in `/etc/nsswitch.conf`
 are left in place. Do not disable these on a machine that shares files or
-printers. Roll back with `sudo systemctl enable --now` on the same units.
+printers, or that is reached as `HOSTNAME.local`. Roll back Samba with
+`sudo systemctl enable --now` on the same units, and Avahi with
+`sudo systemctl unmask avahi-daemon.socket avahi-daemon.service` followed by
+`sudo systemctl enable --now` on both.
 
 This does not add a host firewall; the owner relies on the router for Internet
 filtering, so any new listener is reachable from the LAN.
