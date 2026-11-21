@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['check', 'up', 'status', 'stop'])
+    parser.add_argument('command', choices=['check', 'up', 'status', 'upstreams', 'stop'])
     parser.add_argument('--allow-dns-outage', action='store_true',
                         help='only for an approved maintenance window with a verified fallback resolver')
     args = parser.parse_args()
@@ -28,6 +28,8 @@ def main():
         adguard.check(c, ROOT)
     elif args.command == 'stop':
         adguard.stop(c, ROOT, allow_dns_outage=args.allow_dns_outage)
+    elif args.command == 'upstreams':
+        return adguard.upstreams(c, ROOT)
     else:
         return adguard.status(c, ROOT)
     return 0

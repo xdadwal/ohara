@@ -847,3 +847,26 @@ The upstream Git tag is spelled `v.1.3.2`; the image tags are `1.3.2` and
   commands; restore the stopped-state copy only under explicit recovery scope.
 - Not verified: cloud preset loading with the owner's Bambu Cloud sign-in, a
   representative slice, printer MQTT reconnection after the restart.
+
+### AdGuard second encrypted upstream (2026-11-21)
+
+Reason: on 2026-11-21 from 16:57 to 19:45 IST every request to the only upstream,
+Cloudflare DoH, timed out (about 2,900 failed lookups in the container log), so
+uncached LAN lookups hung for 10–30 seconds. The WAN stayed up and the container
+did not restart; it recovered without intervention. The cause of the Cloudflare
+path failure was not determined. With a single upstream and no fallback, any such
+failure stops LAN DNS, so the owner approved adding Quad9 (default filtered
+endpoint) as a second DoH upstream.
+
+- Unit: `python3 -m unittest discover -s tests` covers the two-provider fresh
+  config, append-only merging, idempotence, and refusal on a failed upstream
+  test or an existing plaintext upstream.
+- Real host: **applied** with `scripts/adguard upstreams` after copying the
+  existing configuration to the private, ignored
+  `local/adguard-AdGuardHome.yaml.20261121-pre-quad9`. No restart (same container
+  start time, zero restarts). The installed `AdGuardHome.yaml` lists both
+  upstreams and four bootstrap addresses; `fallback_dns`, the LAN allowlist and
+  rate limit are unchanged. UDP and TCP queries to the bind address answered in
+  7–15 ms, the local rewrite still resolves, and no errors were logged.
+- Not verified: behaviour during a real single-provider outage, and queries from
+  a separate LAN client.
