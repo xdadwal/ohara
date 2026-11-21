@@ -820,19 +820,30 @@ The upstream Git tag is spelled `v.1.3.2`; the image tags are `1.3.2` and
   account, printer, job or print was created; no model was sliced.
 - Static: `python3 -m unittest discover -s tests` (260 tests),
   `tests/test_setup.sh`, `tests/test_cli.sh` and `tests/static.sh` passed.
-- Real host: **not applied.** Production still runs 1.3.1. With no print
-  running, take Bambuddy's in-app backup, then follow "Verification, upgrades
-  and recovery" in [orcaslicer.md](orcaslicer.md):
+- Real host: **applied 2026-11-21** from merged master (PR #58), with no print
+  activity in the preceding hour of logs. Both services were stopped and the
+  whole `/ohara/bambuddy` state (118 files, including the sidecar's
+  `orcaslicer/` directory) was copied to the private, ignored
+  `local/bambuddy-backups/20261121-113842-pre-1.3.2/`; this same-host copy is
+  not an independent backup. No sudo was needed on this host because the
+  operator account already has Docker access:
 
   ```bash
-  sudo scripts/orcaslicer stop      # then copy its state to a private backup
-  sudo scripts/bambuddy up
-  sudo scripts/orcaslicer up
+  scripts/orcaslicer stop
+  scripts/bambuddy stop
+  cp -a /ohara/bambuddy/. local/bambuddy-backups/<timestamp>-pre-1.3.2/
+  scripts/bambuddy up
+  scripts/orcaslicer up
   scripts/bambuddy status
   scripts/orcaslicer status
   ```
 
+  Result: both containers healthy on the 1.3.2 digests, owner setup and
+  authentication preserved, sidecar reports OrcaSlicer 2.5.0, public HTTPS
+  returns 200 and an unauthenticated printer API call returns 401. No startup
+  errors were logged.
+
   Rollback: revert both pins to the 1.3.1 digests and rerun the two `up`
-  commands; restore state only under explicit recovery scope.
+  commands; restore the stopped-state copy only under explicit recovery scope.
 - Not verified: cloud preset loading with the owner's Bambu Cloud sign-in, a
   representative slice, printer MQTT reconnection after the restart.
