@@ -794,3 +794,45 @@ server, and added the `$ohara_lan_allowed` guard ahead of the existing
   commands are run.
 - Not verified: a real LAN client, a real external client, and a remote request
   through Jellyfin Enhanced with the public route closed.
+
+### Bambuddy/OrcaSlicer 1.3.2 matched preparation (2026-11-21)
+
+Reason: on production 1.3.1 the Slice dialog showed "Failed to load presets.
+Open Settings → Profiles to import them first." and the Profiles cloud list
+failed. The container log showed `AttributeError: 'NoneType' object has no
+attribute 'get'` at `slicer_presets.py:187` and `cloud.py:609`. Bambu Cloud
+returns `null` for a preset type the signed-in account has none of (upstream
+#3593). Importing profiles does not help; the fix is the upstream release.
+The upstream Git tag is spelled `v.1.3.2`; the image tags are `1.3.2` and
+`bambuddy-1.3.2`.
+
+- Reviewed: 1.3.2 release notes (no breaking API changes; tables/columns added
+  automatically) and the v1.3.1...v.1.3.2 deployment diff. The root Compose file
+  is unchanged; the sidecar Compose change only adds an optional host bind
+  address, which this private bridge-only deployment does not publish.
+- Re-resolved `bambuddy:1.3.2` as a linux/amd64 and linux/arm64 OCI index and
+  `orca-slicer-api:bambuddy-1.3.2` as a linux/amd64 manifest.
+- Offline image inspection: the pinned Bambuddy image reports `APP_VERSION`
+  1.3.2 and normalises null preset types in `services/bambu_cloud.py`
+  (`_slicer_settings_listing`); the pinned sidecar reports OrcaSlicer 2.5.0.
+- Disposable: `python3 tests/smoke_bambuddy.py` and
+  `python3 tests/smoke_bambuddy_widget.py` passed against the new pin. No
+  account, printer, job or print was created; no model was sliced.
+- Static: `python3 -m unittest discover -s tests` (260 tests),
+  `tests/test_setup.sh`, `tests/test_cli.sh` and `tests/static.sh` passed.
+- Real host: **not applied.** Production still runs 1.3.1. With no print
+  running, take Bambuddy's in-app backup, then follow "Verification, upgrades
+  and recovery" in [orcaslicer.md](orcaslicer.md):
+
+  ```bash
+  sudo scripts/orcaslicer stop      # then copy its state to a private backup
+  sudo scripts/bambuddy up
+  sudo scripts/orcaslicer up
+  scripts/bambuddy status
+  scripts/orcaslicer status
+  ```
+
+  Rollback: revert both pins to the 1.3.1 digests and rerun the two `up`
+  commands; restore state only under explicit recovery scope.
+- Not verified: cloud preset loading with the owner's Bambu Cloud sign-in, a
+  representative slice, printer MQTT reconnection after the restart.
