@@ -21,7 +21,7 @@ class HostHardeningTests(unittest.TestCase):
         self.assertIn('sudo sshd -t && sudo systemctl reload ssh', guide)
         self.assertIn('sudo rm /etc/ssh/sshd_config.d/90-ohara-keys-only.conf && sudo systemctl reload ssh', guide)
         self.assertIn('sudo systemctl disable --now smbd.service nmbd.service winbind.service', guide)
-        self.assertIn('sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service', guide)
+        self.assertIn('sudo systemctl mask --now avahi-daemon.socket avahi-daemon.service', guide)
         agents = (ROOT/'AGENTS.md').read_text()
         self.assertIn('configs/ssh/90-ohara-keys-only.conf', agents)
         self.assertIn('Optional host hardening', agents)

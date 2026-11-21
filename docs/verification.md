@@ -912,7 +912,8 @@ sudo systemctl disable --now avahi-daemon.socket avahi-daemon.service
 ```
 
 Both units are inactive and disabled and nothing listens on UDP 5353. The package
-is left installed. Roll back with
+is left installed. This did not last: see "Avahi masked after it restarted itself
+(2026-11-22)" below for the current, masked state. Roll back with
 `sudo systemctl enable --now avahi-daemon.socket avahi-daemon.service`.
 Non-loopback listeners are now SSH 22, Nginx 80/443, AdGuard DNS on
 192.168.1.101:53 and Tailscale only.
@@ -1020,3 +1021,23 @@ endpoint) as a second DoH upstream.
   7–15 ms, the local rewrite still resolves, and no errors were logged.
 - Not verified: behaviour during a real single-provider outage, and queries from
   a separate LAN client.
+
+### Avahi masked after it restarted itself (2026-11-22)
+
+The 2026-11-19 record above no longer held: Avahi was `disabled` but had been
+active again since 2026-11-20 00:04 IST, listening on UDP 5353.
+`cups-browsed.service` has `Wants=avahi-daemon.service` and starts it as a
+dependency; the nightly logrotate restart of CUPS is the likely trigger. Nothing
+in Ohara or its Docker networks uses mDNS. The owner approved masking:
+
+```sh
+sudo systemctl mask --now avahi-daemon.socket avahi-daemon.service
+```
+
+- Real host: **applied.** Both units are `masked` and `inactive`, nothing listens
+  on UDP 5353, and Avahi stayed inactive after
+  `sudo systemctl restart cups-browsed.service`. CUPS, cups-browsed and SSH remain
+  active.
+- Not verified: the state after the next nightly logrotate run.
+- Rollback: `sudo systemctl unmask avahi-daemon.socket avahi-daemon.service`, then
+  `sudo systemctl enable --now` on both.
