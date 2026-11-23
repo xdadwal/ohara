@@ -1089,5 +1089,9 @@ backporting nine CVE fixes from upstream 1.30.7. The host ran `+deb13u10`.
 - Not verified: requests from outside the LAN.
 - Not changed: the 112 other pending package updates, and automatic security
   updates, which are not installed.
+- Future setups: `scripts/setup` now requires at least this release on Debian 13
+  (`NGINX_MINIMUM`, unit tested; the real installed package satisfies it per
+  `dpkg --compare-versions`). Not verified: a real fresh-machine setup run, and
+  Ubuntu 24.04, which has no recorded floor.
 - Rollback: reinstall `1.26.3-3+deb13u10` for both packages while the archive
   still offers it.

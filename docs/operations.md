@@ -12,7 +12,13 @@ input collection, user-managed credentials, and account setup boundaries.
 Support target: Ubuntu 24.04 LTS or Debian 13 with systemd, amd64/arm64. Bootstrap
 installs missing Docker Engine/Buildx/Compose from Docker's official apt repository
 and distribution Nginx/Certbot/bpytop. It preserves existing package versions and fails
-on conflicting Docker packages. No curl-to-shell installer, Samba, shell-profile
+on conflicting Docker packages. Host Nginx has a reviewed security floor in
+`scripts/lib/host.py` (`NGINX_MINIMUM`; Debian 13: `1.26.3-3+deb13u11`). A fresh
+install takes the distribution's current package; setup then stops if Nginx is
+older than the floor and prints the upgrade command, because it does not upgrade
+existing packages itself. It is a minimum, not an exact pin: superseded security
+packages leave the archive, and an exact pin would block the next fix. No floor is
+recorded for Ubuntu 24.04, whose patched version has not been reviewed. No curl-to-shell installer, Samba, shell-profile
 replacement, Wi-Fi configuration, resolver disabling, or bot cron installation.
 
 Run `bpytop` in a terminal or an interactive SSH session for host resource
@@ -308,7 +314,8 @@ and image references if an application upgraded its database schema. Do not prom
 that an old image can read a migrated database.
 
 Host Nginx and Certbot are distribution packages, not image pins, and this host
-has no automatic package updates. Check for a pending host Nginx security release
+has no automatic package updates. After applying a newer reviewed Nginx security
+release, raise `NGINX_MINIMUM` in the same change. Check for a pending host Nginx security release
 with `apt-cache policy nginx` and read it with `apt-get changelog nginx`. Apply it
 alone, keeping the installed configuration files:
 
