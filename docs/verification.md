@@ -1074,3 +1074,20 @@ the earlier "no plaintext upstream" choice for this host only.
   router/ISP incident, and queries from a separate LAN client.
 - Rollback: remove `ADGUARD_PRIMARY_DNS` from `.env` and rerun
   `scripts/adguard upstreams`.
+
+### Host Nginx security update (2026-11-23)
+
+Reason: Debian published `1.26.3-3+deb13u11` on 2026-11-18 (urgency high),
+backporting nine CVE fixes from upstream 1.30.7. The host ran `+deb13u10`.
+
+- Real host: **applied** at 19:45 IST with the command in
+  [operations.md](operations.md) ("Backups, upgrades, and recovery"). Only
+  `nginx` and `nginx-common` changed; configuration files were kept. `nginx -t`
+  passes, the unit is active with a master process started at 19:45:53, and
+  `https://xdadwal.in/` (200), the Homepage host (307 to login) and the music
+  host (302) answered from the server.
+- Not verified: requests from outside the LAN.
+- Not changed: the 112 other pending package updates, and automatic security
+  updates, which are not installed.
+- Rollback: reinstall `1.26.3-3+deb13u10` for both packages while the archive
+  still offers it.

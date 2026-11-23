@@ -307,6 +307,22 @@ Rollback may require restoring the previous data snapshot as well as configurati
 and image references if an application upgraded its database schema. Do not promise
 that an old image can read a migrated database.
 
+Host Nginx and Certbot are distribution packages, not image pins, and this host
+has no automatic package updates. Check for a pending host Nginx security release
+with `apt-cache policy nginx` and read it with `apt-get changelog nginx`. Apply it
+alone, keeping the installed configuration files:
+
+```bash
+sudo apt-get install --only-upgrade -o Dpkg::Options::=--force-confold nginx nginx-common
+sudo nginx -t
+```
+
+The package replaces the running binary itself. Verify the new version with
+`dpkg -l nginx nginx-common`, a fresh `ExecMainStartTimestamp` from
+`systemctl show nginx`, and a request to each public site. Rollback is
+`sudo apt-get install nginx=<previous> nginx-common=<previous>` while the previous
+version is still offered by the archive.
+
 ## Verification scope
 
 CI checks configuration, mocked provisioning behaviors, CLI failure paths, and
