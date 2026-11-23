@@ -50,28 +50,47 @@ ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101
 Open `http://localhost:3003`, username **admin**, using the supplied password.
 Use the actual SSH username/address for another host.
 
-Initial settings use two independent DNS-over-HTTPS providers, Cloudflare
-(`https://dns.cloudflare.com/dns-query`) and Quad9 (`https://dns.quad9.net/dns-query`),
-so one provider's outage does not stop LAN DNS. Both are free and need no account.
-Quad9's default endpoint also blocks known malicious domains. 1.1.1.1/1.0.0.1 and
-9.9.9.9/149.112.112.112 are used only for bootstrap resolution of those two
-hostnames; there is no plaintext fallback upstream.
+By default the only upstream is Cloudflare DNS over HTTPS
+(`https://dns.cloudflare.com/dns-query`), with 1.1.1.1/1.0.0.1 used only for
+bootstrap resolution of that hostname and no plaintext upstream.
 
-An existing installation keeps its own settings on `up`. To add the reviewed
-providers to a running resolver without restarting DNS:
+An owner may instead choose a plain resolver as primary, for example the ISP's,
+by setting its literal public IP in the private `.env`:
+
+```sh
+ADGUARD_PRIMARY_DNS=RESOLVER_IP
+```
+
+That address becomes the only entry in `upstream_dns`, and Cloudflare DoH moves
+to `fallback_dns`, which AdGuard uses only when the primary fails. Queries to the
+primary are unencrypted and visible to that provider and the network path; this
+is an explicit owner choice, never a default. Find the ISP's resolver on the
+router's WAN status page and test it from the target before choosing it:
+
+```sh
+dig +tries=1 +time=3 @RESOLVER_IP example.com A
+dig +dnssec @RESOLVER_IP cloudflare.com A     # expect the ad flag
+dig @RESOLVER_IP dnssec-failed.org A          # expect SERVFAIL
+```
+
+Never copy this host's resolver address to another network. A fresh setup writes
+the selected policy into the initial configuration. An existing installation
+keeps its own settings on `up`; apply the policy to a running resolver, without
+restarting DNS, with:
 
 ```sh
 scripts/adguard upstreams
 scripts/adguard status
 ```
 
-The command reads the private ADGUARD_PASSWORD, uses the loopback API, tests the
-resulting list first and changes nothing if any entry fails or an existing
-upstream is plaintext. It only appends missing entries: owner-added upstreams,
-fallback settings, accounts, rewrites and filters are preserved, and a second run
-reports no change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP.
-To undo it, remove the entry under Settings → DNS settings → Upstream DNS servers
-in the dashboard. The AdGuard DNS
+The command reads the private ADGUARD_PASSWORD, uses the loopback API and tests
+the resulting lists first, changing nothing if any entry fails. It sets
+`upstream_dns`, `fallback_dns` and `bootstrap_dns` exactly and prints what it
+replaced, so upstreams added by hand in the dashboard are removed; accounts,
+rewrites, filters and other DNS settings are preserved. A second run reports no
+change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP, a local
+rewrite, a blocked name and DNSSEC failure handling. To return to the default,
+remove ADGUARD_PRIMARY_DNS from `.env` and rerun the command. The AdGuard DNS
 filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.

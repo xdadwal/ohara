@@ -180,8 +180,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
   IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
   DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  Upstreams are Cloudflare and Quad9 DoH with no plaintext fallback; add them to an
-  existing resolver with scripts/adguard upstreams, never by stopping DNS.
+  Default upstream is Cloudflare DoH only. On this host the owner chose a plain
+  primary resolver through private ADGUARD_PRIMARY_DNS, with Cloudflare DoH as
+  fallback, and retired Quad9; never copy that address to another target. Apply
+  the policy with scripts/adguard upstreams, never by stopping DNS.
   Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
   use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
   UI/API LAN-only. Reuse existing private application keys, preserve its state,

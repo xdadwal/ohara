@@ -1041,3 +1041,36 @@ sudo systemctl mask --now avahi-daemon.socket avahi-daemon.service
 - Not verified: the state after the next nightly logrotate run.
 - Rollback: `sudo systemctl unmask avahi-daemon.socket avahi-daemon.service`, then
   `sudo systemctl enable --now` on both.
+
+### AdGuard owner-chosen primary resolver, Quad9 retired (2026-11-23)
+
+Reason: a second incident on 2026-11-23, 16:20-16:47 IST, timed out Cloudflare
+and Quad9 DoH together, so a second encrypted provider did not help. From the
+server, plain DNS to 9.9.9.9 was dropped from the start of that incident, and
+TCP and ICMP to Google's address ranges (including Google DoH) failed while other
+destinations and DNS answers were normal; the cause on the router/ISP path was
+not determined. The owner then chose the resolver 163.53.87.74 (`dns.anonet.in`)
+as primary, with Cloudflare DoH as secondary, and removed Quad9. This replaces
+the earlier "no plaintext upstream" choice for this host only.
+
+- Unit: `python3 -m unittest discover -s tests` (267 tests) covers the default
+  policy, address validation, exact application, idempotence and refusal on a
+  failed upstream test.
+- Real host: `ADGUARD_PRIMARY_DNS` was appended to the private `.env`, the
+  previous configuration copied to the ignored
+  `local/adguard-AdGuardHome.yaml.20261123-pre-primary`, and
+  `scripts/adguard upstreams` applied. No restart. Installed state:
+  `upstream_dns` is the primary only, `fallback_dns` is Cloudflare DoH, bootstrap
+  is 1.1.1.1/1.0.0.1; allowlist and DNSSEC unchanged. TCP queries, a local
+  rewrite, a blocked name (0.0.0.0) and `dnssec-failed.org` (SERVFAIL) behave as
+  before, and no errors were logged.
+- Measured from the server: the primary validates DNSSEC and returns honest
+  NXDOMAIN. Forty real names resolved 39/40 directly (average 69 ms, against
+  40/40 and 21 ms for 1.1.1.1) and 40/40 through AdGuard (72 ms). Random
+  uncached names timed out about 3% of the time at a 5 second client limit, both
+  directly and through AdGuard.
+- Not verified: fallback to Cloudflare during a real primary outage (AdGuard's
+  10 second upstream timeout applies first), behaviour during another
+  router/ISP incident, and queries from a separate LAN client.
+- Rollback: remove `ADGUARD_PRIMARY_DNS` from `.env` and rerun
+  `scripts/adguard upstreams`.
