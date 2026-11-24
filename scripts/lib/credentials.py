@@ -8,6 +8,12 @@ HOMEPAGE_KEYS = {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH
 WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY', 'HOMEPAGE_VAR_IMMICH_API_KEY', 'HOMEPAGE_VAR_BAMBUDDY_API_KEY'}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'} | {
     name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
+# Media logins already belong to the applications. Commands that only log in or
+# forward a value accept any nonempty one; the 16-character rule applies where
+# setup creates the account. These six are read only by setup and may be absent.
+SETUP_ONLY_KEYS = {name+'_PASSWORD' for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR', 'JELLYFIN')}
+MEDIA_PASSWORD_KEYS = SETUP_ONLY_KEYS | {'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'}
+NEW_ACCOUNT_MINIMUM = 16
 BAMBUDDY_OWNER_KEYS = {'BAMBUDDY_USERNAME', 'BAMBUDDY_PASSWORD'}
 KUTT_KEYS = {'KUTT_DB_PASSWORD','KUTT_JWT_SECRET','KUTT_PASSWORD'}
 NTFY_KEYS = {'NTFY_PASSWORD'}
@@ -94,9 +100,26 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
     return values
 
 
+def require_new_account(values, keys, purpose):
+    """Setup is about to create these logins: they must exist and be 16+ characters."""
+    for key in sorted(keys):
+        if key not in values:
+            raise ValueError(f'{purpose} needs {key} in .env; see docs/credentials.md')
+        if len(values[key]) < NEW_ACCOUNT_MINIMUM:
+            raise ValueError(f'{key}: {purpose} creates this login; supply at least {NEW_ACCOUNT_MINIMUM} characters')
+
+
+def require_present(values, keys, purpose):
+    missing = sorted(set(keys) - set(values))
+    if missing:
+        raise ValueError(f'{purpose} needs '+', '.join(missing)+' in .env; see docs/credentials.md')
+
+
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
-    values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS | BAMBUDDY_OWNER_KEYS)
+    values = read(root/'.env', HOMEPAGE_KEYS | (MEDIA_KEYS - SETUP_ONLY_KEYS), WIDGET_KEYS | DNS_KEYS | SETUP_ONLY_KEYS,
+                  config.KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS | BAMBUDDY_OWNER_KEYS,
+                  minimum_lengths={key: 1 for key in MEDIA_PASSWORD_KEYS})
     return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
             {k:v for k,v in values.items() if k in MEDIA_KEYS})
