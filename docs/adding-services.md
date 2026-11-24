@@ -44,6 +44,8 @@ For an authorized live addition, track these together:
   requested or part of the service integration. Use its authenticated API,
   preserve existing rewrites, update initial seeds if appropriate, and test UDP
   and TCP DNS. Public DNS and AdGuard local DNS are separate responsibilities.
+  On the xdadwal.in host the rewrite is an owner dashboard step on the external
+  AdGuard ([network.md](network.md)); give the exact name and address early.
 - Updated deployment baselines, operations/replication notes and an accurate
   account of what is live versus pending. Commit/push the feature work and
   update the existing PR for continuing work on that feature.

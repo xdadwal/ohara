@@ -180,15 +180,20 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
   IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
   DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  Default upstream is Cloudflare DoH only. On this host the owner chose a plain
-  primary resolver through private ADGUARD_PRIMARY_DNS, with Cloudflare DoH as
-  fallback, and retired Quad9; never copy that address to another target. Apply
-  the policy with scripts/adguard upstreams, never by stopping DNS.
-  Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision;
-  LAN DNS runs on the owner's separate OpenWrt device (private ADGUARD_EXTERNAL_IP),
-  which this repository does not manage. Do not restart the bundled project or
-  change that device without an owner decision; see docs/adguard.md and
-  docs/network.md for the topology, DNS path and OpenWrt configuration.
+  The bundled project's default upstream is Cloudflare DoH only; optional private
+  ADGUARD_PRIMARY_DNS selects an owner-chosen plain primary with Cloudflare DoH
+  as fallback (never copy an address to another target). Apply that policy with
+  scripts/adguard upstreams, never by stopping DNS.
+  Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision.
+  LAN DNS runs on the owner's separate OpenWrt device (private ADGUARD_EXTERNAL_IP):
+  AdGuard Home, then Unbound resolving recursively, with the owner's plain resolver
+  only as fallback; no Cloudflare or Quad9 in the path. This repository does not
+  manage that device. Rewrites, filters and upstreams are changed there, so the
+  service scripts' AdGuard rewrite steps, scripts/adguard upstreams and the
+  Homepage AdGuard widget do not apply on this host; the alert DNS probe and the
+  LAN route https://adguard.DOMAIN point at it. Do not restart the bundled project
+  or change that device without an owner decision. Read docs/network.md first for
+  the topology, DNS path, OpenWrt configuration and open items.
   Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
   use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
   UI/API LAN-only. Reuse existing private application keys, preserve its state,

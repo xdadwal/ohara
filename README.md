@@ -31,7 +31,7 @@ media settings on another machine, or to migrate private state safely.
 | Maintainerr (optional separate project) | Media maintenance; LAN-only administration | maintainerr.xdadwal.in; loopback 6246 |
 | Kutt (optional separate project) | Editable short links and QR display; dedicated PostgreSQL | kutt.DOMAIN; LAN-only owner onboarding before public activation |
 | ntfy (optional separate project) | Authenticated phone notifications and host alerts | ntfy.xdadwal.in; loopback 2586 |
-| AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
+| AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 (stopped on the xdadwal.in host, which uses a separate device) |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
@@ -105,7 +105,7 @@ certificate migration in [operations](docs/operations.md#godaddy-dns-validation-
 For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
 This host's network, DNS path and OpenWrt device are described in
 [network architecture](docs/network.md).
-It starts independently with `scripts/adguard up`; router/client DNS cutover is
+On another target it starts independently with `scripts/adguard up`; router/client DNS cutover is
 a separate verified step. Existing applications and public DNS are preserved.
 For AdGuard and media administration in a browser without SSH tunnels, see
 [LAN-only HTTPS service routes](docs/lan-services.md).

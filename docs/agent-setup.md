@@ -324,7 +324,7 @@ Verify that the Samba units are `inactive` and `disabled`, the Avahi units are
 `inactive` and `masked`, and that nothing listens on 137-139, 445 or UDP 5353.
 Recheck Avahi after `sudo systemctl restart cups-browsed.service` and again the
 next day. On this host the remaining non-loopback listeners are SSH 22, Nginx
-80/443, AdGuard DNS on the LAN address and Tailscale.
+80/443 and Tailscale (the bundled AdGuard's LAN port 53 was retired on 2026-11-24).
 Packages, `/etc/samba/smb.conf` and the `winbind` entries in `/etc/nsswitch.conf`
 are left in place. Do not disable these on a machine that shares files or
 printers, or that is reached as `HOSTNAME.local`. Roll back Samba with

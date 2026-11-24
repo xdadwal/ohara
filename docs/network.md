@@ -52,6 +52,13 @@ LAN device -> ISP router (192.168.1.1)
   with the owner.
 - The eighteen `*.xdadwal.in` rewrites to 192.168.1.101 for
   [LAN-only routes](lan-services.md) live in that AdGuard.
+- No third-party resolver answers lookups. Unbound has no forwarders and speaks
+  plain DNS to the root, TLD and authoritative servers, so the ISP can read the
+  names; `fallback_dns` (one plain resolver) is used only when Unbound fails, and
+  `bootstrap_dns` (1.1.1.1, 1.0.0.1) is unused because no upstream is a hostname.
+  AdGuard downloads its filter list from `adguardteam.github.io`.
+- The server's only direct queries to 192.168.1.105 are the alert probe for
+  `example.org` once a minute; its ordinary lookups go through the ISP router.
 - Because the ISP router forwards for every device, AdGuard sees one client
   (192.168.1.1) and has no per-device statistics.
 - The bundled AdGuard project on the server is stopped; see
@@ -69,7 +76,8 @@ Unchanged by the network move and described in [stack](stack.md),
 - Compose projects: `ohara` (eleven applications), `ohara-immich`, `ohara-kutt`,
   `ohara-ntfy`, `ohara-bambuddy`, `ohara-orcaslicer`, `ohara-maintainerr`, and the
   stopped `ohara-dns`.
-- Media lives on the mergerfs pool at `/ohara/mnt` over two USB drives; see
+- Media lives on the mergerfs pool at `/ohara/mnt` over an internal directory and
+  two USB drives; see
   [storage pool](storage-pool.md). The storage watchdog stops media applications
   and Homepage when a branch disappears.
 - Remote administration is ordinary SSH over the host Tailscale client; see

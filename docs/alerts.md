@@ -20,7 +20,8 @@ Inspect `scripts/status`, `docker ps`, `systemctl status tailscaled` and mounted
 storage first. For a media pool, configure and verify the target's real UUIDs
 using [storage setup](storage-pool.md), never example identities. The installer
 reads `/etc/ohara/storage-watchdog.json`, the running managed Compose inventory,
-configured `ADGUARD_BIND_IP`, and the ntfy/Seerr/Jellyfin hostnames. It does not
+configured `ADGUARD_BIND_IP` (or `ADGUARD_EXTERNAL_IP` when the bundled AdGuard is
+not running, as on this host), and the ntfy/Seerr/Jellyfin hostnames. It does not
 change Tailscale preferences, DNS settings, printer controls or watchdog recovery.
 
 ```sh

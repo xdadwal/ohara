@@ -1,5 +1,11 @@
 # AdGuard Home LAN DNS
 
+> **This host (xdadwal.in) since 2026-11-24:** the bundled project described
+> below is stopped. LAN DNS is an owner-run AdGuard Home with Unbound on a
+> separate OpenWrt device. Read ["This host"](#this-host-bundled-adguard-retired-for-an-external-one-2026-11-24)
+> and [network.md](network.md) before using any command on this page here. The
+> rest of this page remains the procedure for a fresh or other target.
+
 AdGuard is optional and runs in the separate `ohara-dns` Compose project defined
 by `compose/adguard.yaml`. Starting it does not restart the eleven application
 containers. Public DNS stays at GoDaddy and host Nginx continues serving HTTPS.
@@ -211,6 +217,20 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   `sudo scripts/lan-proxy --apply`. The hop from the server to that device is
   plain HTTP on the LAN. To roll back, restore `proxy_pass http://127.0.0.1:3003;`
   and apply again.
+- Resolution on that device is AdGuard to Unbound (recursive, DNSSEC-validating,
+  plain DNS to authoritative servers), with the owner's plain resolver as
+  `fallback_dns`. No Cloudflare or Quad9 resolver is in the path; the bundled
+  policy's `ADGUARD_PRIMARY_DNS` and `scripts/adguard upstreams` have no effect on
+  it. The ISP can see lookups; no resolver company does.
+- Commands that do not work on this host while the bundled project is stopped:
+  `scripts/adguard status` and `upstreams` (loopback API on 3003), and the
+  rewrite steps of `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and
+  `scripts/ntfy`, which call that same API. Add or change a rewrite in the
+  external dashboard (`https://adguard.DOMAIN`, Filters, DNS rewrites) and verify
+  with `dig NAME @192.168.1.1`. `ADGUARD_PASSWORD` in `.env` belongs to the
+  stopped bundled account, not to the external one.
 - Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
-  router's DNS back to `ADGUARD_BIND_IP`, then reinstall alerts.
+  router's DNS back to `ADGUARD_BIND_IP`, restore `proxy_pass http://127.0.0.1:3003;`
+  in the LAN route and apply it, then reinstall alerts. Rewrites or filters added
+  on the external device since the cutover must be copied back by hand.
 

@@ -184,7 +184,9 @@ Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
 `download` and `upload`, without expanded per-torrent progress rows. These native
 count blocks represent unfinished/completed torrents, including paused or queued
 ones; they are not strict counts of torrents currently transferring bytes. Rates
-are live sums. AdGuard shows only `blocked` and `latency`. Maintainerr retains
+are live sums. AdGuard shows only `blocked` and `latency`; on this host the
+installed card is a plain link without a widget since 2026-11-24, because DNS moved
+to an owner-run device whose login is not held here ([adguard.md](adguard.md)). Maintainerr retains
 handled items/reclaimable storage; the other enabled widgets are unchanged.
 
 Lifecycle commands map the existing RADARR_API_KEY, SONARR_API_KEY, LIDARR_API_KEY,

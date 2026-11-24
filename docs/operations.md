@@ -59,6 +59,9 @@ described there; stop its timer/worker before planned media-storage maintenance.
 Optional LAN DNS/filtering is managed separately; follow [AdGuard Home](adguard.md)
 for configuration, direct UDP/TCP tests, DHCP cutover and rollback. It does not
 change host/router/client DNS automatically and must never be publicly forwarded.
+On this host DNS, Wi-Fi bridging and the server's uplink run through the owner's
+OpenWrt device; see [network architecture](network.md) before diagnosing DNS or
+connectivity here.
 
 ## LAN-only administration
 
