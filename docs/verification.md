@@ -1146,3 +1146,25 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   own credential returned live statistics, and no failed login was logged
   afterwards. Not verified: the rendered tile, which is behind Homepage's login.
 
+### External AdGuard support in scripts, config-driven dashboard, OpenWrt script (2026-11-24)
+
+- Unit: 273 tests, including dashboard selection by `DNS_IP`, refusal of the
+  bundled-only commands, and the `SEERR_LAN_ONLY` flag with the stack and
+  template variables. `tests/test_setup.sh`, `tests/test_cli.sh` and
+  `tests/static.sh` pass.
+- Real host: `scripts/adguard status` reports the external AdGuard reachable and
+  running; `up` and `upstreams` refuse. The rewrite steps of the Bambuddy,
+  Maintainerr, ntfy and Kutt scripts each found their existing record on the
+  external AdGuard and wrote nothing. `SEERR_LAN_ONLY=true` was added to `.env`,
+  the two template lines merged into the installed `services.yaml` (previous
+  file in `local/homepage-services.yaml.20261124-pre-vars`), and `scripts/up`
+  recreated only Homepage; inside the container both variables hold the expected
+  values and its credential fetched live statistics. Not verified: the rendered
+  cards, which are behind Homepage's login.
+- OpenWrt device: `configs/openwrt/setup.sh` passes `sh -n` and the device's own
+  `ash -n`. Its usage error and both `network` input refusals left no pending
+  change. The `dns` and `harden` phases were run on the configured device and
+  changed nothing observable: both services running, key-only SSH still enforced,
+  lookups, filtering, a rewrite and DNSSEC failure handling as before. Not
+  verified: the `network` phase and a first-time `dns` run on a stock device.
+

@@ -173,7 +173,7 @@ def homepage(c, root):
 def dns(c, root):
     name = 'bambuddy.'+c['DOMAIN']
     address, _ = adguard.settings(c)
-    api = media.Client('http://127.0.0.1:3003')
+    api = media.Client(adguard.api_base(c))
     api.headers['Authorization'] = 'Basic '+base64.b64encode(('admin:'+adguard.password(root)).encode()).decode()
     matches = [r for r in api.call('/control/rewrite/list') if r['domain'] == name]
     if matches:

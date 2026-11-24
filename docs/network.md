@@ -89,103 +89,79 @@ Unchanged by the network move and described in [stack](stack.md),
 - Remote administration is ordinary SSH over the host Tailscale client; see
   [tailscale.md](tailscale.md).
 
-## OpenWrt device configuration
+## OpenWrt device setup
 
-Applied over SSH on 2026-11-24. Backups of the replaced files are on the device in
-`/root/backup-pre-ap/` and beside `/etc/adguardhome/adguardhome.yaml`
-(`.pre-migration`, `.pre-unbound`).
+The device is set up with `configs/openwrt/setup.sh`, which holds the commands
+first applied by hand on 2026-11-24. It runs on the device itself (BusyBox `ash`,
+apk-based OpenWrt 25.12 or later), is fed over SSH from the repository, and every
+phase can be repeated. It does not depend on a backup.
 
-Access point role (no routing, no address management):
+Prerequisites: OpenWrt already installed on the device (how this JioRouter AX6000
+was flashed is not recorded), a root password set in its UI, and a free LAN
+address outside the ISP router's DHCP range, reserved there.
 
-```sh
-uci set network.lan.proto='static'
-uci set network.lan.ipaddr='192.168.1.105'
-uci set network.lan.netmask='255.255.255.0'
-uci set network.lan.gateway='192.168.1.1'
-uci add_list network.lan.dns='192.168.1.1'
-uci set dhcp.lan.ignore='1'
-uci set dhcp.lan.dhcpv4='disabled'
-uci set dhcp.lan.dhcpv6='disabled'
-uci set dhcp.lan.ra='disabled'
-uci commit && /etc/init.d/network restart
-apk del dnsmasq odhcpd-ipv6only      # after AdGuard and Unbound were verified
-```
+1. **Network role.** A stock OpenWrt device uses 192.168.1.1 and runs DHCP, which
+   clash with the ISP router. Connect a computer to the device alone, with no
+   cable to the ISP router, and run:
 
-The ISP router cable is in lan1 and the WAN port is empty. The stock firewall
-package is loaded but filters nothing, because all traffic is bridged inside its
-`lan` zone.
+   ```bash
+   ssh root@192.168.1.1 'LAN_IP=192.168.1.105 GATEWAY=192.168.1.1 sh -s network' < configs/openwrt/setup.sh
+   ```
 
-DNS services:
+   It sets the static address, gateway and DNS, turns off DHCP, DHCPv6 and router
+   advertisements, and restarts the network; the session drops. Then cable the
+   ISP router to a **LAN** port of the device (WAN stays empty) and the server to
+   another LAN port.
+2. **DNS services.** From the server:
 
-```sh
-apk update && apk add adguardhome unbound-daemon unbound-control
-uci set unbound.ub_main.listen_port='5335'
-uci set unbound.ub_main.protocol='ip4_only'
-uci set unbound.ub_main.validator='1'
-uci set unbound.ub_main.query_minimize='1'
-uci set unbound.ub_main.add_local_fqdn='0'
-uci set unbound.ub_main.unbound_control='1'
-uci set unbound.ub_main.ttl_min='0'
-uci commit unbound
-/etc/init.d/unbound enable && /etc/init.d/unbound restart
-/etc/init.d/adguardhome enable && /etc/init.d/adguardhome start
-```
+   ```bash
+   ssh root@192.168.1.105 'sh -s dns' < configs/openwrt/setup.sh
+   ```
 
-The owner completed AdGuard's first-run wizard at port 3000 (DNS on port 53,
-dashboard kept on 3000 because the OpenWrt UI uses 80/443). Its
-`/etc/adguardhome/adguardhome.yaml` was then edited with the service stopped:
-`upstream_dns: [127.0.0.1:5335]`, `fallback_dns` set to the owner's resolver,
-`allowed_clients: [192.168.1.0/24]`, the rewrites copied from the bundled AdGuard,
-`querylog.interval: 1d`, and `hostsfile_enabled` and `use_private_ptr_resolvers`
-off. With dnsmasq removed, the device resolves its own names through
-`/tmp/resolv.conf -> /tmp/resolv.conf.d/resolv.conf.auto`, which
-`/etc/init.d/boot` recreates at start.
+   It installs `adguardhome`, `unbound-daemon` and `unbound-control`; configures
+   Unbound on port 5335 (IPv4 only, DNSSEC validation, query minimisation);
+   removes `dnsmasq` and `odhcpd` to free port 53; points the device's own
+   resolver at the ISP router; enables and starts both services; and checks that
+   Unbound resolves. A failed package download is transient: run it again.
+3. **Manual, in a browser** (owner-chosen secrets and values):
+   - AdGuard wizard at `http://192.168.1.105:3000`: admin interface on all
+     interfaces port 3000, DNS on 192.168.1.105 port 53, username `admin`, and a
+     password the owner chooses. Put that password in the server's private `.env`
+     as `ADGUARD_PASSWORD`.
+   - AdGuard, Settings, DNS settings: upstream `127.0.0.1:5335`; fallback the
+     owner's chosen plain resolver; allowed clients `192.168.1.0/24`; private
+     reverse resolvers off. General settings: query log retention 24 hours.
+   - AdGuard, Filters, DNS rewrites: the eighteen names listed under "DNS path",
+     each answering 192.168.1.101. The server's service scripts add their own
+     name when they run (`scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt`,
+     `scripts/ntfy`), because `DNS_IP` points them at this dashboard.
+   - OpenWrt UI, Network, Wireless: the same network name, WPA2 passphrase and
+     security mode as the ISP router on both radios, on different channels (11
+     and 40 here against the ISP router's 3 and 157).
+   - OpenWrt UI, System, Administration, SSH-Keys: add the server account's public
+     key and any owner device keys.
+   - ISP router UI: forward DNS to 192.168.1.105 and reserve that address.
+4. **Hardening**, only after a key login works:
 
-Wi-Fi, set by the owner in the OpenWrt UI: the same name, WPA2 passphrase and
-security mode as the ISP router so devices roam between the two, on different
-channels. The passphrase is not recorded anywhere in this repository.
+   ```bash
+   ssh root@192.168.1.105 'ZONENAME=Asia/Kolkata TIMEZONE=IST-5:30 sh -s harden' < configs/openwrt/setup.sh
+   ```
 
-Administration:
+   It refuses when no key is installed, turns off SSH password login and sets the
+   timezone. The OpenWrt UI keeps accepting the root password.
+5. **Server side:** set `DNS_IP=192.168.1.105` in `.env`, follow
+   [adguard.md](adguard.md) "This host" to stop the bundled AdGuard once the
+   router's queries have moved, then `sudo scripts/lan-proxy --apply`,
+   `sudo scripts/ntfy install-alerts` and `scripts/up`.
 
-```sh
-uci set dropbear.main.PasswordAuth='off'
-uci set dropbear.main.RootPasswordAuth='off'
-uci commit dropbear && /etc/init.d/dropbear restart
-uci set system.@system[0].zonename='Asia/Kolkata'
-uci set system.@system[0].timezone='IST-5:30'
-uci commit system && /etc/init.d/system reload
-```
+The script keeps the first copy of each file it changes in `/root/ohara-backup/`
+on the device. The stock firewall package stays loaded but filters nothing,
+because all traffic is bridged inside its `lan` zone.
 
-The only authorized SSH key is the server account's
-(`/etc/dropbear/authorized_keys`); further keys are added in the OpenWrt UI under
-System, Administration, SSH-Keys. The UI itself still accepts the root password.
-
-## Backup and rebuild of the OpenWrt device
-
-Nothing on the device is generated by this repository. Its whole configuration
-(network, wireless with the Wi-Fi passphrase, firewall, system, Unbound, the
-AdGuard configuration with its account hash and rewrites, and the authorized SSH
-key) is captured by OpenWrt's own backup, taken from the server into the ignored
-private directory:
-
-```bash
-ssh root@192.168.1.105 'sysupgrade -b -' > local/openwrt-backup-YYYYMMDD.tar.gz
-chmod 600 local/openwrt-backup-YYYYMMDD.tar.gz
-tar -tzf local/openwrt-backup-YYYYMMDD.tar.gz | grep -E 'adguardhome.yaml|config/wireless'
-```
-
-A copy was taken on 2026-11-24 after the configuration above. It contains
-secrets: never commit, print or upload it. It is only on the server's internal
-disk; an off-host copy is an open owner task. Take a new one after every change
-on the device.
-
-To rebuild on the same model with the same OpenWrt release: install the packages
-from "DNS services", restore with `sysupgrade -r /tmp/backup.tar.gz` (or System,
-Backup in the UI), reboot, and run the verification below. Not recorded anywhere:
-how OpenWrt was first installed on this JioRouter AX6000, the root and AdGuard
-passwords, and the ISP router's settings (DHCP range and reservations, the DNS
-forward to 192.168.1.105, the TCP 80/443 port forwards, its Wi-Fi), which exist
-only in that router's UI. The restore itself has not been tested.
+An OpenWrt configuration archive (`ssh root@192.168.1.105 'sysupgrade -b -'`) is
+an optional convenience, not part of this procedure. One taken on 2026-11-24 is
+in the ignored `local/` directory; it contains the Wi-Fi passphrase and account
+hashes, so never commit, print or upload it.
 
 ## Verification
 
@@ -210,11 +186,12 @@ between the two access points, and reachability from outside the LAN.
 
 ## Known limits and open items
 
-- The service scripts' AdGuard rewrite steps (`scripts/bambuddy`, `scripts/maintainerr`,
-  `scripts/kutt`, `scripts/ntfy`) and `scripts/adguard status` call the stopped
-  bundled API and fail on this host; rewrites are an owner dashboard step.
-- The installed Homepage `services.yaml` differs from the template by hand edits
-  (AdGuard widget URL, Seerr description); they are documented, not scripted.
+- Not replicable from this repository: the ISP router's settings, the first
+  OpenWrt installation on the device, and every password. The AdGuard settings in
+  step 3 of the setup are manual.
+- The `network` phase of `configs/openwrt/setup.sh` has not been run end to end on
+  a stock device; its validation, and the `dns` and `harden` phases, were run on
+  the configured device.
 - The OpenWrt device is a single point of failure for LAN DNS, its Wi-Fi and the
   server's Internet path. Its restart costs about one minute of outage.
 - The ISP router exposes telnet, SSH and UPnP on the LAN; disabling them is an
@@ -237,8 +214,9 @@ between the two access points, and reachability from outside the LAN.
 
 - DNS: on the server run `scripts/adguard up`, verify with `scripts/adguard
   status`, set the ISP router's DNS back to 192.168.1.101, then reinstall alerts.
-- OpenWrt as a router again: `apk add dnsmasq odhcpd-ipv6only`, restore
-  `/root/backup-pre-ap/network` and `dhcp` into `/etc/config/`, and restart the
+- OpenWrt as a router again: `apk add dnsmasq odhcpd-ipv6only`, restore the
+  original `network` and `dhcp` files (`/root/backup-pre-ap/` on this device,
+  `/root/ohara-backup/` after a scripted setup) into `/etc/config/`, and restart the
   network. Do this only with its LAN cable removed from the ISP router, because
   its stock address and DHCP server conflict with the ISP router's.
 - Cabling: the server can be plugged straight into the ISP router at any time; its

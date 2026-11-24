@@ -153,6 +153,19 @@ class AdguardTests(unittest.TestCase):
         posted = [body for path, body in calls if path == 'dns_config']
         self.assertEqual([set(body) for body in posted], [{'upstream_dns', 'fallback_dns', 'bootstrap_dns'}])
 
+    def test_external_resolver_selects_its_dashboard_and_blocks_bundled_changes(self):
+        c = self.settings()
+        self.assertEqual(adguard.api_base(c), 'http://127.0.0.1:3003')
+        adguard.require_bundled(c, 'up')
+        c['DNS_IP'] = '192.168.1.105'
+        self.assertEqual(adguard.api_base(c), 'http://192.168.1.105:3000')
+        for action in ('up', 'upstreams'):
+            with self.assertRaisesRegex(ValueError, 'DNS_IP is set'):
+                adguard.require_bundled(c, action)
+        with patch.object(adguard, 'api') as api, self.assertRaisesRegex(ValueError, 'DNS_IP is set'):
+            adguard.upstreams(c, ROOT)
+        api.assert_not_called()
+
     def test_upstreams_is_idempotent(self):
         code, calls, _ = self.run_upstreams({'upstream_dns': ['https://dns.cloudflare.com/dns-query'],
                                              'bootstrap_dns': ['1.1.1.1', '1.0.0.1'], 'fallback_dns': None})

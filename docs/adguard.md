@@ -181,20 +181,20 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   LAN IPv4 of another device). It is used only by the alert DNS probe while the
   bundled project is not running; reinstall alerts afterwards with
   `sudo scripts/ntfy install-alerts`, which also drops the bundled container and
-  dashboard checks.
+  dashboard checks. The device itself is set up with `configs/openwrt/setup.sh`;
+  see [network.md](network.md).
 - Settings were copied once by editing the other AdGuard's configuration while it
   was stopped: rewrites, client allowlist, query-log retention and the
   private-PTR/hosts-file switches. Blocklists and rules already matched. Query
   history was not moved. Later changes must be made on that device.
-- Homepage: the installed `DATA_ROOT/homepage/services.yaml` tile keeps its
-  `https://adguard.DOMAIN` link, and its widget reads the external dashboard:
-  `url: http://192.168.1.105:3000`, `username: admin`, the existing
-  `{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}` alias and the `blocked`/`latency` fields.
-  The owner replaced `ADGUARD_PASSWORD` in private `.env` with that device's
-  login; `scripts/up` then recreated only Homepage. Test a changed password once
-  before reloading Homepage: the device blocks an address for 15 minutes after
-  five failed logins, and the server's address is also the one its LAN route
-  uses. The repository template still describes the bundled project.
+- Homepage: the widget URL is the variable `HOMEPAGE_VAR_ADGUARD_URL`, which
+  `compose/stack.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
+  the bundled `http://adguard:3000` otherwise; the template and the installed
+  `DATA_ROOT/homepage/services.yaml` both use it. `scripts/up` recreates only
+  Homepage after a change. Test a changed `ADGUARD_PASSWORD` once with
+  `scripts/adguard status` before reloading Homepage: the device blocks an
+  address for 15 minutes after five failed logins, and the server's address is
+  also the one its LAN route uses.
 - LAN route: `configs/nginx/deployed/ohara-lan.conf` proxies
   `https://adguard.DOMAIN` to `http://192.168.1.105:3000`, keeping the wildcard
   certificate and the LAN-only source rule. Apply with
@@ -205,17 +205,18 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   plain DNS to authoritative servers), with the owner's plain resolver as
   `fallback_dns`. No Cloudflare or Quad9 resolver is in the path, and
   `scripts/adguard upstreams` has no effect on it. The ISP can see lookups; no resolver company does.
-- Commands that do not work on this host while the bundled project is stopped:
-  `scripts/adguard status` and `upstreams` (loopback API on 3003), and the
-  rewrite steps of `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and
-  `scripts/ntfy`, which call that same API. Add or change a rewrite in the
-  external dashboard (`https://adguard.DOMAIN`, Filters, DNS rewrites) and verify
-  with `dig NAME @192.168.1.1`. `ADGUARD_PASSWORD` in `.env` is now the external
-  device's login, used only by the Homepage widget; the bundled account's
-  previous value is in the ignored `local/env.20261124-pre-key-cleanup`.
+- With `DNS_IP` set, `scripts/adguard status` and the rewrite steps of
+  `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and `scripts/ntfy` use
+  the external dashboard (`http://DNS_IP:3000`) with username `admin` and
+  `ADGUARD_PASSWORD`, which is now that device's login. `scripts/adguard up` and
+  `upstreams` refuse to run, because they would restart the bundled project or
+  replace the Unbound upstream with the bundled policy. Other rewrites and
+  filters are changed in the dashboard; verify with `dig NAME @192.168.1.1`. The
+  bundled account's previous password is in the ignored
+  `local/env.20261124-pre-key-cleanup`.
 - Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
   router's DNS back to `ADGUARD_BIND_IP`, restore `proxy_pass http://127.0.0.1:3003;`
-  in the LAN route and apply it, set `ADGUARD_PASSWORD` and the widget `url`
-  (`http://adguard:3000`) back, then reinstall alerts. Rewrites or filters added
+  in the LAN route and apply it, remove `DNS_IP` and set `ADGUARD_PASSWORD` back,
+  run `scripts/up`, then reinstall alerts. Rewrites or filters added
   on the external device since the cutover must be copied back by hand.
 

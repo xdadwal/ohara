@@ -186,11 +186,12 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   LAN DNS runs on the owner's separate OpenWrt device (DNS_IP in private .env):
   AdGuard Home, then Unbound resolving recursively, with the owner's plain resolver
   only as fallback; no Cloudflare or Quad9 in the path. This repository does not
-  manage that device. Rewrites, filters and upstreams are changed there, so the
-  service scripts' AdGuard rewrite steps and scripts/adguard upstreams do not
-  apply on this host; the alert DNS probe, the LAN route https://adguard.DOMAIN
-  and the installed Homepage widget (ADGUARD_PASSWORD is now that device's
-  login) point at it. Do not restart the bundled project
+  manage that device beyond configs/openwrt/setup.sh, which reproduces its
+  network role and the AdGuard/Unbound installation; its accounts, Wi-Fi and
+  AdGuard settings stay manual. With DNS_IP set, scripts/adguard status, the
+  service scripts' rewrite steps, the alert DNS probe and the Homepage widget use
+  that device (ADGUARD_PASSWORD is its login), the LAN route https://adguard.DOMAIN
+  proxies to it, and scripts/adguard up/upstreams refuse to run. Do not restart the bundled project
   or change that device without an owner decision. Read docs/network.md first for
   the topology, DNS path, OpenWrt configuration and open items.
   Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;

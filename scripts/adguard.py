@@ -21,6 +21,7 @@ def main():
     c = config.load(ROOT/'.env')
     adguard.settings(c)
     if args.command == 'up':
+        adguard.require_bundled(c, 'up')
         adguard.prepare(c, ROOT)
         adguard.compose(c, ROOT, ['up', '-d'], timeout=300)
         print('AdGuard started; run scripts/adguard status before configuring any clients.')

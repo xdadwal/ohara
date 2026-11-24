@@ -20,8 +20,8 @@ ADGUARD_BIND_IP (192.168.1.101 here). Existing installations retain their settin
 setup does not overwrite or automatically reconcile existing records. Preserve existing
 rewrites, especially records the operator added; do not replace the entire list or
 use a wildcard. On this host the records live in the owner's external AdGuard
-([network.md](network.md)); add new ones in its dashboard, because the service
-scripts' rewrite steps target the stopped bundled one. Only clients querying AdGuard receive these local records. A
+([network.md](network.md)); the service scripts' rewrite steps reach it through
+`DNS_IP`, and other names are added in its dashboard. Only clients querying AdGuard receive these local records. A
 rewrite is not a web route or access control; Nginx enforces the latter separately.
 
 The reviewed host-specific configuration is
