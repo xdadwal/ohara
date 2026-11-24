@@ -7,6 +7,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent/'lib'))
 import config
 import media
+import media_passwords
 import media_profile
 import media_quality
 
@@ -19,14 +20,23 @@ def main():
     parser.add_argument('--profile-only', action='store_true', help='apply a profile to existing accounts; skip owner/login initialization')
     parser.add_argument('--storage-only', action='store_true', help='apply download paths, hardlinks and recycle policy to existing accounts without owner initialization')
     parser.add_argument('--quality-only', action='store_true', help='apply the bounded HD-1080p policy without owner initialization or searching')
+    parser.add_argument('--verify-logins', action='store_true', help='check that Radarr/Sonarr/Prowlarr/Lidarr/Bazarr/qBittorrent accept the .env passwords; changes nothing')
+    parser.add_argument('--rotate-passwords', action='store_true', help='apply owner-edited .env passwords to those services through their APIs')
+    parser.add_argument('--previous-env', type=Path, help='private copy of .env from before the edit; needed when the qBittorrent password changes')
     args = parser.parse_args()
+    login_mode = args.verify_logins or args.rotate_passwords
+    if args.previous_env and not args.rotate_passwords:
+        parser.error('--previous-env requires --rotate-passwords')
+    if login_mode and (args.verify_logins and args.rotate_passwords or args.quality_only or args.storage_only
+                       or args.profile or args.profile_only or args.owner_email):
+        parser.error('--verify-logins and --rotate-passwords cannot be combined with other setup options')
     if args.quality_only and (args.storage_only or args.profile or args.profile_only or args.owner_email):
         parser.error('--quality-only cannot be combined with other setup options')
     if args.profile_only and not args.profile:
         parser.error('--profile-only requires --profile')
     if args.storage_only and (args.profile or args.profile_only or args.owner_email):
         parser.error('--storage-only cannot be combined with owner/profile options')
-    if not args.profile_only and not args.storage_only and not args.quality_only and not args.owner_email:
+    if not login_mode and not args.profile_only and not args.storage_only and not args.quality_only and not args.owner_email:
         parser.error('--owner-email is required unless --profile-only, --storage-only or --quality-only is used')
     c = config.load(ROOT/'.env')
     if (ROOT/'local').is_symlink() or not (ROOT/'local').is_dir():
@@ -39,7 +49,12 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise RuntimeError('Another media setup is running') from None
-        if args.quality_only:
+        if args.verify_logins:
+            if media_passwords.verify(ROOT):
+                raise ValueError('Some services reject their .env password; see docs/credentials.md')
+        elif args.rotate_passwords:
+            media_passwords.rotate(ROOT, args.previous_env)
+        elif args.quality_only:
             media_quality.apply(ROOT)
         elif args.storage_only:
             media.configure_storage(ROOT)

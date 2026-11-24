@@ -76,7 +76,9 @@ No subtitle language, provider or provider account is assumed.
 
 A private journal (`local/media-state.json`) records completed account setup.
 Reruns preserve configured accounts, existing connections and library choices;
-missing named connections are added. Do not remove the journal to rotate passwords.
+missing named connections are added. Do not remove the journal to rotate passwords;
+change Arr/Bazarr/qBittorrent passwords with the workflow in
+[credentials.md](credentials.md#change-radarr-sonarr-prowlarr-lidarr-bazarr-and-qbittorrent-passwords).
 If existing credentials differ or a default profile is unavailable, the command
 stops for manual review. It is for first-run setup, not importing an old stack.
 Back up and migrate existing databases deliberately before running it. An API

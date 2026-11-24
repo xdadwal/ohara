@@ -105,6 +105,52 @@ and widget inputs take effect when its container is recreated with `scripts/up`.
 Do not delete databases or `local/media-state.json` to reset an account. Missing
 values must be restored/provided privately; setup never generates replacements.
 
+### Change Radarr, Sonarr, Prowlarr, Lidarr, Bazarr and qBittorrent passwords
+
+The owner chooses the new values; commands never generate or print them. All six
+log in as `admin`. Nothing else uses the five Arr/Bazarr passwords (connections
+and Homepage use API keys). Radarr, Sonarr and Lidarr keep their own copy of the
+qBittorrent password in their qBittorrent download client, and Homepage's torrent
+widget receives it, so the command updates those clients and `scripts/up` refreshes
+Homepage. The services must be running; their API keys are unchanged.
+
+```sh
+cd /path/to/ohara
+scripts/media-setup --verify-logins          # every service must report "login ok"
+install -m 600 .env local/env-before-password-change   # needed only for qBittorrent
+# Edit .env privately: change any of RADARR_PASSWORD, SONARR_PASSWORD,
+# PROWLARR_PASSWORD, LIDARR_PASSWORD, BAZARR_PASSWORD, QBITTORRENT_PASSWORD.
+# Add MEDIA_ALLOW_SHORT_PASSWORD=true only if one is shorter than 16 characters.
+scripts/check
+scripts/media-setup --rotate-passwords --previous-env local/env-before-password-change
+scripts/media-setup --verify-logins
+scripts/up                                   # Homepage gets the new qBittorrent password
+shred -u local/env-before-password-change    # it still holds every other current secret
+```
+
+`--rotate-passwords` skips a service that already accepts its `.env` value, so an
+interrupted run can be repeated. Each Arr app changes through `config/host` with its
+API key, Bazarr through `/api/system/settings` (it stores the MD5 itself), and
+qBittorrent through `setPreferences` after logging in with the value from
+`--previous-env`; that option is required only when the qBittorrent value changed.
+Every change is confirmed by a fresh login before the next service, and each
+qBittorrent download client is tested before it is saved. Afterwards, check the
+Homepage qBittorrent widget and one Arr **Activity → Queue** page.
+
+Rollback uses the same command in reverse: copy the edited `.env` to a second
+private file, restore `local/env-before-password-change` as `.env` (mode 0600), and
+run `--rotate-passwords --previous-env` with the second file, then `scripts/up`.
+
+### Shorter Arr, Bazarr and qBittorrent passwords
+
+Media passwords need 16 characters by default. Private
+`MEDIA_ALLOW_SHORT_PASSWORD=true` is an explicit owner exception that accepts any
+nonempty `RADARR_PASSWORD`, `SONARR_PASSWORD`, `PROWLARR_PASSWORD`,
+`LIDARR_PASSWORD`, `BAZARR_PASSWORD` and `QBITTORRENT_PASSWORD`. Jellyfin and
+Navidrome passwords, API keys, Homepage inputs and secrets keep their rules. These
+services stay loopback/LAN-only; never relax this for a publicly reachable login.
+The owner of the xdadwal.in host approved this exception on 2026-11-25.
+
 Keep `.env`, essential `local/`, application state and TLS material in encrypted
 backups. Retired Copyparty/Pi-hole inputs are not consumed and may be archived
 separately. Optional GoDaddy DNS API activation still uses the documented private
