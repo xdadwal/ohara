@@ -50,7 +50,12 @@ ports or Docker socket are needed.
 
 Jellyfin shows movie/series/episode counts and Now Playing, with usernames and
 playback controls hidden. Its version 2 widget matches the pinned Jellyfin 12.4.
-Seerr shows pending requests, processing requests and issues. Everyone with access
+Seerr shows pending requests, processing requests and issues. Its widget uses the
+internal `http://seerr:5055` URL, so it is unaffected by where the site is
+reachable. On this host the Seerr site is LAN-only (2026-11-18), and since
+2026-11-24 the installed card's description ends with "(local network)" like the
+other LAN-only cards; the template keeps the plain description for targets
+where Seerr is public. Everyone with access
 to the dashboard can see these widgets' information.
 
 ## Clock and weather
