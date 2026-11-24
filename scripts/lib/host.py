@@ -80,7 +80,11 @@ def ensure_directory(path, uid, gid, mode=0o750):
 
 
 def prepare_storage(c, root):
-    credential_files.load(root)
+    _, media_values = credential_files.load(root)
+    bazarr = Path(c['DATA_ROOT'])/'bazarr/config'
+    if not (bazarr/'config.yaml').exists() and not (bazarr/'config.ini').exists():
+        # Check before creating anything: a fresh Bazarr is seeded with this login.
+        credential_files.require(media_values, {'BAZARR_PASSWORD'}, 'First Bazarr setup')
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'

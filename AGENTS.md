@@ -91,7 +91,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   docs/credentials.md (`scripts/media-setup --rotate-passwords`); the owner edits
   .env. MEDIA_ALLOW_SHORT_PASSWORD (six LAN-only logins) and the separate
   NAVIDROME_ALLOW_SHORT_PASSWORD (public login) are owner-approved exceptions;
-  never extend them to Jellyfin, keys or secrets.
+  never extend them to Jellyfin, keys or secrets. Jellyfin and the five Arr/Bazarr
+  login passwords are setup-only and may be absent from .env (owner removed them on
+  this host); never ask to restore them except for a command that names one.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.

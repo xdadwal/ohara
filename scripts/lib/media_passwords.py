@@ -85,6 +85,9 @@ def verify(root, urls=None, out=print):
     urls = urls or default_urls()
     failed = []
     for name in ROTATABLE:
+        if name.upper()+'_PASSWORD' not in values:
+            out(f'{name}: not in .env (setup-only); skipped')
+            continue
         ok = login_ok(name, urls[name], values[name.upper()+'_PASSWORD'])
         out(f'{name}: {"login ok" if ok else "LOGIN REJECTED"}')
         if not ok:
@@ -104,6 +107,9 @@ def rotate(root, previous, urls=None, out=print):
     _, values = credential_files.load(root)
     urls = urls or default_urls()
     for name, (version, _) in ARR.items():
+        if name.upper()+'_PASSWORD' not in values:
+            out(f'{name}: not in .env (setup-only); unchanged')
+            continue
         new = values[name.upper()+'_PASSWORD']
         if login_ok(name, urls[name], new):
             out(f'{name}: already uses the .env password')
@@ -116,8 +122,10 @@ def rotate(root, previous, urls=None, out=print):
             raise RuntimeError(f'{name}: password update was not accepted; check its UI')
         out(f'{name}: password changed and login verified')
 
-    new = values['BAZARR_PASSWORD']
-    if login_ok('bazarr', urls['bazarr'], new):
+    new = values.get('BAZARR_PASSWORD')
+    if new is None:
+        out('bazarr: not in .env (setup-only); unchanged')
+    elif login_ok('bazarr', urls['bazarr'], new):
         out('bazarr: already uses the .env password')
     else:
         bazarr = Client(urls['bazarr'])

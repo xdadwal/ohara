@@ -18,17 +18,29 @@ Edit `.env` privately. Fill deployment settings and uncomment/fill the required
 credential entries copied from `.env.example` into `.env`; the example contains
 no working credential defaults.
 
-| Service | Required keys |
-|---|---|
-| Homepage | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
-| Jellyfin | `JELLYFIN_PASSWORD` |
-| qBittorrent | `QBITTORRENT_PASSWORD` |
-| Radarr | `RADARR_PASSWORD`, `RADARR_API_KEY` |
-| Sonarr | `SONARR_PASSWORD`, `SONARR_API_KEY` |
-| Prowlarr | `PROWLARR_PASSWORD`, `PROWLARR_API_KEY` |
-| Lidarr | `LIDARR_PASSWORD`, `LIDARR_API_KEY` |
-| Bazarr | `BAZARR_PASSWORD`, `BAZARR_API_KEY` |
-| Navidrome | `NAVIDROME_PASSWORD` |
+| Service | Always required | Setup-only |
+|---|---|---|
+| Homepage | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` | |
+| Jellyfin | | `JELLYFIN_PASSWORD` |
+| qBittorrent | `QBITTORRENT_PASSWORD` | |
+| Radarr | `RADARR_API_KEY` | `RADARR_PASSWORD` |
+| Sonarr | `SONARR_API_KEY` | `SONARR_PASSWORD` |
+| Prowlarr | `PROWLARR_API_KEY` | `PROWLARR_PASSWORD` |
+| Lidarr | `LIDARR_API_KEY` | `LIDARR_PASSWORD` |
+| Bazarr | `BAZARR_API_KEY` | `BAZARR_PASSWORD` |
+| Navidrome | `NAVIDROME_PASSWORD` | |
+
+A fresh installation needs every key in both columns. Setup-only passwords are read
+only when `scripts/setup` seeds a new Bazarr configuration, when owner media setup
+(`scripts/media-setup --owner-email`) signs in to Jellyfin/Seerr or sets an Arr login
+for the first time, and by `--verify-logins`/`--rotate-passwords`. After setup the
+owner may delete them from `.env` and keep them in a password manager; the services
+keep their own accounts. A command that needs a missing one stops before changing
+anything and names it; add it back privately for that run. The always-required
+values are used at run time: qBittorrent's by the Homepage widget and storage
+policy, Navidrome's for the derived widget token, Homepage's for its login. The
+xdadwal.in owner removed the setup-only passwords on 2026-11-25 and keeps all
+passwords in a password manager.
 
 Homepage passwords require at least 8 characters, media passwords 16, and the
 Homepage session secret 32. Acquisition API keys must be 32 hexadecimal characters.
@@ -131,7 +143,9 @@ shred -u local/env-before-password-change    # it still holds every other curren
 ```
 
 `--rotate-passwords` skips a service that already accepts its `.env` value, so an
-interrupted run can be repeated. Each Arr app changes through `config/host` with its
+interrupted run can be repeated. Services whose setup-only password is absent from
+`.env` are skipped and left unchanged; to change one, add its new value to `.env`
+for that run (these five change through API keys, so their old value is not needed). Each Arr app changes through `config/host` with its
 API key, Bazarr through `/api/system/settings` (it stores the MD5 itself), and
 qBittorrent through `setPreferences` after logging in with the value from
 `--previous-env`, and Navidrome through `PUT /api/user/{id}` with that previous

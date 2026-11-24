@@ -168,6 +168,10 @@ def connect(c, root, email, urls=None):
         finally:
             if os.path.exists(name_tmp):
                 os.unlink(name_tmp)
+    # Owner setup signs in to Jellyfin and Seerr; Arr logins are set only once.
+    credential_files.require(values, {'JELLYFIN_PASSWORD'} |
+                             {name.upper()+'_PASSWORD' for name in PORTS if not state.get(name+'-auth')},
+                             'Owner media setup')
     arr = {name: Client(urls[name], values[name.upper()+'_API_KEY']) for name in PORTS}
     for name, client in arr.items():
         version = '/api/v1' if name in ('prowlarr', 'lidarr') else '/api/v3'

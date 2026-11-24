@@ -80,6 +80,56 @@ class ShortPasswordOptionTests(unittest.TestCase):
                 (root/'.env').write_text(original)
 
 
+class SetupOnlyPasswordTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name).resolve()
+        credential_fixtures.write(self.root)
+        path = self.root/'.env'
+        path.write_text('\n'.join(line for line in path.read_text().splitlines()
+                                  if line.partition('=')[0] not in credentials.SETUP_ONLY_KEYS)+'\n')
+
+    def test_runtime_commands_load_without_setup_only_passwords(self):
+        _, values = credentials.load(self.root)
+        self.assertFalse(credentials.SETUP_ONLY_KEYS & set(values))
+        self.assertIn('QBITTORRENT_PASSWORD', values)
+        self.assertIn('NAVIDROME_PASSWORD', values)
+
+    def test_runtime_passwords_stay_required(self):
+        for key in ('QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD', 'HOMEPAGE_AUTH_PASSWORD'):
+            path = self.root/'.env'
+            original = path.read_text()
+            path.write_text('\n'.join(l for l in original.splitlines() if not l.startswith(key+'='))+'\n')
+            with self.assertRaisesRegex(ValueError, key):
+                credentials.load(self.root)
+            path.write_text(original)
+
+    def test_fresh_bazarr_needs_its_password_before_storage_changes(self):
+        import shutil
+        import config
+        import host
+        shutil.copytree(ROOT/'configs', self.root/'configs')
+        c = config.load(ROOT/'.env.example')
+        c.update(DATA_ROOT=str(self.root/'data'), MEDIA_ROOT=str(self.root/'media'))
+        with self.assertRaisesRegex(ValueError, 'First Bazarr setup needs BAZARR_PASSWORD'):
+            host.prepare_storage(c, self.root)
+        self.assertFalse((self.root/'data').exists())
+
+    def test_owner_setup_names_missing_logins_and_verify_skips_them(self):
+        import config
+        c = config.load(ROOT/'.env.example')
+        (self.root/'local').mkdir(exist_ok=True)
+        with self.assertRaisesRegex(ValueError, 'Owner media setup needs JELLYFIN_PASSWORD, LIDARR_PASSWORD'):
+            media.connect(c, self.root, 'owner@example.com', urls={n: 'http://127.0.0.1:9' for n in
+                          ('radarr', 'sonarr', 'prowlarr', 'lidarr', 'qbittorrent', 'jellyfin', 'seerr', 'navidrome')})
+        output = []
+        with patch.object(media_passwords, 'login_ok', lambda *a, **k: True):
+            self.assertEqual(media_passwords.verify(self.root, out=output.append), [])
+        self.assertIn('radarr: not in .env (setup-only); skipped', output)
+        self.assertIn('qbittorrent: login ok', output)
+
+
 class Services:
     """Fake Arr/Bazarr/qBittorrent state: current login passwords and clients."""
     def __init__(self, passwords):
