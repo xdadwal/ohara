@@ -48,8 +48,9 @@ LAN device -> ISP router (192.168.1.1)
 
 - AdGuard accepts only 192.168.1.0/24 clients. Its dashboard is
   `http://192.168.1.105:3000`, also proxied by the server's LAN-only route
-  `https://adguard.DOMAIN` ([lan-services.md](lan-services.md)); the login stays
-  with the owner.
+  `https://adguard.DOMAIN` ([lan-services.md](lan-services.md)). Its login is
+  the owner's; the server holds it only as `ADGUARD_PASSWORD` for the Homepage
+  widget, which reads that dashboard directly.
 - The eighteen `*.xdadwal.in` rewrites to 192.168.1.101 for
   [LAN-only routes](lan-services.md) live in that AdGuard.
 - No third-party resolver answers lookups. Unbound has no forwarders and speaks

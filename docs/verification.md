@@ -1138,4 +1138,11 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   all three are needed to roll back to the bundled AdGuard. Unit suite (271),
   `scripts/check` and `scripts/status` pass; the installed alert configuration
   already holds the probe address, so no reinstall was needed.
+- 2026-11-24, Homepage widget: after the owner put the external AdGuard's login
+  in `ADGUARD_PASSWORD`, one authenticated status call was accepted, the widget
+  block was restored in the installed `services.yaml` with the external URL
+  (previous file in `local/homepage-services.yaml.20261124-pre-widget`), and
+  `scripts/up` recreated only Homepage. From inside the Homepage container its
+  own credential returned live statistics, and no failed login was logged
+  afterwards. Not verified: the rendered tile, which is behind Homepage's login.
 

@@ -185,8 +185,8 @@ Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
 count blocks represent unfinished/completed torrents, including paused or queued
 ones; they are not strict counts of torrents currently transferring bytes. Rates
 are live sums. AdGuard shows only `blocked` and `latency`; on this host the
-installed card is a plain link without a widget since 2026-11-24, because DNS moved
-to an owner-run device whose login is not held here ([adguard.md](adguard.md)). Maintainerr retains
+installed widget reads the owner-run external AdGuard at `http://192.168.1.105:3000`
+since 2026-11-24 ([adguard.md](adguard.md)). Maintainerr retains
 handled items/reclaimable storage; the other enabled widgets are unchanged.
 
 Lifecycle commands map the existing RADARR_API_KEY, SONARR_API_KEY, LIDARR_API_KEY,

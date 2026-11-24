@@ -89,8 +89,7 @@ chose a plain primary resolver, then moved LAN DNS to an AdGuard Home with a
 recursive Unbound on a separate OpenWrt device and asked for the bundled AdGuard
 to be disabled. Accepted consequences: lookups are visible to the ISP instead of
 a resolver company; that device is a single point of failure for DNS, its Wi-Fi
-and the server's uplink; it is configured by the owner outside this repository;
-and Homepage has no AdGuard widget. Host Nginx stays on the server: moving it
+and the server's uplink; and it is configured by the owner outside this repository. Host Nginx stays on the server: moving it
 would require opening every loopback backend to the LAN. The bundled project,
 its policy and its documentation remain for other targets. See
 [network.md](network.md) and [adguard.md](adguard.md).
