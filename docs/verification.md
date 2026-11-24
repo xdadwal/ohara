@@ -1127,3 +1127,15 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   contains the bundled container or its dashboard check; the next timer run
   succeeded. The installed Homepage tile links to `https://adguard.DOMAIN` again,
   without a widget.
+- 2026-11-24, key cleanup: `ADGUARD_EXTERNAL_IP` was renamed `DNS_IP`, and the
+  optional `ADGUARD_PRIMARY_DNS` policy added the day before was removed again,
+  because the bundled AdGuard it configured is retired here; the bundled policy
+  is Cloudflare DoH only. Entries above keep the names used at the time. In the
+  private `.env` the key was renamed and the dead `ADGUARD_PRIMARY_DNS` and
+  retired, ignored `LAN_IP`, `FILES_ROOT` and `FILES_HOST` lines removed (previous file in the ignored
+  `local/env.20261124-pre-key-cleanup`). `ADGUARD_BIND_IP`, `ADGUARD_NETWORK`
+  and `ADGUARD_PASSWORD` stay: the Kutt LAN rule reads `ADGUARD_NETWORK`, and
+  all three are needed to roll back to the bundled AdGuard. Unit suite (271),
+  `scripts/check` and `scripts/status` pass; the installed alert configuration
+  already holds the probe address, so no reinstall was needed.
+

@@ -180,12 +180,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
   IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
   DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  The bundled project's default upstream is Cloudflare DoH only; optional private
-  ADGUARD_PRIMARY_DNS selects an owner-chosen plain primary with Cloudflare DoH
-  as fallback (never copy an address to another target). Apply that policy with
+  The bundled project's only upstream is Cloudflare DoH; apply that policy with
   scripts/adguard upstreams, never by stopping DNS.
   Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision.
-  LAN DNS runs on the owner's separate OpenWrt device (private ADGUARD_EXTERNAL_IP):
+  LAN DNS runs on the owner's separate OpenWrt device (DNS_IP in private .env):
   AdGuard Home, then Unbound resolving recursively, with the owner's plain resolver
   only as fallback; no Cloudflare or Quad9 in the path. This repository does not
   manage that device. Rewrites, filters and upstreams are changed there, so the

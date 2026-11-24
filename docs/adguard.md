@@ -56,33 +56,12 @@ ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101
 Open `http://localhost:3003`, username **admin**, using the supplied password.
 Use the actual SSH username/address for another host.
 
-By default the only upstream is Cloudflare DNS over HTTPS
+The only upstream is Cloudflare DNS over HTTPS
 (`https://dns.cloudflare.com/dns-query`), with 1.1.1.1/1.0.0.1 used only for
-bootstrap resolution of that hostname and no plaintext upstream.
-
-An owner may instead choose a plain resolver as primary, for example the ISP's,
-by setting its literal public IP in the private `.env`:
-
-```sh
-ADGUARD_PRIMARY_DNS=RESOLVER_IP
-```
-
-That address becomes the only entry in `upstream_dns`, and Cloudflare DoH moves
-to `fallback_dns`, which AdGuard uses only when the primary fails. Queries to the
-primary are unencrypted and visible to that provider and the network path; this
-is an explicit owner choice, never a default. Find the ISP's resolver on the
-router's WAN status page and test it from the target before choosing it:
-
-```sh
-dig +tries=1 +time=3 @RESOLVER_IP example.com A
-dig +dnssec @RESOLVER_IP cloudflare.com A     # expect the ad flag
-dig @RESOLVER_IP dnssec-failed.org A          # expect SERVFAIL
-```
-
-Never copy this host's resolver address to another network. A fresh setup writes
-the selected policy into the initial configuration. An existing installation
-keeps its own settings on `up`; apply the policy to a running resolver, without
-restarting DNS, with:
+bootstrap resolution of that hostname, no fallback and no plaintext upstream. A
+fresh setup writes this policy into the initial configuration. An existing
+installation keeps its own settings on `up`; apply the policy to a running
+resolver, without restarting DNS, with:
 
 ```sh
 scripts/adguard upstreams
@@ -95,8 +74,8 @@ the resulting lists first, changing nothing if any entry fails. It sets
 replaced, so upstreams added by hand in the dashboard are removed; accounts,
 rewrites, filters and other DNS settings are preserved. A second run reports no
 change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP, a local
-rewrite, a blocked name and DNSSEC failure handling. To return to the default,
-remove ADGUARD_PRIMARY_DNS from `.env` and rerun the command. The AdGuard DNS
+rewrite, a blocked name and DNSSEC failure handling. A different upstream is an
+owner choice made in the dashboard, which this command would replace. The AdGuard DNS
 filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.
@@ -198,7 +177,7 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   query log shows no router queries: `scripts/adguard stop --allow-dns-outage`.
   `restart: unless-stopped` keeps it stopped across reboots. Its configuration and
   data stay in `DATA_ROOT/adguard`.
-- Record the other resolver in private `.env` as `ADGUARD_EXTERNAL_IP` (a private
+- Record the other resolver in private `.env` as `DNS_IP` (a private
   LAN IPv4 of another device). It is used only by the alert DNS probe while the
   bundled project is not running; reinstall alerts afterwards with
   `sudo scripts/ntfy install-alerts`, which also drops the bundled container and
@@ -219,9 +198,8 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   and apply again.
 - Resolution on that device is AdGuard to Unbound (recursive, DNSSEC-validating,
   plain DNS to authoritative servers), with the owner's plain resolver as
-  `fallback_dns`. No Cloudflare or Quad9 resolver is in the path; the bundled
-  policy's `ADGUARD_PRIMARY_DNS` and `scripts/adguard upstreams` have no effect on
-  it. The ISP can see lookups; no resolver company does.
+  `fallback_dns`. No Cloudflare or Quad9 resolver is in the path, and
+  `scripts/adguard upstreams` has no effect on it. The ISP can see lookups; no resolver company does.
 - Commands that do not work on this host while the bundled project is stopped:
   `scripts/adguard status` and `upstreams` (loopback API on 3003), and the
   rewrite steps of `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and

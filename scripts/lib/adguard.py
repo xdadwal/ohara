@@ -20,22 +20,8 @@ BOOTSTRAP = ('1.1.1.1', '1.0.0.1')
 
 
 def policy(c):
-    """Upstream, fallback and bootstrap lists for this target.
-
-    Without ADGUARD_PRIMARY_DNS the only upstream is encrypted. An owner-chosen
-    plain resolver address (for example the ISP's) becomes the primary, with the
-    encrypted upstream used only when the primary fails.
-    """
-    primary = c.get('ADGUARD_PRIMARY_DNS')
-    if not primary:
-        return {'upstream_dns': [ENCRYPTED], 'fallback_dns': [], 'bootstrap_dns': list(BOOTSTRAP)}
-    try:
-        address = ipaddress.ip_address(primary)
-    except ValueError:
-        raise ValueError('ADGUARD_PRIMARY_DNS must be one literal resolver IP address') from None
-    if not address.is_global:
-        raise ValueError('ADGUARD_PRIMARY_DNS must be a public resolver address, not a LAN, loopback or reserved one')
-    return {'upstream_dns': [str(address)], 'fallback_dns': [ENCRYPTED], 'bootstrap_dns': list(BOOTSTRAP)}
+    """Upstream, fallback and bootstrap lists: one encrypted upstream, no fallback."""
+    return {'upstream_dns': [ENCRYPTED], 'fallback_dns': [], 'bootstrap_dns': list(BOOTSTRAP)}
 
 
 def settings(c):

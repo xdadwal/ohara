@@ -55,7 +55,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(sum('storage recovered' in m['title'] for m in s['outbox']),1)
 
     def test_dns_probe_prefers_bundled_adguard_then_external(self):
-        c={'ADGUARD_BIND_IP':'192.168.1.101','ADGUARD_EXTERNAL_IP':'192.168.1.105'}
+        c={'ADGUARD_BIND_IP':'192.168.1.101','DNS_IP':'192.168.1.105'}
         self.assertEqual(alerts.dns_probe(c,['ohara-dns/adguard']),'192.168.1.101')
         self.assertEqual(alerts.dns_probe(c,['ohara/homepage']),'192.168.1.105')
         self.assertIsNone(alerts.dns_probe({'ADGUARD_BIND_IP':'192.168.1.101'},[]))

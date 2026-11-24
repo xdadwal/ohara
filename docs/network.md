@@ -42,8 +42,8 @@ LAN device -> ISP router (192.168.1.1)
            -> AdGuard Home on OpenWrt (192.168.1.105:53, filtering, local rewrites)
            -> Unbound on OpenWrt (127.0.0.1:5335, recursive, DNSSEC validation, IPv4 only)
            -> authoritative servers
-   fallback when Unbound does not answer: the owner's chosen resolver (private
-   ADGUARD_PRIMARY_DNS in the server's .env records the same address)
+   fallback when Unbound does not answer: the owner's chosen plain resolver
+   (163.53.87.74, set as fallback_dns in that AdGuard)
 ```
 
 - AdGuard accepts only 192.168.1.0/24 clients. Its dashboard is
@@ -63,7 +63,7 @@ LAN device -> ISP router (192.168.1.1)
   (192.168.1.1) and has no per-device statistics.
 - The bundled AdGuard project on the server is stopped; see
   [adguard.md](adguard.md), "This host". The server's alert monitor probes the
-  external one through private `ADGUARD_EXTERNAL_IP`.
+  external one through `DNS_IP` in the private `.env`.
 
 ## Server
 

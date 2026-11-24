@@ -116,7 +116,7 @@ def json_api(port, path, key):
 def dns_probe(c,running):
     """LAN resolver to probe: the bundled AdGuard when it runs, else the owner's external one."""
     if 'ohara-dns/adguard' in running:return c['ADGUARD_BIND_IP']
-    return c.get('ADGUARD_EXTERNAL_IP')
+    return c.get('DNS_IP')
 
 
 def validate_integrations(c):

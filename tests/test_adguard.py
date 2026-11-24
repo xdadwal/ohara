@@ -124,26 +124,10 @@ class AdguardTests(unittest.TestCase):
         self.assertEqual(dns['fallback_dns'], [])
         self.assertEqual(dns['bootstrap_dns'], ['1.1.1.1', '1.0.0.1'])
 
-    def test_owner_primary_resolver_keeps_encrypted_fallback(self):
-        c = self.settings()
-        c['ADGUARD_PRIMARY_DNS'] = '192.0.2.1'
-        with self.assertRaisesRegex(ValueError, 'public resolver'):
-            adguard.policy(c)
-        for bad in ('192.168.1.1', '127.0.0.1', 'dns.example', '8.8.8.8:53', 'https://dns.example/dns-query'):
-            c['ADGUARD_PRIMARY_DNS'] = bad
-            with self.assertRaises(ValueError):
-                adguard.policy(c)
-        c['ADGUARD_PRIMARY_DNS'] = '8.8.8.8'
-        dns = adguard.initial_config(c, 'hash')['dns']
-        self.assertEqual(dns['upstream_dns'], ['8.8.8.8'])
-        self.assertEqual(dns['fallback_dns'], ['https://dns.cloudflare.com/dns-query'])
-
-    def run_upstreams(self, info, tested=None, primary=None):
+    def run_upstreams(self, info, tested=None):
         calls = []
         state = dict(info)
         c = self.settings()
-        if primary:
-            c['ADGUARD_PRIMARY_DNS'] = primary
         def api(root, path, body=None):
             calls.append((path, body))
             if path == 'dns_info':
@@ -159,11 +143,11 @@ class AdguardTests(unittest.TestCase):
     LIVE = {'upstream_dns': ['https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'],
             'bootstrap_dns': ['1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112'], 'fallback_dns': [], 'ratelimit': 20}
 
-    def test_upstreams_applies_primary_policy_and_retires_other_entries(self):
-        code, calls, state = self.run_upstreams(self.LIVE, primary='8.8.8.8')
+    def test_upstreams_applies_policy_and_retires_other_entries(self):
+        code, calls, state = self.run_upstreams(self.LIVE)
         self.assertEqual(code, 0)
-        self.assertEqual(state['upstream_dns'], ['8.8.8.8'])
-        self.assertEqual(state['fallback_dns'], ['https://dns.cloudflare.com/dns-query'])
+        self.assertEqual(state['upstream_dns'], ['https://dns.cloudflare.com/dns-query'])
+        self.assertEqual(state['fallback_dns'], [])
         self.assertEqual(state['bootstrap_dns'], ['1.1.1.1', '1.0.0.1'])
         self.assertEqual(state['ratelimit'], 20)
         posted = [body for path, body in calls if path == 'dns_config']
@@ -177,7 +161,7 @@ class AdguardTests(unittest.TestCase):
 
     def test_upstreams_changes_nothing_when_a_test_fails(self):
         with self.assertRaisesRegex(ValueError, 'nothing changed'):
-            _, calls, state = self.run_upstreams(self.LIVE, tested={'8.8.8.8': 'timeout'}, primary='8.8.8.8')
+            _, calls, state = self.run_upstreams(self.LIVE, tested={'https://dns.cloudflare.com/dns-query': 'timeout'})
 
 
 if __name__ == '__main__':
