@@ -1095,3 +1095,27 @@ backporting nine CVE fixes from upstream 1.30.7. The host ran `+deb13u10`.
   Ubuntu 24.04, which has no recorded floor.
 - Rollback: reinstall `1.26.3-3+deb13u10` for both packages while the archive
   still offers it.
+
+### Bundled AdGuard retired for an external resolver (2026-11-24)
+
+Reason: the owner moved LAN DNS to an AdGuard Home with Unbound on a separate
+OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
+
+- Unit: `python3 -m unittest discover -s tests` (272 tests) covers
+  `ADGUARD_EXTERNAL_IP` validation and the alert probe's choice of resolver.
+- Real host: the owner changed the router's DNS; the bundled query log showed the
+  router's last query at 08:30:49 UTC and none in the following 16 minutes. The
+  previous configuration was copied to the ignored
+  `local/adguard-AdGuardHome.yaml.20261124-pre-retire`, and
+  `scripts/adguard stop --allow-dns-outage` applied at about 08:51 UTC. Afterwards
+  lookups through the router still resolved, a rewrite returned 192.168.1.101 and
+  a blocked name returned 0.0.0.0. `ADGUARD_EXTERNAL_IP` was appended to `.env`
+  and the installed Homepage tile repointed (previous file in
+  `local/homepage-services.yaml.20261124-pre-adguard-retire`).
+- Pending, needs sudo: `sudo scripts/ntfy install-alerts`. Until then the
+  installed alert checks still target the stopped container.
+- Not verified: the external device across a reboot, lookups from a separate LAN
+  client, and the Homepage tile (Homepage was stopped with the media pool at the
+  time; see the operator report of the missing WD branch drive).
+- Rollback: see "This host" in [adguard.md](adguard.md).
+

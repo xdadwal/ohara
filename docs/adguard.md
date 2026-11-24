@@ -178,3 +178,33 @@ credentials in its environment. See [Homepage widgets](homepage-widgets.md).
 AdGuard image pins live independently in `versions/adguard.env`, paired with
 `compose/adguard.yaml`; the main stack no longer carries the optional DNS pin.
 See [deployment layout](deployment-layout.md).
+
+## This host: bundled AdGuard retired for an external one (2026-11-24)
+
+By owner decision the bundled project is **stopped** on this host. LAN DNS is
+served by an AdGuard Home the owner runs on a separate OpenWrt device at
+192.168.1.105 (AdGuard on port 53, dashboard on port 3000, Unbound on port 5335
+as its upstream, the owner's chosen plain resolver as fallback). That device is
+not managed by this repository; its login stays with the owner.
+
+- Stop, only after the router forwards to the other resolver and the bundled
+  query log shows no router queries: `scripts/adguard stop --allow-dns-outage`.
+  `restart: unless-stopped` keeps it stopped across reboots. Its configuration and
+  data stay in `DATA_ROOT/adguard`.
+- Record the other resolver in private `.env` as `ADGUARD_EXTERNAL_IP` (a private
+  LAN IPv4 of another device). It is used only by the alert DNS probe while the
+  bundled project is not running; reinstall alerts afterwards with
+  `sudo scripts/ntfy install-alerts`, which also drops the bundled container and
+  dashboard checks.
+- Settings were copied once by editing the other AdGuard's configuration while it
+  was stopped: rewrites, client allowlist, query-log retention and the
+  private-PTR/hosts-file switches. Blocklists and rules already matched. Query
+  history was not moved. Later changes must be made on that device.
+- Homepage: the installed `DATA_ROOT/homepage/services.yaml` tile links to
+  `http://192.168.1.105:3000` and has no widget, because the widget would need
+  that device's login. The repository template still describes the bundled
+  project. `https://adguard.DOMAIN` still proxies to the stopped loopback
+  dashboard and returns an error until the LAN route is removed or repointed.
+- Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
+  router's DNS back to `ADGUARD_BIND_IP`, then reinstall alerts.
+

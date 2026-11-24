@@ -15,6 +15,13 @@ class ConfigurationTests(unittest.TestCase):
             path.write_text(text)
             return config.load(path)
 
+    def test_external_adguard_address_must_be_another_private_lan_device(self):
+        base = (ROOT / '.env.example').read_text()
+        self.assertEqual(self.load(base + 'ADGUARD_EXTERNAL_IP=192.168.1.105\n')['ADGUARD_EXTERNAL_IP'], '192.168.1.105')
+        for bad in ('8.8.8.8', '127.0.0.1', 'dns.lan', 'fd00::1'):
+            with self.assertRaises(ValueError):
+                self.load(base + f'ADGUARD_EXTERNAL_IP={bad}\n')
+
     def test_example_valid(self):
         self.assertEqual(config.load(ROOT / '.env.example')['DOMAIN'], 'xdadwal.in')
 

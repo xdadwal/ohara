@@ -54,6 +54,12 @@ class IntegrationTests(unittest.TestCase):
             alerts.extra_checks(c,s,True);alerts.extra_checks(c,s,True)
         self.assertEqual(sum('storage recovered' in m['title'] for m in s['outbox']),1)
 
+    def test_dns_probe_prefers_bundled_adguard_then_external(self):
+        c={'ADGUARD_BIND_IP':'192.168.1.101','ADGUARD_EXTERNAL_IP':'192.168.1.105'}
+        self.assertEqual(alerts.dns_probe(c,['ohara-dns/adguard']),'192.168.1.101')
+        self.assertEqual(alerts.dns_probe(c,['ohara/homepage']),'192.168.1.105')
+        self.assertIsNone(alerts.dns_probe({'ADGUARD_BIND_IP':'192.168.1.101'},[]))
+
     def test_invalid_targets_are_rejected(self):
         for c in ({'tls':['host;touch /tmp/bad']},{'containers':[{'project':'--help','service':'x','media':True}]},{'dns':'8.8.8.8'},{'other':True}):
             with self.subTest(c=c),self.assertRaises(ValueError):alerts.validate_integrations(c)

@@ -60,7 +60,7 @@ credentials in its own private application settings; they never go to Homepage.
 |---|---|
 | Storage | Missing configured disk/pool, unsafe/read-only mount reported by watchdog, three recovery attempts exhausted in an hour, return to healthy storage; watchdog timer/observation failure |
 | Bambuddy | Printer disconnected/reconnected, hardware errors, transition to FINISH, FAILED or PAUSE; service/API observation failure |
-| AdGuard | Local service failure and actual DNS lookup failure against its configured private LAN IP |
+| AdGuard | Local service failure and actual DNS lookup failure against its configured private LAN IP; with the bundled project stopped, only a DNS lookup against optional `ADGUARD_EXTERNAL_IP` |
 | Maintainerr | Local service failure and errors/fatal entries in its container logs since the previous sample |
 | Nginx | HTTP service failure, local trusted TLS/SNI route failures or HTTP 5xx for ntfy/Seerr/Jellyfin, certificate under 14 days and under 3 days, failed Certbot service result |
 | Tailscale | Backend not Running or this node offline; read-only CLI failure |

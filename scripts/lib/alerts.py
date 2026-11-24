@@ -113,6 +113,12 @@ def json_api(port, path, key):
         return json.loads(response.read(1024*1024))
 
 
+def dns_probe(c,running):
+    """LAN resolver to probe: the bundled AdGuard when it runs, else the owner's external one."""
+    if 'ohara-dns/adguard' in running:return c['ADGUARD_BIND_IP']
+    return c.get('ADGUARD_EXTERNAL_IP')
+
+
 def validate_integrations(c):
     if not isinstance(c,dict):raise ValueError('Invalid integrations')
     if set(c)-{'containers','tailscale','watchdog','tls','dns','bambuddy'}:
@@ -369,7 +375,8 @@ def install(c,root):
     if 'ohara-kutt/kutt' in running:
         import kutt
         d['integrations']['tls'].append(kutt.settings(c)[0])
-    if 'ohara-dns/adguard' in running:d['integrations']['dns']=c['ADGUARD_BIND_IP']
+    probe=dns_probe(c,running)
+    if probe:d['integrations']['dns']=probe
     if 'ohara-bambuddy/bambuddy' in running and values.get('HOMEPAGE_VAR_BAMBUDDY_API_KEY'):
         d['integrations']['bambuddy']=values['HOMEPAGE_VAR_BAMBUDDY_API_KEY']
     validate_integrations(d['integrations'])

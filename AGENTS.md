@@ -184,6 +184,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   primary resolver through private ADGUARD_PRIMARY_DNS, with Cloudflare DoH as
   fallback, and retired Quad9; never copy that address to another target. Apply
   the policy with scripts/adguard upstreams, never by stopping DNS.
+  Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision;
+  LAN DNS runs on the owner's separate OpenWrt device (private ADGUARD_EXTERNAL_IP),
+  which this repository does not manage. Do not restart the bundled project or
+  change that device without an owner decision; see docs/adguard.md.
   Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
   use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
   UI/API LAN-only. Reuse existing private application keys, preserve its state,
