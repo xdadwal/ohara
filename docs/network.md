@@ -129,7 +129,8 @@ address outside the ISP router's DHCP range, reserved there.
    ```
 
    It installs `adguardhome`, `unbound-daemon` and `unbound-control`; configures
-   Unbound on port 5335 (IPv4 only, DNSSEC validation, query minimisation);
+   Unbound on loopback port 5335 only (IPv4 only, DNSSEC validation, query
+   minimisation; `interface_auto=0`, so LAN devices cannot bypass AdGuard);
    removes `dnsmasq` and `odhcpd` to free port 53; points the device's own
    resolver at the ISP router; enables and starts both services; and checks that
    Unbound resolves. A failed package download is transient: run it again.
@@ -147,7 +148,15 @@ address outside the ISP router's DHCP range, reserved there.
      `scripts/ntfy`), because `DNS_IP` points them at this dashboard.
    - OpenWrt UI, Network, Wireless: the same network name, WPA2 passphrase and
      security mode as the ISP router on both radios, on different channels (11
-     and 40 here against the ISP router's 3 and 157).
+     and 40 here against the ISP router's 3 and 157). Then set the radio
+     standards and country (2.4 GHz `HE20`, both radios `IN`):
+
+     ```bash
+     ssh root@192.168.1.105 'COUNTRY=IN sh -s wifi' < configs/openwrt/setup.sh
+     ```
+
+     The 5 GHz radio here uses `HE80`. Before 2026-11-24 the 2.4 GHz radio had no
+     `htmode` and ran legacy 802.11g, and no country was set (world domain `00`).
    - OpenWrt UI, System, Administration, SSH-Keys: add the server account's public
      key and any owner device keys.
    - ISP router UI: forward DNS to 192.168.1.105 and reserve that address.
@@ -183,6 +192,8 @@ dig +short example.org @192.168.1.1                      # resolves through AdGu
 dig +short doubleclick.net @192.168.1.1                  # 0.0.0.0 (filtered)
 dig +short ohara.xdadwal.in @192.168.1.1                 # 192.168.1.101 (rewrite)
 dig @192.168.1.105 dnssec-failed.org | grep status       # SERVFAIL (validation)
+dig +tries=1 example.org @192.168.1.105 -p 5335          # connection refused (Unbound loopback-only)
+ssh root@192.168.1.105 'iw reg get | sed -n 2p; grep -h ieee80211ax= /var/run/hostapd-phy*.conf'  # country IN; ax=1 twice
 nmcli -t -f DHCP4.OPTION dev show | grep server_identifier   # 192.168.1.1
 ssh root@192.168.1.105 'for s in adguardhome unbound; do /etc/init.d/$s status; done'
 curl -s -o /dev/null -w '%{http_code}\n' https://xdadwal.in/     # 200
@@ -206,8 +217,9 @@ between the two access points, and reachability from outside the LAN.
   server's Internet path. Its restart costs about one minute of outage.
 - The ISP router exposes telnet, SSH and UPnP on the LAN; disabling them is an
   owner task in its UI.
-- Unbound answers any LAN device on port 5335, which bypasses filtering for a
-  device that asks it directly. The OpenWrt UI is also served over plain HTTP.
+- The OpenWrt UI is served over plain HTTP as well as HTTPS, without a redirect.
+  (Unbound was open to the LAN on port 5335 until 2026-11-24; it is now
+  loopback-only.)
 - The network is flat: no guest or IoT separation, and no firewall between LAN
   devices and the server.
 - The OpenWrt device has pending package updates and no automatic updates.

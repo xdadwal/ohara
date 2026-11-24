@@ -1182,3 +1182,19 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   cleanly and the timer is active. Previous worker, configuration and units:
   `/var/backups/ohara/ntfy-alerts-20261124-213322-855868`. Rollback: copy those
   files back and run `sudo systemctl daemon-reload`.
+- OpenWrt Wi-Fi and Unbound (2026-11-24, about 22:05 IST, owner-approved): first
+  copies of `/etc/config/wireless` and `/etc/config/unbound` in
+  `/root/ohara-backup/20261124-pre-radio-unbound/` on the device. Applied
+  `unbound.ub_main.interface_auto=0`, `wireless.radio0.htmode=HE20`, and
+  `country=IN` on both radios, then restarted Unbound and ran `wifi reload`.
+  Verified: Unbound listens only on 127.0.0.1:5335 and the server's query to
+  192.168.1.105:5335 is refused; through AdGuard from the server, `example.org`
+  resolves, `doubleclick.net` returns 0.0.0.0, `adguard.xdadwal.in` returns
+  192.168.1.101 and `dnssec-failed.org` returns SERVFAIL; `iw reg get` reports
+  country IN; both hostapd configurations have `ieee80211ax=1` and `ieee80211n=1`;
+  a 2.4 GHz client reconnected at 65 Mbit/s MCS 7 (above the 54 Mbit/s legacy
+  limit) and the 5 GHz client at 1200 Mbit/s HE-MCS 11. The new `wifi` phase of
+  `configs/openwrt/setup.sh` and the `interface_auto` line of its `dns` phase
+  were written after the live change. The `wifi` phase was then run on the device: it reapplied the same values, `wifi reload` returned and both radios came back with country IN and `ieee80211ax=1`; it refuses a missing or malformed `COUNTRY` before changing anything. The `interface_auto` line of the `dns` phase was not rerun (already applied live). Rollback: copy the two
+  saved files back to `/etc/config/`, then `/etc/init.d/unbound restart` and
+  `wifi reload`.

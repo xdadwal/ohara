@@ -9,6 +9,7 @@
 #   ssh root@DEVICE 'LAN_IP=192.168.1.105 GATEWAY=192.168.1.1 sh -s network' < configs/openwrt/setup.sh
 #   ssh root@LAN_IP 'sh -s dns'    < configs/openwrt/setup.sh
 #   ssh root@LAN_IP 'sh -s harden' < configs/openwrt/setup.sh
+#   ssh root@LAN_IP 'COUNTRY=IN sh -s wifi' < configs/openwrt/setup.sh
 #
 # Every phase is safe to repeat. Nothing here sets a password, a Wi-Fi name or
 # passphrase, an AdGuard account, rewrites or upstreams: those stay manual.
@@ -75,9 +76,12 @@ dns() {
     apk add adguardhome unbound-daemon unbound-control
 
     # Unbound: validating recursive resolver for AdGuard only. IPv4 only, because
-    # an access point has no IPv6 route to the Internet.
+    # an access point has no IPv6 route to the Internet. interface_auto=0 leaves
+    # Unbound on its default loopback address, so LAN devices cannot query it
+    # directly and skip AdGuard's filtering.
     keep /etc/config/unbound
     uci set unbound.ub_main.listen_port="$UNBOUND_PORT"
+    uci set unbound.ub_main.interface_auto='0'
     uci set unbound.ub_main.protocol='ip4_only'
     uci set unbound.ub_main.validator='1'
     uci set unbound.ub_main.query_minimize='1'
@@ -130,9 +134,30 @@ harden() {
     say 'SSH accepts keys only; verify a new key login before closing this session'
 }
 
+wifi_phase() {
+    # Radio standards and regulatory country only. The network name, passphrase,
+    # encryption and channels stay manual in the OpenWrt UI.
+    : "${COUNTRY:?set COUNTRY to the two-letter country code, for example IN}"
+    echo "$COUNTRY" | grep -Eq '^[A-Z]{2}$' || die "not a two-letter country code: $COUNTRY"
+    keep /etc/config/wireless
+    radios=$(uci show wireless | sed -n "s/^wireless\.\([^.=]*\)=wifi-device$/\1/p")
+    [ -n "$radios" ] || die 'no wifi-device sections in /etc/config/wireless'
+    for radio in $radios; do
+        uci set "wireless.$radio.country=$COUNTRY"
+        # Without htmode a 2.4 GHz radio runs legacy 802.11g (54 Mbit/s at most).
+        if [ "$(uci -q get "wireless.$radio.band")" = '2g' ]; then
+            uci set "wireless.$radio.htmode=HE20"
+        fi
+    done
+    uci commit wireless
+    /sbin/wifi reload </dev/null >/dev/null 2>&1
+    say "radios set to country $COUNTRY, 2.4 GHz HE20; Wi-Fi clients reconnect within seconds"
+}
+
 case "$phase" in
     network) network ;;
     dns) dns ;;
     harden) harden ;;
-    *) die 'usage: sh -s network|dns|harden  (see the header of this script)' ;;
+    wifi) wifi_phase ;;
+    *) die 'usage: sh -s network|dns|harden|wifi  (see the header of this script)' ;;
 esac
