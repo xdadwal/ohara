@@ -54,13 +54,30 @@ class ShortPasswordOptionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'RADARR_API_KEY'):
                 credentials.load(root)
 
+    def test_public_navidrome_needs_its_own_option(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            credential_fixtures.write(root)
+            set_values(root, MEDIA_ALLOW_SHORT_PASSWORD='true', NAVIDROME_PASSWORD='tiny')
+            with self.assertRaisesRegex(ValueError, 'NAVIDROME_PASSWORD: supply at least 16'):
+                credentials.load(root)
+            set_values(root, NAVIDROME_ALLOW_SHORT_PASSWORD='true', MEDIA_ALLOW_SHORT_PASSWORD='false',
+                       RADARR_PASSWORD='tiny')
+            with self.assertRaisesRegex(ValueError, 'RADARR_PASSWORD: supply at least 16'):
+                credentials.load(root)
+            set_values(root, MEDIA_ALLOW_SHORT_PASSWORD='true')
+            self.assertEqual(credentials.load(root)[1]['NAVIDROME_PASSWORD'], 'tiny')
+
     def test_option_value_is_validated(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             credential_fixtures.write(root)
-            set_values(root, MEDIA_ALLOW_SHORT_PASSWORD='yes')
-            with self.assertRaisesRegex(ValueError, 'must be true or false'):
-                credentials.load(root)
+            for option in ('MEDIA_ALLOW_SHORT_PASSWORD', 'NAVIDROME_ALLOW_SHORT_PASSWORD'):
+                original = (root/'.env').read_text()
+                set_values(root, **{option: 'yes'})
+                with self.assertRaisesRegex(ValueError, option+' must be true or false'):
+                    credentials.load(root)
+                (root/'.env').write_text(original)
 
 
 class Services:
@@ -107,11 +124,24 @@ class Services:
                 if '/downloadclient/' in path and method == 'PUT':
                     services.clients[name] = [body]
                     return None
+                if path == '/api/user/nd-admin':
+                    assert self.headers.get('X-ND-Authorization') == 'Bearer nd-token'
+                    if method == 'PUT':
+                        assert body['currentPassword'] == services.passwords['navidrome'], 'current password required'
+                        services.passwords['navidrome'] = body['password']
+                        services.navidrome_user = body
+                        return body
+                    return {'id': 'nd-admin', 'userName': 'admin', 'isAdmin': True, 'name': 'Owner'}
                 raise AssertionError('unexpected call '+path)
         self.Client = Client
 
     def login_ok(self, name, url, password, username='admin'):
         return self.passwords[name] == password
+
+    def navidrome_session(self, url, password, username='admin'):
+        if self.passwords['navidrome'] != password:
+            return None
+        return {'id': 'nd-admin', 'token': 'nd-token', 'username': 'admin'}
 
 
 class RotationTests(unittest.TestCase):
@@ -129,14 +159,16 @@ class RotationTests(unittest.TestCase):
     def run_rotate(self, previous):
         output = []
         with patch.object(media, 'Client', self.services.Client), \
-                patch.object(media_passwords, 'login_ok', self.services.login_ok):
+                patch.object(media_passwords, 'login_ok', self.services.login_ok), \
+                patch.object(media_passwords, '_navidrome_session', self.services.navidrome_session):
             media_passwords.rotate(self.root, previous, out=output.append)
         return output
 
     def test_rotation_applies_new_values_and_updates_download_clients(self):
         new = {name.upper()+'_PASSWORD': 'new-'+name for name in media_passwords.ROTATABLE}
-        set_values(self.root, MEDIA_ALLOW_SHORT_PASSWORD='true', **new)
+        set_values(self.root, MEDIA_ALLOW_SHORT_PASSWORD='true', NAVIDROME_ALLOW_SHORT_PASSWORD='true', **new)
         output = self.run_rotate(self.previous)
+        self.assertEqual(self.services.navidrome_user['name'], 'Owner')
         for name in media_passwords.ROTATABLE:
             self.assertEqual(self.services.passwords[name], 'new-'+name)
         self.assertEqual(sorted(self.services.tested), [(n, 'new-qbittorrent') for n in ('lidarr', 'radarr', 'sonarr')])
@@ -152,13 +184,22 @@ class RotationTests(unittest.TestCase):
         self.run_rotate(None)
         self.assertEqual(self.services.passwords['sonarr'], 'new-sonarr')
         output = self.run_rotate(None)
-        self.assertEqual(sum('already uses' in line for line in output), 6)
+        self.assertEqual(sum('already uses' in line for line in output), 7)
 
     def test_qbittorrent_change_requires_previous_copy(self):
         set_values(self.root, MEDIA_ALLOW_SHORT_PASSWORD='true', QBITTORRENT_PASSWORD='new-qb')
         with self.assertRaisesRegex(ValueError, '--previous-env'):
             self.run_rotate(None)
         self.assertEqual(self.services.passwords['qbittorrent'], self.old['QBITTORRENT_PASSWORD'])
+
+    def test_navidrome_change_requires_previous_copy_and_matching_old_value(self):
+        set_values(self.root, NAVIDROME_ALLOW_SHORT_PASSWORD='true', NAVIDROME_PASSWORD='new-nd')
+        with self.assertRaisesRegex(ValueError, 'Navidrome needs --previous-env'):
+            self.run_rotate(None)
+        self.services.passwords['navidrome'] = 'something else'
+        with self.assertRaisesRegex(RuntimeError, 'navidrome: the previous password was rejected'):
+            self.run_rotate(self.previous)
+        self.assertEqual(self.services.passwords['navidrome'], 'something else')
 
     def test_wrong_previous_copy_changes_nothing_in_qbittorrent(self):
         set_values(self.root, MEDIA_ALLOW_SHORT_PASSWORD='true', QBITTORRENT_PASSWORD='new-qb')

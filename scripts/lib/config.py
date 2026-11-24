@@ -8,7 +8,7 @@ KUTT_KEYS = {'KUTT_HOST','KUTT_ROOT','KUTT_MOUNT','KUTT_LAN_NETWORK','KUTT_TLS_C
 NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY', 'NTFY_ALLOW_SHORT_PASSWORD'}
 DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK', 'DNS_IP', 'SEERR_LAN_ONLY'}
 IMMICH_KEYS = {'IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT', 'IMMICH_LIBRARY_MOUNT', 'IMMICH_DATABASE_MOUNT'}
-MEDIA_OPTION_KEYS = {'MEDIA_ALLOW_SHORT_PASSWORD'}
+MEDIA_OPTION_KEYS = {'MEDIA_ALLOW_SHORT_PASSWORD', 'NAVIDROME_ALLOW_SHORT_PASSWORD'}
 
 KEYS = MEDIA_OPTION_KEYS | DNS_KEYS | IMMICH_KEYS | BAMBUDDY_KEYS | NTFY_KEYS | KUTT_KEYS | {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
         'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}
@@ -56,8 +56,9 @@ def load(path):
         raise ValueError('KUTT_HOST must be a valid hostname')
     if values.get('NTFY_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
         raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
-    if values.get('MEDIA_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
-        raise ValueError('MEDIA_ALLOW_SHORT_PASSWORD must be true or false')
+    for key in sorted(MEDIA_OPTION_KEYS):
+        if values.get(key, 'false') not in {'true', 'false'}:
+            raise ValueError(f'{key} must be true or false')
     values.pop('FILES_ROOT', None)
     values.pop('FILES_HOST', None)
     values.pop('LAN_IP', None)  # Retired DNS-only input; never used.

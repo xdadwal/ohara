@@ -15,9 +15,13 @@ NTFY_WIDGET_KEYS = {'NTFY_HOMEPAGE_PASSWORD'}
 DNS_KEYS = {'ADGUARD_PASSWORD'}
 IMMICH_KEYS = {'IMMICH_DB_PASSWORD'}
 IMMICH_OAUTH_KEYS = {'IMMICH_GOOGLE_CLIENT_ID', 'IMMICH_GOOGLE_CLIENT_SECRET'}
-# Login passwords the owner may shorten with MEDIA_ALLOW_SHORT_PASSWORD=true.
-# Jellyfin/Navidrome logins, API keys and secrets keep their normal rules.
+# Login passwords the owner may shorten: the six LAN-only logins with
+# MEDIA_ALLOW_SHORT_PASSWORD=true, and the public Navidrome login only with its
+# own NAVIDROME_ALLOW_SHORT_PASSWORD=true. Jellyfin, API keys and secrets keep
+# their normal rules.
 SHORT_OK_MEDIA_KEYS = {name+'_PASSWORD' for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR', 'QBITTORRENT')}
+SHORT_OPTIONS = {'MEDIA_ALLOW_SHORT_PASSWORD': SHORT_OK_MEDIA_KEYS,
+                 'NAVIDROME_ALLOW_SHORT_PASSWORD': {'NAVIDROME_PASSWORD'}}
 ALL_KEYS = BAMBUDDY_OWNER_KEYS | HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | NTFY_KEYS | DNS_KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS
 DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN', 'HOMEPAGE_VAR_RADARR_API_KEY',
     'HOMEPAGE_VAR_SONARR_API_KEY', 'HOMEPAGE_VAR_LIDARR_API_KEY',
@@ -97,26 +101,30 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
     return values
 
 
-def short_media_passwords_allowed(root):
-    """Owner-approved exception for Arr/Bazarr/qBittorrent login passwords."""
+def short_password_keys(root):
+    """Keys whose 16-character minimum the owner explicitly waived in .env."""
     import config
     options = config.parse(root/'.env', config.MEDIA_OPTION_KEYS, config.MEDIA_OPTION_KEYS,
                            (config.KEYS-config.MEDIA_OPTION_KEYS) | ALL_KEYS)
-    flag = options.get('MEDIA_ALLOW_SHORT_PASSWORD', 'false')
-    if flag not in {'true', 'false'}:
-        raise ValueError('MEDIA_ALLOW_SHORT_PASSWORD must be true or false')
-    return flag == 'true'
+    allowed = set()
+    for option, keys in SHORT_OPTIONS.items():
+        flag = options.get(option, 'false')
+        if flag not in {'true', 'false'}:
+            raise ValueError(f'{option} must be true or false')
+        if flag == 'true':
+            allowed |= keys
+    return allowed
 
 
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
     values = read(root/'.env', HOMEPAGE_KEYS | MEDIA_KEYS, WIDGET_KEYS | DNS_KEYS, config.KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS | BAMBUDDY_OWNER_KEYS,
-                  minimum_lengths={key: 1 for key in SHORT_OK_MEDIA_KEYS})
+                  minimum_lengths={key: 1 for option in SHORT_OPTIONS.values() for key in option})
     # read() has already rejected symlinks, loose permissions and empty values.
-    if not short_media_passwords_allowed(root):
-        for key in sorted(SHORT_OK_MEDIA_KEYS):
-            if len(values[key]) < 16:
-                raise ValueError(f'{key}: supply at least 16 characters')
+    allowed = short_password_keys(root)
+    for key in sorted(set().union(*SHORT_OPTIONS.values()) - allowed):
+        if len(values[key]) < 16:
+            raise ValueError(f'{key}: supply at least 16 characters')
     return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
             {k:v for k,v in values.items() if k in MEDIA_KEYS})

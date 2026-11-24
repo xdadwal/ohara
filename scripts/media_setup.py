@@ -20,9 +20,9 @@ def main():
     parser.add_argument('--profile-only', action='store_true', help='apply a profile to existing accounts; skip owner/login initialization')
     parser.add_argument('--storage-only', action='store_true', help='apply download paths, hardlinks and recycle policy to existing accounts without owner initialization')
     parser.add_argument('--quality-only', action='store_true', help='apply the bounded HD-1080p policy without owner initialization or searching')
-    parser.add_argument('--verify-logins', action='store_true', help='check that Radarr/Sonarr/Prowlarr/Lidarr/Bazarr/qBittorrent accept the .env passwords; changes nothing')
+    parser.add_argument('--verify-logins', action='store_true', help='check that Radarr/Sonarr/Prowlarr/Lidarr/Bazarr/qBittorrent/Navidrome accept the .env passwords; changes nothing')
     parser.add_argument('--rotate-passwords', action='store_true', help='apply owner-edited .env passwords to those services through their APIs')
-    parser.add_argument('--previous-env', type=Path, help='private copy of .env from before the edit; needed when the qBittorrent password changes')
+    parser.add_argument('--previous-env', type=Path, help='private copy of .env from before the edit; needed when the qBittorrent or Navidrome password changes')
     args = parser.parse_args()
     login_mode = args.verify_logins or args.rotate_passwords
     if args.previous_env and not args.rotate_passwords:

@@ -2,20 +2,21 @@
 
 The owner chooses new values and writes them to private .env; nothing here
 generates, prints or persists a password. Rotation needs a private copy of the
-previous .env only for qBittorrent, whose API requires the current password.
-Radarr/Sonarr/Prowlarr/Lidarr and Bazarr change through their API keys.
+previous .env only for qBittorrent and Navidrome, whose APIs require the current
+password. Radarr/Sonarr/Prowlarr/Lidarr and Bazarr change through their API keys.
 """
 from pathlib import Path
 import credentials as credential_files
 
 ARR = {'radarr': ('/api/v3', 7878), 'sonarr': ('/api/v3', 8989),
        'prowlarr': ('/api/v1', 9696), 'lidarr': ('/api/v1', 8686)}
-ROTATABLE = ('radarr', 'sonarr', 'prowlarr', 'lidarr', 'bazarr', 'qbittorrent')
+ROTATABLE = ('radarr', 'sonarr', 'prowlarr', 'lidarr', 'bazarr', 'qbittorrent', 'navidrome')
 
 
 def default_urls():
     urls = {name: f'http://127.0.0.1:{port}' for name, (_, port) in ARR.items()}
-    urls.update(bazarr='http://127.0.0.1:6767', qbittorrent='http://127.0.0.1:8081')
+    urls.update(bazarr='http://127.0.0.1:6767', qbittorrent='http://127.0.0.1:8081',
+                navidrome='http://127.0.0.1:4533')
     return urls
 
 
@@ -53,7 +54,29 @@ def login_ok(name, url, password, username='admin'):
                                      {'Referer': url+'/', 'Host': url.split('//', 1)[1]})
         # qBittorrent 5.x answers 204; earlier releases answer 200 "Ok.".
         return status == 204 or (status == 200 and text.strip() == 'Ok.')
+    if name == 'navidrome':
+        return _navidrome_session(url, password, username) is not None
     raise ValueError(f'Unsupported service {name}')
+
+
+def _navidrome_session(url, password, username='admin'):
+    """Return the login response for a valid Navidrome login, else None."""
+    import json
+    import urllib.error
+    import urllib.request
+    request = urllib.request.Request(url+'/auth/login', json.dumps({'username': username, 'password': password}).encode(),
+                                     {'Content-Type': 'application/json'})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=30) as response:
+            account = json.loads(response.read())
+    except urllib.error.HTTPError:
+        return None
+    except (OSError, ValueError):
+        raise RuntimeError('Media login check could not reach '+url+'/auth/login') from None
+    if isinstance(account, dict) and isinstance(account.get('token'), str) and account['token'] and account.get('id'):
+        return account
+    return None
 
 
 def verify(root, urls=None, out=print):
@@ -111,11 +134,7 @@ def rotate(root, previous, urls=None, out=print):
     else:
         if previous is None:
             raise ValueError('qBittorrent needs --previous-env: a private copy of .env from before the edit')
-        old = credential_files.read(Path(previous), set(), {'QBITTORRENT_PASSWORD'},
-                                    credential_files.ALL_KEYS - {'QBITTORRENT_PASSWORD'} | _config_keys(),
-                                    minimum_lengths={'QBITTORRENT_PASSWORD': 1}).get('QBITTORRENT_PASSWORD')
-        if not old:
-            raise ValueError('--previous-env has no QBITTORRENT_PASSWORD')
+        old = _previous(previous, 'QBITTORRENT_PASSWORD')
         if not login_ok('qbittorrent', qb_url, old):
             raise RuntimeError('qbittorrent: the previous password was rejected; nothing changed')
         qb = Client(qb_url)
@@ -138,7 +157,42 @@ def rotate(root, previous, urls=None, out=print):
             client.call(version+'/downloadclient/test', download)
             client.call(version+'/downloadclient/'+str(download['id']), download, 'PUT')
             out(f'{name}: download client "{download.get("name")}" updated and tested')
-    out('Run scripts/up so Homepage receives the new qBittorrent password.')
+
+    new = values['NAVIDROME_PASSWORD']
+    nd_url = urls['navidrome']
+    if login_ok('navidrome', nd_url, new):
+        out('navidrome: already uses the .env password')
+    else:
+        if previous is None:
+            raise ValueError('Navidrome needs --previous-env: a private copy of .env from before the edit')
+        old = _previous(previous, 'NAVIDROME_PASSWORD')
+        account = _navidrome_session(nd_url, old)
+        if account is None:
+            raise RuntimeError('navidrome: the previous password was rejected; nothing changed')
+        from urllib.parse import quote
+        nd = Client(nd_url)
+        nd.headers['X-ND-Authorization'] = 'Bearer '+account['token']
+        path = '/api/user/'+quote(account['id'], safe='')
+        user = nd.call(path)
+        if not isinstance(user, dict) or user.get('id') != account['id']:
+            raise RuntimeError('navidrome: could not read the admin account; nothing changed')
+        # Upstream requires the current password when a user changes their own.
+        user.update(password=new, currentPassword=old)
+        nd.call(path, user, 'PUT')
+        if not login_ok('navidrome', nd_url, new):
+            raise RuntimeError('navidrome: password update was not accepted; check its UI')
+        out('navidrome: password changed and login verified; update music apps that log in to it')
+    out('Run scripts/up so Homepage receives the new qBittorrent password and Navidrome token.')
+
+
+def _previous(previous, key):
+    """Read one old value from the private pre-edit copy of .env."""
+    value = credential_files.read(Path(previous), set(), {key},
+                                  (credential_files.ALL_KEYS - {key}) | _config_keys(),
+                                  minimum_lengths={key: 1}).get(key)
+    if not value:
+        raise ValueError(f'--previous-env has no {key}')
+    return value
 
 
 def _config_keys():
