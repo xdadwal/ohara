@@ -8,6 +8,7 @@ This is the implemented repository configuration, not a claim that a production
 server is deployed or publicly reachable. Eleven applications run in the main Docker Compose project,
 with optional AdGuard Home in the separate `ohara-dns` project.
 Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
+For this host's routers, addresses and DNS path, see [network architecture](network.md).
 
 Jellyfin optionally uses the pinned Abyss web theme and Spotlight through a
 persistent read-only overlay; see [theme operations](jellyfin-theme.md).

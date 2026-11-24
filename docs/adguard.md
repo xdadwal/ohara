@@ -186,6 +186,7 @@ served by an AdGuard Home the owner runs on a separate OpenWrt device at
 192.168.1.105 (AdGuard on port 53, dashboard on port 3000, Unbound on port 5335
 as its upstream, the owner's chosen plain resolver as fallback). That device is
 not managed by this repository; its login stays with the owner.
+Its configuration and the whole topology are recorded in [network.md](network.md).
 
 - Stop, only after the router forwards to the other resolver and the bundled
   query log shows no router queries: `scripts/adguard stop --allow-dns-outage`.

@@ -103,6 +103,8 @@ certificate migration in [operations](docs/operations.md#godaddy-dns-validation-
 ## Optional LAN DNS
 
 For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
+This host's network, DNS path and OpenWrt device are described in
+[network architecture](docs/network.md).
 It starts independently with `scripts/adguard up`; router/client DNS cutover is
 a separate verified step. Existing applications and public DNS are preserved.
 For AdGuard and media administration in a browser without SSH tunnels, see
