@@ -6,7 +6,7 @@ certificate; no shared authentication service or public DNS record is added.
 
 | URL | Loopback backend |
 |---|---|
-| https://adguard.xdadwal.in | 127.0.0.1:3003 |
+| https://adguard.xdadwal.in | 192.168.1.105:3000 (AdGuard on the owner's OpenWrt device since 2026-11-24; the bundled one used 127.0.0.1:3003) |
 | https://radarr.xdadwal.in | 127.0.0.1:7878 |
 | https://sonarr.xdadwal.in | 127.0.0.1:8989 |
 | https://prowlarr.xdadwal.in | 127.0.0.1:9696 |

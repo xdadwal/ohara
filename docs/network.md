@@ -47,7 +47,9 @@ LAN device -> ISP router (192.168.1.1)
 ```
 
 - AdGuard accepts only 192.168.1.0/24 clients. Its dashboard is
-  `http://192.168.1.105:3000`; the login stays with the owner.
+  `http://192.168.1.105:3000`, also proxied by the server's LAN-only route
+  `https://adguard.DOMAIN` ([lan-services.md](lan-services.md)); the login stays
+  with the owner.
 - The eighteen `*.xdadwal.in` rewrites to 192.168.1.101 for
   [LAN-only routes](lan-services.md) live in that AdGuard.
 - Because the ISP router forwards for every device, AdGuard sees one client
@@ -176,9 +178,9 @@ between the two access points, and reachability from outside the LAN.
 - The network is flat: no guest or IoT separation, and no firewall between LAN
   devices and the server.
 - The OpenWrt device has pending package updates and no automatic updates.
-- Pending on the server, needs sudo: `sudo scripts/ntfy install-alerts`, and the
-  `https://adguard.DOMAIN` LAN route, which still points at the stopped bundled
-  dashboard.
+- Pending on the server, needs sudo: `sudo scripts/ntfy install-alerts`, and
+  `sudo scripts/lan-proxy --apply` so `https://adguard.DOMAIN` reaches the
+  dashboard on the OpenWrt device instead of the stopped bundled one.
 - Storage on 2026-11-24: the two USB media drives disconnected and reappeared
   intermittently during the day, and the Crucial SSD once identified itself as a
   1 GB `SM2259AB` device. The pool was unmounted and the media applications and

@@ -1118,4 +1118,7 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   client, and the Homepage tile (Homepage was stopped with the media pool at the
   time; see the operator report of the missing WD branch drive).
 - Rollback: see "This host" in [adguard.md](adguard.md).
-
+- 2026-11-24, later: the tracked LAN route for `adguard.DOMAIN` was repointed to
+  the OpenWrt dashboard. Static and unit suites pass; the dashboard answers a
+  request carrying the proxied Host header. Pending, needs sudo:
+  `sudo scripts/lan-proxy --apply`; until then the installed route returns 502.

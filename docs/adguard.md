@@ -204,8 +204,13 @@ Its configuration and the whole topology are recorded in [network.md](network.md
 - Homepage: the installed `DATA_ROOT/homepage/services.yaml` tile links to
   `http://192.168.1.105:3000` and has no widget, because the widget would need
   that device's login. The repository template still describes the bundled
-  project. `https://adguard.DOMAIN` still proxies to the stopped loopback
-  dashboard and returns an error until the LAN route is removed or repointed.
+  project.
+- LAN route: `configs/nginx/deployed/ohara-lan.conf` proxies
+  `https://adguard.DOMAIN` to `http://192.168.1.105:3000`, keeping the wildcard
+  certificate and the LAN-only source rule. Apply with
+  `sudo scripts/lan-proxy --apply`. The hop from the server to that device is
+  plain HTTP on the LAN. To roll back, restore `proxy_pass http://127.0.0.1:3003;`
+  and apply again.
 - Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
   router's DNS back to `ADGUARD_BIND_IP`, then reinstall alerts.
 
