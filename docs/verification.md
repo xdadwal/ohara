@@ -1172,3 +1172,13 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   `parental_enabled: false`, no remaining connection to 94.140.14.15 in
   `/proc/net/nf_conntrack` (it closed within about two minutes), and lookups plus
   ad blocking still answer from the server.
+- Alert worker realigned (2026-11-24 21:33 IST): the installed
+  `/usr/local/lib/ohara/alerts.py` still named the pre-rename key
+  `ADGUARD_EXTERNAL_IP` (install-time only, no runtime effect). Reran
+  `sudo scripts/ntfy install-alerts` with every monitored service running;
+  ntfy authentication verified, the installed worker is byte-identical to
+  `scripts/lib/alerts.py`, `/etc/ohara/alerts.json` keeps the DNS probe
+  192.168.1.105, a manual `systemctl start ohara-alerts.service` finished
+  cleanly and the timer is active. Previous worker, configuration and units:
+  `/var/backups/ohara/ntfy-alerts-20261124-213322-855868`. Rollback: copy those
+  files back and run `sudo systemctl daemon-reload`.
