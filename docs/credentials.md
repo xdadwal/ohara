@@ -18,20 +18,40 @@ Edit `.env` privately. Fill deployment settings and uncomment/fill the required
 credential entries copied from `.env.example` into `.env`; the example contains
 no working credential defaults.
 
-| Service | Required keys |
-|---|---|
-| Homepage | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` |
-| Jellyfin | `JELLYFIN_PASSWORD` |
-| qBittorrent | `QBITTORRENT_PASSWORD` |
-| Radarr | `RADARR_PASSWORD`, `RADARR_API_KEY` |
-| Sonarr | `SONARR_PASSWORD`, `SONARR_API_KEY` |
-| Prowlarr | `PROWLARR_PASSWORD`, `PROWLARR_API_KEY` |
-| Lidarr | `LIDARR_PASSWORD`, `LIDARR_API_KEY` |
-| Bazarr | `BAZARR_PASSWORD`, `BAZARR_API_KEY` |
-| Navidrome | `NAVIDROME_PASSWORD` |
+| Service | Always required | Setup-only |
+|---|---|---|
+| Homepage | `HOMEPAGE_AUTH_ENABLED=true`, `HOMEPAGE_AUTH_PASSWORD`, `HOMEPAGE_AUTH_SECRET` | |
+| Jellyfin | | `JELLYFIN_PASSWORD` |
+| qBittorrent | `QBITTORRENT_PASSWORD` | |
+| Radarr | `RADARR_API_KEY` | `RADARR_PASSWORD` |
+| Sonarr | `SONARR_API_KEY` | `SONARR_PASSWORD` |
+| Prowlarr | `PROWLARR_API_KEY` | `PROWLARR_PASSWORD` |
+| Lidarr | `LIDARR_API_KEY` | `LIDARR_PASSWORD` |
+| Bazarr | `BAZARR_API_KEY` | `BAZARR_PASSWORD` |
+| Navidrome | `NAVIDROME_PASSWORD` | |
 
-Homepage passwords require at least 8 characters, media passwords 16, and the
-Homepage session secret 32. Acquisition API keys must be 32 hexadecimal characters.
+A fresh installation needs every key in both columns. Setup-only passwords are read
+only when setup creates or first signs in to that login: `scripts/setup` seeding a
+new Bazarr configuration, and owner media setup (`scripts/media-setup --owner-email`)
+setting each Arr login once (journaled) and creating or signing in to Jellyfin/Seerr.
+Afterwards they may be deleted from `.env` and kept in a password manager; the
+applications keep their own accounts. A command that needs a missing one stops
+before changing anything and names it; add it back privately for that run.
+qBittorrent and Navidrome stay required because they are used at run time: the
+Homepage torrent widget and storage policy log in to qBittorrent, and the Homepage
+Navidrome token is derived from its password.
+
+Media passwords must be at least 16 characters where setup creates that login (a
+fresh Bazarr or qBittorrent configuration, an Arr login set by owner setup, the
+Jellyfin startup wizard and Navidrome's first admin). Commands that only log in to
+an existing account or forward the value accept any nonempty value, because the
+application already holds that password. Homepage passwords require at least 8
+characters and the Homepage session secret 32.
+
+On the xdadwal.in host (2026-11-25) the owner changed the Radarr, Sonarr, Prowlarr,
+Lidarr, Bazarr, qBittorrent and Navidrome logins to one shorter shared password,
+keeps all passwords in a password manager and removed the setup-only entries from
+`.env`. This is an owner decision; do not lengthen, split or restore them unasked. Acquisition API keys must be 32 hexadecimal characters.
 Use independent values. Existing installations must use their actual application
 values. Seerr initially authenticates through Jellyfin; OpenSpeedTest has no login.
 Navidrome uses its supplied password for supported first-run account creation and

@@ -66,12 +66,19 @@ class NavidromeTests(unittest.TestCase):
         self.url = 'http://127.0.0.1:' + str(server.server_port)
 
     def test_bootstrap_and_rerun_prove_login_without_changing_password(self):
-        navidrome.connect(self.url, 'supplied-secret')
-        navidrome.connect(self.url, 'supplied-secret')
-        self.assertEqual(self.password, 'supplied-secret')
+        navidrome.connect(self.url, 'supplied-secret-value')
+        navidrome.connect(self.url, 'supplied-secret-value')
+        self.assertEqual(self.password, 'supplied-secret-value')
         self.assertEqual(self.calls, [('GET', '/app/'), ('POST', '/auth/createAdmin'),
                          ('POST', '/auth/login'), ('GET', '/api/user/user-id'),
                          ('GET', '/app/'), ('POST', '/auth/login'), ('GET', '/api/user/user-id')])
+
+    def test_first_admin_needs_sixteen_characters_but_existing_login_does_not(self):
+        with self.assertRaisesRegex(ValueError, 'first Navidrome setup creates this login'):
+            navidrome.connect(self.url, 'short')
+        self.assertIsNone(self.password)
+        self.password = 'short'
+        navidrome.connect(self.url, 'short')
 
     def test_wrong_existing_password_fails_without_reset_or_secret_error(self):
         self.password = 'existing-secret'
@@ -86,19 +93,19 @@ class NavidromeTests(unittest.TestCase):
                      'window.__APP_CONFIG__ = {"firstTime": "true"}']:
             self.page = page
             with self.assertRaisesRegex(RuntimeError, 'bootstrap state'):
-                navidrome.connect(self.url, 'supplied-secret')
+                navidrome.connect(self.url, 'supplied-secret-value')
         self.assertIsNone(self.password)
         self.assertTrue(all(method == 'GET' for method, path in self.calls))
 
     def test_success_status_without_login_token_is_rejected(self):
-        self.password = 'supplied-secret'
+        self.password = 'supplied-secret-value'
         self.bad_login = True
         with self.assertRaisesRegex(RuntimeError, 'login was not verified'):
             navidrome.connect(self.url, self.password)
         self.assertNotIn(('GET', '/api/user/user-id'), self.calls)
 
     def test_protected_api_rejecting_token_fails_closed(self):
-        self.password = 'supplied-secret'
+        self.password = 'supplied-secret-value'
         self.reject_token = True
         with self.assertRaises(RuntimeError) as error:
             navidrome.connect(self.url, self.password)

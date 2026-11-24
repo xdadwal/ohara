@@ -87,6 +87,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   Migrate legacy split files with `scripts/migrate-credentials` before setup/up;
   never source `.env` or pass the whole file to containers. Media setup preserves
   account state; changing input values alone does not rotate existing passwords.
+  Jellyfin and the five Arr/Bazarr login passwords are setup-only and may be absent
+  from .env (the owner removed them on this host); ask for one only when a command
+  names it. The 16-character media minimum applies where setup creates a login.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.

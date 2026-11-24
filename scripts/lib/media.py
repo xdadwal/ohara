@@ -141,6 +141,10 @@ def configure_storage(root, urls=None):
           'Existing torrent states/overrides and custom recycle settings preserved.')
 
 
+def _jellyfin_wizard_done(url):
+    return bool(Client(url).call('/System/Info/Public')['StartupWizardCompleted'])
+
+
 def connect(c, root, email, urls=None):
     """Configure first-run accounts/connections via supported APIs, preserve reruns."""
     import json
@@ -168,6 +172,15 @@ def connect(c, root, email, urls=None):
         finally:
             if os.path.exists(name_tmp):
                 os.unlink(name_tmp)
+    # Check inputs before changing anything. Arr logins are set once (journaled);
+    # Jellyfin's is created only while its startup wizard is incomplete.
+    credential_files.require_new_account(values, {name.upper()+'_PASSWORD' for name in PORTS
+                                                  if not state.get(name+'-auth')}, 'Owner media setup')
+    jellyfin_new = not _jellyfin_wizard_done(urls['jellyfin'])
+    if jellyfin_new:
+        credential_files.require_new_account(values, {'JELLYFIN_PASSWORD'}, 'Owner media setup')
+    else:
+        credential_files.require_present(values, {'JELLYFIN_PASSWORD'}, 'Owner media setup')
     arr = {name: Client(urls[name], values[name.upper()+'_API_KEY']) for name in PORTS}
     for name, client in arr.items():
         version = '/api/v1' if name in ('prowlarr', 'lidarr') else '/api/v3'

@@ -80,7 +80,13 @@ def ensure_directory(path, uid, gid, mode=0o750):
 
 
 def prepare_storage(c, root):
-    credential_files.load(root)
+    _, media_values = credential_files.load(root)
+    # Check before creating anything: fresh Bazarr/qBittorrent are seeded with these logins.
+    data = Path(c['DATA_ROOT'])
+    if not (data/'bazarr/config/config.yaml').exists() and not (data/'bazarr/config/config.ini').exists():
+        credential_files.require_new_account(media_values, {'BAZARR_PASSWORD'}, 'First Bazarr setup')
+    if not (data/'qbittorrent/qBittorrent/qBittorrent.conf').exists():
+        credential_files.require_new_account(media_values, {'QBITTORRENT_PASSWORD'}, 'First qBittorrent setup')
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'
