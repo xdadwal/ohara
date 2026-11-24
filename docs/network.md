@@ -8,6 +8,8 @@ OpenWrt device are configured by the owner and recorded here.
 
 ## Topology
 
+A rendered diagram of the same layout is in the [README](../README.md#network-of-the-xdadwalin-host); keep both in step when the layout changes.
+
 ```
 Internet
    |
