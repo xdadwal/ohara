@@ -201,8 +201,8 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   was stopped: rewrites, client allowlist, query-log retention and the
   private-PTR/hosts-file switches. Blocklists and rules already matched. Query
   history was not moved. Later changes must be made on that device.
-- Homepage: the installed `DATA_ROOT/homepage/services.yaml` tile links to
-  `http://192.168.1.105:3000` and has no widget, because the widget would need
+- Homepage: the installed `DATA_ROOT/homepage/services.yaml` tile keeps its
+  `https://adguard.DOMAIN` link but has no widget, because the widget would need
   that device's login. The repository template still describes the bundled
   project.
 - LAN route: `configs/nginx/deployed/ohara-lan.conf` proxies

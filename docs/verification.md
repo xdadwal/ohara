@@ -1112,13 +1112,18 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   a blocked name returned 0.0.0.0. `ADGUARD_EXTERNAL_IP` was appended to `.env`
   and the installed Homepage tile repointed (previous file in
   `local/homepage-services.yaml.20261124-pre-adguard-retire`).
-- Pending, needs sudo: `sudo scripts/ntfy install-alerts`. Until then the
-  installed alert checks still target the stopped container.
 - Not verified: the external device across a reboot, lookups from a separate LAN
   client, and the Homepage tile (Homepage was stopped with the media pool at the
   time; see the operator report of the missing WD branch drive).
 - Rollback: see "This host" in [adguard.md](adguard.md).
 - 2026-11-24, later: the tracked LAN route for `adguard.DOMAIN` was repointed to
   the OpenWrt dashboard. Static and unit suites pass; the dashboard answers a
-  request carrying the proxied Host header. Pending, needs sudo:
-  `sudo scripts/lan-proxy --apply`; until then the installed route returns 502.
+  request carrying the proxied Host header.
+- Real host, 16:11 IST: `sudo scripts/lan-proxy --apply` **applied**;
+  `https://adguard.DOMAIN` now serves the OpenWrt dashboard's login page, an
+  unauthenticated API call returns 401, and the other LAN routes and the public
+  apex answer as before. `sudo scripts/ntfy install-alerts` **applied**: the
+  installed configuration probes DNS at the external address and no longer
+  contains the bundled container or its dashboard check; the next timer run
+  succeeded. The installed Homepage tile links to `https://adguard.DOMAIN` again,
+  without a widget.

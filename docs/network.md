@@ -178,13 +178,14 @@ between the two access points, and reachability from outside the LAN.
 - The network is flat: no guest or IoT separation, and no firewall between LAN
   devices and the server.
 - The OpenWrt device has pending package updates and no automatic updates.
-- Pending on the server, needs sudo: `sudo scripts/ntfy install-alerts`, and
-  `sudo scripts/lan-proxy --apply` so `https://adguard.DOMAIN` reaches the
-  dashboard on the OpenWrt device instead of the stopped bundled one.
+- The server-to-OpenWrt hop of `https://adguard.DOMAIN` is plain HTTP on the LAN.
 - Storage on 2026-11-24: the two USB media drives disconnected and reappeared
   intermittently during the day, and the Crucial SSD once identified itself as a
   1 GB `SM2259AB` device. The pool was unmounted and the media applications and
-  Homepage were stopped by the watchdog. Not diagnosed or repaired.
+  Homepage were stopped by the watchdog, which remounted the pool and restarted
+  them at 15:58 IST once both drives stayed detected. The cause of the
+  disconnects was not diagnosed; the WD adapter had re-enumerated about 42 times
+  in five days. See [storage pool](storage-pool.md).
 
 ## Rollback
 
