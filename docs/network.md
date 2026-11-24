@@ -62,14 +62,16 @@ LAN device -> ISP router (192.168.1.1)
   plain DNS to the root, TLD and authoritative servers, so the ISP can read the
   names; `fallback_dns` (one plain resolver) is used only when Unbound fails, and
   `bootstrap_dns` is unused because no upstream is a hostname.
-  AdGuard downloads its filter list from `adguardteam.github.io`. Its Browsing
-  Security option was found enabled on 2026-11-24 (an owner dashboard setting):
-  AdGuard then keeps an HTTPS connection to AdGuard's own service
-  (94.140.14.15:443) and sends it short hash prefixes of looked-up names.
+  AdGuard downloads its filter list from `adguardteam.github.io`. Browsing
+  Security and Parental Control must stay off to keep this true: when on, AdGuard
+  holds an HTTPS connection to AdGuard's own service (94.140.14.15:443) and
+  sends it short hash prefixes of looked-up names. Browsing Security was found
+  enabled on 2026-11-24 and the owner switched it off the same day; check with
+  `grep -E 'safebrowsing_enabled|parental_enabled' /etc/adguardhome/adguardhome.yaml`.
 - Connection tracking on the device shows only its own traffic, because bridged
   LAN traffic is not tracked: lookups arriving from the ISP router on port 53,
   AdGuard to Unbound on loopback 5335, Unbound to many authoritative servers on
-  UDP/TCP 53, the Browsing Security connection, NTP, and SSH, dashboard and probe
+  UDP/TCP 53, NTP, and SSH, dashboard and probe
   traffic from the server. Broadcasts from other LAN devices also appear.
 - The server's only direct queries to 192.168.1.105 are the alert probe for
   `example.org` once a minute; its ordinary lookups go through the ISP router.

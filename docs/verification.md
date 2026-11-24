@@ -1167,4 +1167,8 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   changed nothing observable: both services running, key-only SSH still enforced,
   lookups, filtering, a rewrite and DNSSEC failure handling as before. Not
   verified: the `network` phase and a first-time `dns` run on a stock device.
-
+- Browsing Security: the owner switched it off in the AdGuard dashboard on
+  2026-11-24. Read from the device afterwards: `safebrowsing_enabled: false`,
+  `parental_enabled: false`, no remaining connection to 94.140.14.15 in
+  `/proc/net/nf_conntrack` (it closed within about two minutes), and lookups plus
+  ad blocking still answer from the server.
