@@ -18,10 +18,9 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - name: Install integration test dependencies
-        run: python3 -m pip install PyYAML==6.0.3 bcrypt==4.3.0
-      - run: python3 -m unittest discover -s tests -v
-      - run: tests/test_setup.sh && tests/test_cli.sh && tests/static.sh
+      - name: Install pinned test and lint dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - run: tests/verify.sh
       - name: Check CLI with dummy configuration
         run: |
           cp .env.example .env

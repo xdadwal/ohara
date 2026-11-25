@@ -1,0 +1,6 @@
+# Development and CI only. A deployed host needs none of this: scripts/setup
+# installs what the commands use. Install into a virtualenv, for example:
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+PyYAML==6.0.3
+bcrypt==4.3.0
+ruff==0.17.6

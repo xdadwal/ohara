@@ -197,8 +197,10 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
 - Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,
   SSH access, networking, and host DNS. No recursive chown or destructive cleanup.
 - Never execute dotenv contents. Add configuration validation before consumption.
-- Verify with `python3 -m unittest discover -s tests -v`, `tests/test_setup.sh`,
+- Verify with `tests/verify.sh`, which runs `tests/lint.sh` (ruff, pinned in
+  requirements-dev.txt), `python3 -m unittest discover -s tests`, `tests/test_setup.sh`,
   `tests/test_cli.sh`, and `tests/static.sh`. Docker smoke tests: `tests/smoke.sh`.
+  Format Python with `tests/lint.sh --fix`; style is defined in ruff.toml.
 - Report static checks, disposable runtime checks, real Linux provisioning, and
   public reachability separately. One does not establish the others.
 - Commit feature work, push its feature branch, and open a PR unless opted out.

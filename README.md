@@ -181,12 +181,14 @@ The current approved one-by-one security maintenance checklist is
 [security update remediation](docs/superpowers/plans/2026-11-17-security-update-remediation.md).
 
 ```sh
-python3 -m unittest discover -s tests -v
-./tests/test_setup.sh
-./tests/test_cli.sh
-./tests/static.sh       # requires ShellCheck
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # once
+./tests/verify.sh       # lint, unit tests, CLI and static checks; requires ShellCheck
+./tests/lint.sh --fix   # apply the formatter and safe lint fixes (ruff.toml)
 ./tests/smoke.sh        # Docker; isolated disposable project and dummy data
 ```
+
+`tests/verify.sh` runs `tests/lint.sh`, `python3 -m unittest discover -s tests`,
+`tests/test_setup.sh`, `tests/test_cli.sh` and `tests/static.sh`; each also runs alone.
 
 `./scripts/check --static` checks configuration/Compose without requiring local
 storage or private files. It requires Docker CLI/Compose but no running daemon.
