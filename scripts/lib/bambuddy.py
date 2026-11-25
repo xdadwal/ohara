@@ -1,17 +1,14 @@
 """Optional Bambuddy lifecycle. Printer access and owner setup stay in its UI."""
 
-import base64
 import datetime
 import ipaddress
 import json
-import os
 from pathlib import Path
-import re
 
 import adguard
 import config
+import homepage_services
 import host
-import jellyfin_theme
 import media
 import runtime
 
@@ -51,25 +48,18 @@ def settings(c):
 
 
 def images(root):
-    values = config.parse(root / 'versions/bambuddy.env', {'BAMBUDDY_IMAGE'})
-    if not re.fullmatch(
-        r'ghcr.io/maziggy/bambuddy:[0-9.]+@sha256:[a-f0-9]{64}', values['BAMBUDDY_IMAGE']
-    ):
-        raise ValueError('Bambuddy requires an official immutable release image')
-    return values
+    return config.pinned_images(
+        root / 'versions/bambuddy.env',
+        {'BAMBUDDY_IMAGE'},
+        r'ghcr.io/maziggy/bambuddy:[0-9.]+',
+        'Bambuddy requires an official immutable release image',
+    )
 
 
 def require_storage(c, *, directories=True):
     base, expected = settings(c)
-    existing = base
-    while not existing.exists():
-        existing = existing.parent
-    result = json.loads(
-        runtime.run(
-            ['findmnt', '--json', '--target', str(existing), '-o', 'TARGET,FSTYPE'], capture=True
-        )
-    )['filesystems'][0]
-    if result['target'] != str(expected) or result['fstype'] not in {'ext4', 'xfs', 'btrfs', 'zfs'}:
+    result = runtime.filesystems_holding(base)[0]
+    if result['target'] != str(expected) or result['fstype'] not in runtime.LOCAL_FILESYSTEMS:
         raise ValueError('Bambuddy storage is not on the expected local Linux filesystem')
     if directories:
         for p in (base / 'data', base / 'logs'):
@@ -128,51 +118,17 @@ def proxy_gateway(docker, *, project='ohara-bambuddy'):
 
 
 def compose(c, root, args, *, capture=False, timeout=60):
-    if any(a in {'up', 'start', 'restart', 'create', 'run'} for a in args):
+    starting = runtime.starts_containers(args)
+    if starting:
         require_storage(c)
     base, _ = settings(c)
     values = {k: c[k] for k in ('RUN_UID', 'RUN_GID', 'TZ')}
-    values.update(BAMBUDDY_ROOT=str(base), COMPOSE_DISABLE_ENV_FILE='1')
+    values['BAMBUDDY_ROOT'] = str(base)
     values.update(images(root))
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k
-        in {
-            'PATH',
-            'HOME',
-            'USER',
-            'XDG_RUNTIME_DIR',
-            'DOCKER_CONFIG',
-            'DOCKER_HOST',
-            'DOCKER_CONTEXT',
-            'SSH_AUTH_SOCK',
-        }
-    }
-    prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
-    values['BAMBUDDY_PROXY_IP'] = (
-        proxy_gateway(prefix)
-        if any(a in {'up', 'start', 'restart', 'create', 'run'} for a in args)
-        else '127.0.0.1'
-    )
-    env.update(values)
-    if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
-    return runtime.run(
-        prefix
-        + [
-            'compose',
-            '--project-directory',
-            str(root),
-            '--env-file',
-            '/dev/null',
-            '-f',
-            str(root / 'compose/bambuddy.yaml'),
-            *args,
-        ],
-        env=env,
-        capture=capture,
-        timeout=timeout,
+    prefix = runtime.project_prefix(args)
+    values['BAMBUDDY_PROXY_IP'] = proxy_gateway(prefix) if starting else '127.0.0.1'
+    return runtime.project_compose(
+        root, 'compose/bambuddy.yaml', values, args, prefix=prefix, capture=capture, timeout=timeout
     )
 
 
@@ -250,20 +206,11 @@ def status():
 
 
 def homepage(c, root):
-    import yaml
-
-    path = Path(c['DATA_ROOT']) / 'homepage/services.yaml'
-    jellyfin_theme.safe(path)
-    before = path.read_text()
-    data = yaml.safe_load(before)
-    if any('Bambuddy' in entry for group in data for rows in group.values() for entry in rows):
+    path, before, data = homepage_services.read(c)
+    if homepage_services.cards(data, 'Bambuddy'):
         print('Existing Bambuddy Homepage card preserved')
         return
-    group = next((g['3D Print'] for g in data if '3D Print' in g), None)
-    if group is None:
-        group = []
-        data.append({'3D Print': group})
-    group.append(
+    homepage_services.group(data, '3D Print').append(
         {
             'Bambuddy': {
                 'icon': 'mdi-printer-3d',
@@ -272,28 +219,23 @@ def homepage(c, root):
             }
         }
     )
-    backup = (
-        root / 'local/bambuddy-backups' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')
+    homepage_services.backup(
+        root
+        / 'local/bambuddy-backups'
+        / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage'),
+        before,
     )
-    backup.mkdir(parents=True, mode=0o700)
-    config.create_file(backup / 'services.yaml', before)
-    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+    path.write_text(homepage_services.dump(data))
     print('Bambuddy Homepage card merged; existing cards and widgets preserved')
 
 
 def dns(c, root):
-    name = 'bambuddy.' + c['DOMAIN']
-    address, _ = adguard.settings(c)
-    api = media.Client(adguard.api_base(c))
-    api.headers['Authorization'] = (
-        'Basic ' + base64.b64encode(('admin:' + adguard.password(root)).encode()).decode()
+    adguard.ensure_rewrite(
+        c,
+        root,
+        'bambuddy.' + c['DOMAIN'],
+        'Conflicting Bambuddy DNS rewrite; preserve and review',
     )
-    matches = [r for r in api.call('/control/rewrite/list') if r['domain'] == name]
-    if matches:
-        if not all(r['answer'] == address and r.get('enabled', True) for r in matches):
-            raise ValueError('Conflicting Bambuddy DNS rewrite; preserve and review')
-    else:
-        api.call('/control/rewrite/add', {'domain': name, 'answer': address})
     print('Exact Bambuddy LAN DNS rewrite present; other records preserved')
 
 
@@ -327,8 +269,6 @@ def widget_config(domain, printer_id):
 
 def widget(c, root):
     """Install a status-only widget after an owner supplies an application key."""
-    import yaml
-
     import credentials
 
     homepage_credentials, _ = credentials.load(root)
@@ -346,30 +286,20 @@ def widget(c, root):
     status = api.call(f'/api/v1/printers/{printer_id}/status')
     if not isinstance(status, dict) or not isinstance(status.get('connected'), bool):
         raise ValueError('Bambuddy returned an unsupported printer status')
-    path = Path(c['DATA_ROOT']) / 'homepage/services.yaml'
-    jellyfin_theme.safe(path)
-    before = path.read_text()
-    data = yaml.safe_load(before)
-    cards = [
-        entry['Bambuddy']
-        for group in data
-        for rows in group.values()
-        for entry in rows
-        if 'Bambuddy' in entry
-    ]
+    path, before, data = homepage_services.read(c)
+    cards = homepage_services.cards(data, 'Bambuddy')
     if len(cards) != 1:
         raise ValueError('Expected exactly one existing Bambuddy Homepage card; run homepage first')
     if cards[0].get('widgets'):
         raise ValueError('Existing multiple Bambuddy widgets require manual review')
     cards[0]['widget'] = profile
-    after = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
+    after = homepage_services.dump(data)
     if after != before:
-        backup = (
+        homepage_services.backup(
             root
             / 'local/bambuddy-backups'
-            / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-widget')
+            / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-widget'),
+            before,
         )
-        backup.mkdir(parents=True, mode=0o700)
-        config.create_file(backup / 'services.yaml', before)
         path.write_text(after)
     print('Bambuddy status widget configured; recreate Homepage to load its allowlisted key')

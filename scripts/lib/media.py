@@ -8,7 +8,6 @@ import secrets
 import credentials as credential_files
 
 PORTS = {'radarr': 7878, 'sonarr': 8989, 'prowlarr': 9696, 'lidarr': 8686}
-SECRET_KEYS = credential_files.MEDIA_KEYS
 
 
 def prepare(c, root, create, directory, owner, group):

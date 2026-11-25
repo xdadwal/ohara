@@ -214,6 +214,18 @@ def images(path):
     return values
 
 
+def pinned_images(path, keys, reference, message):
+    """Parse one project's pin manifest; every value must be REFERENCE@sha256:<digest>.
+
+    REFERENCE is a regular expression for the repository and tag the project
+    accepts. A mismatch raises ValueError(message).
+    """
+    values = parse(path, keys)
+    if any(not re.fullmatch(reference + '@sha256:[a-f0-9]{64}', v) for v in values.values()):
+        raise ValueError(message)
+    return values
+
+
 def create_file(path, content, mode=0o600):
     """Never overwrite operator edits or follow an existing symlink."""
     try:
