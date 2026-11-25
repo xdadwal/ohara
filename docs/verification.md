@@ -1198,3 +1198,23 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   were written after the live change. The `wifi` phase was then run on the device: it reapplied the same values, `wifi reload` returned and both radios came back with country IN and `ieee80211ax=1`; it refuses a missing or malformed `COUNTRY` before changing anything. The `interface_auto` line of the `dns` phase was not rerun (already applied live). Rollback: copy the two
   saved files back to `/etc/config/`, then `/etc/init.d/unbound restart` and
   `wifi reload`.
+
+### Repository compared with the live host; Bambuddy 2FA and portfolio assistant recorded (2026-11-25)
+
+- Compared read-only from the host checkout at `544dd5a` (branch
+  `feat/adguard-primary-resolver`, including #64). Byte-identical: the seven
+  `configs/nginx/deployed/*.conf` files and `/etc/nginx/conf.d/` (no untracked
+  files there), `/usr/local/lib/ohara/alerts.py` and `storage_watchdog.py`, and the
+  SSH key-only policy. Nginx package `1.26.3-3+deb13u11`. All 20 running images
+  match the pins in `versions/` (Immich's Valkey by digest). Projects running:
+  `ohara`, `ohara-bambuddy`, `ohara-immich`, `ohara-kutt`, `ohara-maintainerr`,
+  `ohara-ntfy`, `ohara-orcaslicer`; `ohara-dns` stopped by owner decision. Every
+  `.env` key is known and `scripts/check` passes. The live Homepage files match
+  the templates apart from rendered hostnames and the script-added Bambuddy and
+  ntfy widgets.
+- Docs corrected: Bambuddy's `admin` has TOTP two-factor enabled (the docs said
+  no MFA); the portfolio's chat assistant, private `.env` and `/var/lib/portfolio`
+  state are now described in operations.md and replication.md.
+- Not compared: root-only `/etc/ohara/alerts.json` and `/etc/ohara/tls`,
+  `nginx -t`, certificate expiry, and the OpenWrt device's live state.
+

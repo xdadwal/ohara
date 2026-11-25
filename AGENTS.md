@@ -146,7 +146,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   /etc/ohara/storage-watchdog.json and timer; ordinary setup does not enable it.
 - Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
   docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
-  native password login, explicitly without adding MFA. Keep the backend
+  native password login, explicitly without requiring MFA. The owner later enabled
+  TOTP two-factor on the admin account (present 2026-11-25); keep it, never bypass
+  or reset it, and never reset the owner password from the database. Keep the backend
   loopback-only and use scripts/bambuddy-proxy with the owner-ready guard.
   Preserve other LAN-only admin routes and the dedicated SQLite/archive directory. Owner/printer access codes stay in its UI;
   never assume credentials or start/queue a print during deployment. Use bridge

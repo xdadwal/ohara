@@ -106,7 +106,15 @@ Use DNS mode below for certificate operations on this deployment: it preserves
 the separate apex route, private ACLs and existing wildcard lineage. HTTP mode
 rejects a separate dashboard hostname rather than replacing the portfolio route.
 Portfolio code/CSS updates and service restart instructions are in the portfolio
-checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
+checkout's `deploy/README.md`. Since 2026-11-25 the portfolio also runs a chat
+assistant that calls the OpenAI API: its keys and settings are in the portfolio
+checkout's own private `.env` (mode 0600, separate from Ohara's), and its
+`portfolio.service` unit gives it a writable state directory `/var/lib/portfolio`
+(mode 0700) holding `logpose.db` (chats and traces, including question/answer
+text) and `feedback.db`, both kept for 30 days by default. Ohara's Nginx route is
+unchanged: the assistant streams through it via the app's `X-Accel-Buffering: no`
+header and the default 60-second read timeout. Include `/var/lib/portfolio` and
+the portfolio `.env` in encrypted backups if those chats should survive. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
 The exact stable host configuration, including localhost redirects and the

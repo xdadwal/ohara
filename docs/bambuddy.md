@@ -39,7 +39,13 @@ selective Homepage integration; CI declares PyYAML explicitly.
 ## Proxy trust and public access
 
 The owner approved Internet access with native password login and explicitly
-without adding MFA. Public DNS already aliases `bambuddy.xdadwal.in` to the apex,
+without requiring MFA. The owner later enabled TOTP two-factor authentication on
+the `admin` account in Bambuddy's own UI; it was present and in use on 2026-11-25.
+Scripts neither require nor change it. Keep it: login then needs the password and a
+code from the owner's authenticator. Bambuddy 1.3.2 has no supported recovery for a
+forgotten password on this host (advanced auth and email are off, `admin` is the
+only user, and its CLI only bootstraps kiosk mode), so keep the password and the
+authenticator in the owner's password manager. Public DNS already aliases `bambuddy.xdadwal.in` to the apex,
 which resolves to this host's public IPv4. The existing wildcard certificate and
 router 80/443 forwarding are reused. No additional ports are forwarded; actual
 printer MQTT/FTPS/camera ports stay private.
