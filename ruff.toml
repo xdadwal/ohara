@@ -1,0 +1,30 @@
+# Formatting and lint rules for scripts/ and tests/. Run `make lint` (see Makefile).
+target-version = "py312"
+line-length = 100
+# Entry points in scripts/ have no .py suffix; lint them too. Bash ones are excluded.
+extend-include = ["scripts/*"]
+# Modules in scripts/lib and tests import each other by bare name.
+src = ["scripts/lib", "tests"]
+extend-exclude = [
+    "scripts/adguard", "scripts/check", "scripts/immich", "scripts/media-setup",
+    "scripts/setup", "scripts/status", "scripts/tailscale", "scripts/tls", "scripts/up",
+]
+
+[format]
+quote-style = "single"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",  # the formatter wraps code; long string literals are left alone
+    "B905",  # zip(strict=...) would change behaviour on length mismatch
+]
+
+[lint.per-file-ignores]
+# Entry points and tests put scripts/lib on sys.path before importing from it.
+"scripts/*" = ["E402"]
+# B023: test helpers are defined and called within one loop iteration.
+"tests/*" = ["E402", "B023"]
+
+[lint.isort]
+force-sort-within-sections = true
