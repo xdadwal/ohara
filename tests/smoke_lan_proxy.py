@@ -33,7 +33,7 @@ def main():
             data = (ROOT/'configs/nginx/deployed'/filename).read_text()
             data = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', data)
             data = re.sub(r'ssl_certificate_key\s+[^;]+;', 'ssl_certificate_key /fixture/key.pem;', data)
-            data = re.sub(r'proxy_pass http://127\.0\.0\.1:\d+;', 'proxy_pass http://127.0.0.1:18081;', data)
+            data = re.sub(r'proxy_pass http://[0-9.]+:\d+;', 'proxy_pass http://127.0.0.1:18081;', data)
             blocks.append(data)
         (base/'nginx.conf').write_text('events {}\nhttp {\n'+''.join(blocks)+
                                        '\nserver { listen 127.0.0.1:18081; return 200 "fixture backend"; }\n}\n')
@@ -89,7 +89,7 @@ def main():
             onboarding = bambuddy_proxy.render(ROOT)
             onboarding = re.sub(r'ssl_certificate\s+[^;]+;', 'ssl_certificate /fixture/cert.pem;', onboarding)
             onboarding = re.sub(r'ssl_certificate_key\s+[^;]+;', 'ssl_certificate_key /fixture/key.pem;', onboarding)
-            onboarding = re.sub(r'proxy_pass http://127\.0\.0\.1:\d+;', 'proxy_pass http://127.0.0.1:18081;', onboarding)
+            onboarding = re.sub(r'proxy_pass http://[0-9.]+:\d+;', 'proxy_pass http://127.0.0.1:18081;', onboarding)
             (base/'nginx.conf').write_text('events {}\nhttp {\n'+''.join(blocks[:2])+onboarding+
                                            '\nserver { listen 127.0.0.1:18081; return 200 "fixture backend"; }\n}\n')
             runtime.run(docker+['start', name])

@@ -59,7 +59,7 @@
         description: DNS administration (local network)
         widget:
           type: adguard
-          url: http://adguard:3000
+          url: '{{HOMEPAGE_VAR_ADGUARD_URL}}'
           username: admin
           password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
           fields:
@@ -84,7 +84,7 @@
     - Seerr:
         icon: jellyseerr.png
         href: "https://{{HOMEPAGE_VAR_REQUESTS_HOST}}"
-        description: Discover and request movies and shows
+        description: '{{HOMEPAGE_VAR_SEERR_DESCRIPTION}}'
         widget:
           type: seerr
           url: http://seerr:5055

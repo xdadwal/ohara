@@ -31,7 +31,7 @@ media settings on another machine, or to migrate private state safely.
 | Maintainerr (optional separate project) | Media maintenance; LAN-only administration | maintainerr.xdadwal.in; loopback 6246 |
 | Kutt (optional separate project) | Editable short links and QR display; dedicated PostgreSQL | kutt.DOMAIN; LAN-only owner onboarding before public activation |
 | ntfy (optional separate project) | Authenticated phone notifications and host alerts | ntfy.xdadwal.in; loopback 2586 |
-| AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 |
+| AdGuard Home (optional separate project) | LAN DNS, filtering and local domain rewrites | LAN TCP/UDP 53; private dashboard 3003 (stopped on the xdadwal.in host, which uses a separate device) |
 
 The dashboard runs [Homepage](https://github.com/gethomepage/homepage), with links to
 Jellyfin, Navidrome, Seerr, and OpenSpeedTest, plus native media, resource, clock and weather
@@ -47,6 +47,62 @@ The optional [Abyss Jellyfin theme](docs/jellyfin-theme.md) includes persistent
 CSS and Spotlight without changing the official image or media storage.
 Optional [Maintainerr](docs/maintainerr.md) connects the existing media services
 for owner-selected maintenance rules; initial integration creates no cleanup rules.
+
+## Network of the xdadwal.in host
+
+Current state (2026-11-24). Host-specific; details, commands and open items are in
+[network architecture](docs/network.md).
+
+```mermaid
+flowchart TB
+    internet(("Internet"))
+
+    subgraph isp["ISP router · 192.168.1.1"]
+        direction TB
+        isp_role["Gateway and NAT<br/>DHCP server for the whole LAN<br/>Forwards TCP 80/443 to the server<br/>Forwards DNS to 192.168.1.105<br/>Wi-Fi: ohara"]
+    end
+
+    subgraph owrt["OpenWrt device · 192.168.1.105 (static)"]
+        direction TB
+        bridge["Switch and Wi-Fi access point<br/>lan1-lan4 and Wi-Fi ohara bridged<br/>No DHCP, no routing, no NAT"]
+        adguard["AdGuard Home :53<br/>filtering and local rewrites<br/>dashboard :3000"]
+        unbound["Unbound :5335<br/>recursive, DNSSEC"]
+        adguard --> unbound
+    end
+
+    subgraph server["Ohara server · 192.168.1.101 (DHCP reservation)"]
+        direction TB
+        nginx["Host Nginx :80/:443<br/>public sites and LAN-only routes"]
+        apps["Docker applications<br/>all backends on loopback"]
+        pool[("Media pool /ohara/mnt<br/>internal disk + 2 USB drives")]
+        nginx --> apps --> pool
+    end
+
+    wifi["Wi-Fi and wired devices<br/>192.168.1.0/24"]
+    auth(("Root, TLD and<br/>authoritative DNS"))
+    fallback(("Fallback resolver<br/>only if Unbound fails"))
+
+    internet <--> isp
+    isp <-->|"cable to lan1"| owrt
+    owrt <-->|"cable from lan2"| server
+    wifi <-.-> isp
+    wifi <-.-> owrt
+
+    isp -->|"DNS lookups"| adguard
+    unbound -->|"plain DNS"| auth
+    adguard -.->|"fallback"| fallback
+    isp -->|"HTTPS port forward"| nginx
+    nginx -->|"adguard.xdadwal.in"| adguard
+```
+
+- **Addresses:** the ISP router is the only DHCP server. The OpenWrt device's
+  address is set on the device itself.
+- **Web traffic:** Internet to ISP router to the server's Nginx, passing through
+  the OpenWrt device as a plain switch.
+- **DNS:** every device asks the ISP router, which forwards to AdGuard; Unbound
+  resolves directly, with no third-party resolver in the normal path.
+- **Single point of failure:** the OpenWrt device carries LAN DNS, its own Wi-Fi
+  and the server's uplink.
 
 ## Fresh-host quick start
 
@@ -103,7 +159,9 @@ certificate migration in [operations](docs/operations.md#godaddy-dns-validation-
 ## Optional LAN DNS
 
 For LAN DNS and filtering, see [AdGuard Home setup](docs/adguard.md).
-It starts independently with `scripts/adguard up`; router/client DNS cutover is
+This host's network, DNS path and OpenWrt device are described in
+[network architecture](docs/network.md).
+On another target it starts independently with `scripts/adguard up`; router/client DNS cutover is
 a separate verified step. Existing applications and public DNS are preserved.
 For AdGuard and media administration in a browser without SSH tunnels, see
 [LAN-only HTTPS service routes](docs/lan-services.md).

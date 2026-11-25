@@ -58,6 +58,32 @@ class HostTests(unittest.TestCase):
             host.ensure_packages(['nginx', 'certbot'])
         self.assertTrue(all(c[0] == 'dpkg-query' for c in calls))
 
+    def nginx_floor(self, identity, version, newer):
+        calls = []
+        def fake(args, **kwargs):
+            calls.append(args)
+            if args[0] == 'dpkg-query':
+                return version
+            if not newer:
+                raise RuntimeError('dpkg: command failed')
+        with patch.object(host, 'run', side_effect=fake):
+            host.require_nginx_minimum(identity)
+        return calls
+
+    def test_nginx_security_floor_accepts_reviewed_or_newer_release(self):
+        calls = self.nginx_floor('debian', '1.26.3-3+deb13u12', True)
+        self.assertEqual(calls[-1], ['dpkg', '--compare-versions', '1.26.3-3+deb13u12', 'ge',
+                                     host.NGINX_MINIMUM['debian']])
+
+    def test_nginx_security_floor_rejects_older_release_without_upgrading(self):
+        with self.assertRaises(RuntimeError) as caught:
+            self.nginx_floor('debian', '1.26.3-3+deb13u10', False)
+        self.assertIn('--only-upgrade', str(caught.exception))
+        self.assertIn(host.NGINX_MINIMUM['debian'], str(caught.exception))
+
+    def test_nginx_security_floor_is_not_invented_for_other_distributions(self):
+        self.assertEqual(self.nginx_floor('ubuntu', '1.24.0-2ubuntu7', False), [])
+
     def test_missing_privileges_fails_without_mutation(self):
         with patch.object(host.os, 'geteuid', return_value=1000), self.assertRaises(RuntimeError):
             host.require_root()

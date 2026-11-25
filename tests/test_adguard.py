@@ -118,50 +118,63 @@ class AdguardTests(unittest.TestCase):
             adguard.stop(c, ROOT, allow_dns_outage=True)
             compose.assert_called_once_with(c, ROOT, ['stop'])
 
-    def test_fresh_config_uses_two_encrypted_providers(self):
+    def test_default_policy_is_one_encrypted_upstream_without_fallback(self):
         dns = adguard.initial_config(self.settings(), 'hash')['dns']
-        self.assertEqual(dns['upstream_dns'], ['https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'])
+        self.assertEqual(dns['upstream_dns'], ['https://dns.cloudflare.com/dns-query'])
         self.assertEqual(dns['fallback_dns'], [])
-        self.assertIn('9.9.9.9', dns['bootstrap_dns'])
+        self.assertEqual(dns['bootstrap_dns'], ['1.1.1.1', '1.0.0.1'])
 
     def run_upstreams(self, info, tested=None):
         calls = []
         state = dict(info)
+        c = self.settings()
         def api(root, path, body=None):
             calls.append((path, body))
             if path == 'dns_info':
                 return dict(state)
             if path == 'test_upstream_dns':
-                return tested if tested is not None else {u: 'OK' for u in body['upstream_dns']+body['bootstrap_dns']}
+                names = body['upstream_dns']+body['fallback_dns']+body['bootstrap_dns']
+                return tested if tested is not None else {u: 'OK' for u in names}
             state.update(body)
             return {}
         with patch.object(adguard, 'api', side_effect=api):
-            return adguard.upstreams(self.settings(), ROOT), calls, state
+            return adguard.upstreams(c, ROOT), calls, state
 
-    def test_upstreams_adds_missing_entries_and_preserves_existing(self):
-        code, calls, state = self.run_upstreams({
-            'upstream_dns': ['https://owner.example/dns-query', 'https://dns.cloudflare.com/dns-query'],
-            'bootstrap_dns': ['1.1.1.1', '1.0.0.1'], 'fallback_dns': [], 'ratelimit': 20})
+    LIVE = {'upstream_dns': ['https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'],
+            'bootstrap_dns': ['1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112'], 'fallback_dns': [], 'ratelimit': 20}
+
+    def test_upstreams_applies_policy_and_retires_other_entries(self):
+        code, calls, state = self.run_upstreams(self.LIVE)
         self.assertEqual(code, 0)
-        self.assertEqual(state['upstream_dns'], ['https://owner.example/dns-query',
-                         'https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query'])
-        self.assertEqual(state['bootstrap_dns'], ['1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112'])
+        self.assertEqual(state['upstream_dns'], ['https://dns.cloudflare.com/dns-query'])
+        self.assertEqual(state['fallback_dns'], [])
+        self.assertEqual(state['bootstrap_dns'], ['1.1.1.1', '1.0.0.1'])
         self.assertEqual(state['ratelimit'], 20)
         posted = [body for path, body in calls if path == 'dns_config']
-        self.assertEqual([set(body) for body in posted], [{'upstream_dns', 'bootstrap_dns'}])
+        self.assertEqual([set(body) for body in posted], [{'upstream_dns', 'fallback_dns', 'bootstrap_dns'}])
+
+    def test_external_resolver_selects_its_dashboard_and_blocks_bundled_changes(self):
+        c = self.settings()
+        self.assertEqual(adguard.api_base(c), 'http://127.0.0.1:3003')
+        adguard.require_bundled(c, 'up')
+        c['DNS_IP'] = '192.168.1.105'
+        self.assertEqual(adguard.api_base(c), 'http://192.168.1.105:3000')
+        for action in ('up', 'upstreams'):
+            with self.assertRaisesRegex(ValueError, 'DNS_IP is set'):
+                adguard.require_bundled(c, action)
+        with patch.object(adguard, 'api') as api, self.assertRaisesRegex(ValueError, 'DNS_IP is set'):
+            adguard.upstreams(c, ROOT)
+        api.assert_not_called()
 
     def test_upstreams_is_idempotent(self):
-        code, calls, _ = self.run_upstreams({'upstream_dns': list(adguard.UPSTREAMS),
-                                             'bootstrap_dns': list(adguard.BOOTSTRAP)})
+        code, calls, _ = self.run_upstreams({'upstream_dns': ['https://dns.cloudflare.com/dns-query'],
+                                             'bootstrap_dns': ['1.1.1.1', '1.0.0.1'], 'fallback_dns': None})
         self.assertEqual(code, 0)
         self.assertEqual([path for path, _ in calls], ['dns_info'])
 
-    def test_upstreams_changes_nothing_when_a_test_fails_or_plaintext_exists(self):
-        info = {'upstream_dns': ['https://dns.cloudflare.com/dns-query'], 'bootstrap_dns': ['1.1.1.1', '1.0.0.1']}
+    def test_upstreams_changes_nothing_when_a_test_fails(self):
         with self.assertRaisesRegex(ValueError, 'nothing changed'):
-            self.run_upstreams(info, tested={'https://dns.quad9.net/dns-query': 'timeout'})
-        with self.assertRaisesRegex(ValueError, 'plaintext'):
-            self.run_upstreams(dict(info, upstream_dns=['8.8.8.8']))
+            _, calls, state = self.run_upstreams(self.LIVE, tested={'https://dns.cloudflare.com/dns-query': 'timeout'})
 
 
 if __name__ == '__main__':

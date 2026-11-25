@@ -165,7 +165,7 @@ def homepage(c,root):
 
 def dns(c,root):
     name='maintainerr.'+c['DOMAIN'];address,_=adguard.settings(c)
-    api=media.Client('http://127.0.0.1:3003')
+    api=media.Client(adguard.api_base(c))
     api.headers['Authorization']='Basic '+base64.b64encode(('admin:'+adguard.password(root)).encode()).decode()
     rows=api.call('/control/rewrite/list')
     matching=[r for r in rows if r['domain']==name]

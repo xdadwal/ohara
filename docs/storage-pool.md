@@ -151,6 +151,16 @@ outage: journal entries progressed from `missing` to `settling` to `recover`,
 then both external mounts, the pool and all eight guarded consumers started
 automatically. No reboot or deliberate disk unplug was used to test recovery.
 
+On 2026-11-24 both USB drives disconnected and returned several times over about
+three hours while the owner was re-cabling nearby equipment; at one point the
+Crucial bridge enumerated as a 1 GB `SM2259AB` device before identifying normally
+again. The watchdog had stopped the pool, the eight consumers and Homepage, and
+at 15:58 IST, once both drives stayed detected, it remounted both branches and
+the pool and restarted the consumers without operator action. Afterwards the
+library directories were present and the applications answered locally. Not
+verified: file readability or playback. The WD bridge had re-enumerated about 42
+times in five days; replacing that adapter or cable is an open owner task.
+
 Recovery decisions and timestamps persist in root-only
 `/run/ohara-storage-watchdog/state.json` between timer runs. This runtime state
 resets on reboot. Missing disks clear the settling timestamp and stop only the

@@ -79,3 +79,18 @@ for the current inventory and operations.md for deployed-host migration.
 - Resource widgets were simplified to CPU, RAM, uptime and one filesystem usage/total
   entry. OpenSpeedTest is a link-only card; its iframe and extra media monitoring
   mount were removed. Jellyfin, Seerr, clock and weather are retained.
+
+## LAN DNS moved off the server (2026-11-24)
+
+Supersedes, for the xdadwal.in host only, the 2026-10-22 choice to run AdGuard
+Home in the bundled `ohara-dns` project and the "encrypted upstream only" policy.
+After two upstream timeout incidents (2026-11-21 and 2026-11-23) the owner first
+chose a plain primary resolver, then moved LAN DNS to an AdGuard Home with a
+recursive Unbound on a separate OpenWrt device and asked for the bundled AdGuard
+to be disabled. Accepted consequences: lookups are visible to the ISP instead of
+a resolver company; that device is a single point of failure for DNS, its Wi-Fi
+and the server's uplink; and it is configured by the owner outside this repository. Host Nginx stays on the server: moving it
+would require opening every loopback backend to the LAN. The bundled project,
+its policy and its documentation remain for other targets. See
+[network.md](network.md) and [adguard.md](adguard.md).
+

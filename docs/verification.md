@@ -1041,3 +1041,180 @@ sudo systemctl mask --now avahi-daemon.socket avahi-daemon.service
 - Not verified: the state after the next nightly logrotate run.
 - Rollback: `sudo systemctl unmask avahi-daemon.socket avahi-daemon.service`, then
   `sudo systemctl enable --now` on both.
+
+### AdGuard owner-chosen primary resolver, Quad9 retired (2026-11-23)
+
+Reason: a second incident on 2026-11-23, 16:20-16:47 IST, timed out Cloudflare
+and Quad9 DoH together, so a second encrypted provider did not help. From the
+server, plain DNS to 9.9.9.9 was dropped from the start of that incident, and
+TCP and ICMP to Google's address ranges (including Google DoH) failed while other
+destinations and DNS answers were normal; the cause on the router/ISP path was
+not determined. The owner then chose the resolver 163.53.87.74 (`dns.anonet.in`)
+as primary, with Cloudflare DoH as secondary, and removed Quad9. This replaces
+the earlier "no plaintext upstream" choice for this host only.
+
+- Unit: `python3 -m unittest discover -s tests` (267 tests) covers the default
+  policy, address validation, exact application, idempotence and refusal on a
+  failed upstream test.
+- Real host: `ADGUARD_PRIMARY_DNS` was appended to the private `.env`, the
+  previous configuration copied to the ignored
+  `local/adguard-AdGuardHome.yaml.20261123-pre-primary`, and
+  `scripts/adguard upstreams` applied. No restart. Installed state:
+  `upstream_dns` is the primary only, `fallback_dns` is Cloudflare DoH, bootstrap
+  is 1.1.1.1/1.0.0.1; allowlist and DNSSEC unchanged. TCP queries, a local
+  rewrite, a blocked name (0.0.0.0) and `dnssec-failed.org` (SERVFAIL) behave as
+  before, and no errors were logged.
+- Measured from the server: the primary validates DNSSEC and returns honest
+  NXDOMAIN. Forty real names resolved 39/40 directly (average 69 ms, against
+  40/40 and 21 ms for 1.1.1.1) and 40/40 through AdGuard (72 ms). Random
+  uncached names timed out about 3% of the time at a 5 second client limit, both
+  directly and through AdGuard.
+- Not verified: fallback to Cloudflare during a real primary outage (AdGuard's
+  10 second upstream timeout applies first), behaviour during another
+  router/ISP incident, and queries from a separate LAN client.
+- Rollback: remove `ADGUARD_PRIMARY_DNS` from `.env` and rerun
+  `scripts/adguard upstreams`.
+
+### Host Nginx security update (2026-11-23)
+
+Reason: Debian published `1.26.3-3+deb13u11` on 2026-11-18 (urgency high),
+backporting nine CVE fixes from upstream 1.30.7. The host ran `+deb13u10`.
+
+- Real host: **applied** at 19:45 IST with the command in
+  [operations.md](operations.md) ("Backups, upgrades, and recovery"). Only
+  `nginx` and `nginx-common` changed; configuration files were kept. `nginx -t`
+  passes, the unit is active with a master process started at 19:45:53, and
+  `https://xdadwal.in/` (200), the Homepage host (307 to login) and the music
+  host (302) answered from the server.
+- Not verified: requests from outside the LAN.
+- Not changed: the 112 other pending package updates, and automatic security
+  updates, which are not installed.
+- Future setups: `scripts/setup` now requires at least this release on Debian 13
+  (`NGINX_MINIMUM`, unit tested; the real installed package satisfies it per
+  `dpkg --compare-versions`). Not verified: a real fresh-machine setup run, and
+  Ubuntu 24.04, which has no recorded floor.
+- Rollback: reinstall `1.26.3-3+deb13u10` for both packages while the archive
+  still offers it.
+
+### Bundled AdGuard retired for an external resolver (2026-11-24)
+
+Reason: the owner moved LAN DNS to an AdGuard Home with Unbound on a separate
+OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
+
+- Unit: `python3 -m unittest discover -s tests` (272 tests) covers
+  `ADGUARD_EXTERNAL_IP` validation and the alert probe's choice of resolver.
+- Real host: the owner changed the router's DNS; the bundled query log showed the
+  router's last query at 08:30:49 UTC and none in the following 16 minutes. The
+  previous configuration was copied to the ignored
+  `local/adguard-AdGuardHome.yaml.20261124-pre-retire`, and
+  `scripts/adguard stop --allow-dns-outage` applied at about 08:51 UTC. Afterwards
+  lookups through the router still resolved, a rewrite returned 192.168.1.101 and
+  a blocked name returned 0.0.0.0. `ADGUARD_EXTERNAL_IP` was appended to `.env`
+  and the installed Homepage tile repointed (previous file in
+  `local/homepage-services.yaml.20261124-pre-adguard-retire`).
+- Not verified: the external device across a reboot, lookups from a separate LAN
+  client, and the Homepage tile (Homepage was stopped with the media pool at the
+  time; see the operator report of the missing WD branch drive).
+- Rollback: see "This host" in [adguard.md](adguard.md).
+- 2026-11-24, later: the tracked LAN route for `adguard.DOMAIN` was repointed to
+  the OpenWrt dashboard. Static and unit suites pass; the dashboard answers a
+  request carrying the proxied Host header.
+- Real host, 16:11 IST: `sudo scripts/lan-proxy --apply` **applied**;
+  `https://adguard.DOMAIN` now serves the OpenWrt dashboard's login page, an
+  unauthenticated API call returns 401, and the other LAN routes and the public
+  apex answer as before. `sudo scripts/ntfy install-alerts` **applied**: the
+  installed configuration probes DNS at the external address and no longer
+  contains the bundled container or its dashboard check; the next timer run
+  succeeded. The installed Homepage tile links to `https://adguard.DOMAIN` again,
+  without a widget.
+- 2026-11-24, key cleanup: `ADGUARD_EXTERNAL_IP` was renamed `DNS_IP`, and the
+  optional `ADGUARD_PRIMARY_DNS` policy added the day before was removed again,
+  because the bundled AdGuard it configured is retired here; the bundled policy
+  is Cloudflare DoH only. Entries above keep the names used at the time. In the
+  private `.env` the key was renamed and the dead `ADGUARD_PRIMARY_DNS` and
+  retired, ignored `LAN_IP`, `FILES_ROOT` and `FILES_HOST` lines removed (previous file in the ignored
+  `local/env.20261124-pre-key-cleanup`). `ADGUARD_BIND_IP`, `ADGUARD_NETWORK`
+  and `ADGUARD_PASSWORD` stay: the Kutt LAN rule reads `ADGUARD_NETWORK`, and
+  all three are needed to roll back to the bundled AdGuard. Unit suite (271),
+  `scripts/check` and `scripts/status` pass; the installed alert configuration
+  already holds the probe address, so no reinstall was needed.
+- 2026-11-24, Homepage widget: after the owner put the external AdGuard's login
+  in `ADGUARD_PASSWORD`, one authenticated status call was accepted, the widget
+  block was restored in the installed `services.yaml` with the external URL
+  (previous file in `local/homepage-services.yaml.20261124-pre-widget`), and
+  `scripts/up` recreated only Homepage. From inside the Homepage container its
+  own credential returned live statistics, and no failed login was logged
+  afterwards. Not verified: the rendered tile, which is behind Homepage's login.
+
+### External AdGuard support in scripts, config-driven dashboard, OpenWrt script (2026-11-24)
+
+- Unit: 273 tests, including dashboard selection by `DNS_IP`, refusal of the
+  bundled-only commands, and the `SEERR_LAN_ONLY` flag with the stack and
+  template variables. `tests/test_setup.sh`, `tests/test_cli.sh` and
+  `tests/static.sh` pass.
+- Real host: `scripts/adguard status` reports the external AdGuard reachable and
+  running; `up` and `upstreams` refuse. The rewrite steps of the Bambuddy,
+  Maintainerr, ntfy and Kutt scripts each found their existing record on the
+  external AdGuard and wrote nothing. `SEERR_LAN_ONLY=true` was added to `.env`,
+  the two template lines merged into the installed `services.yaml` (previous
+  file in `local/homepage-services.yaml.20261124-pre-vars`), and `scripts/up`
+  recreated only Homepage; inside the container both variables hold the expected
+  values and its credential fetched live statistics. Not verified: the rendered
+  cards, which are behind Homepage's login.
+- OpenWrt device: `configs/openwrt/setup.sh` passes `sh -n` and the device's own
+  `ash -n`. Its usage error and both `network` input refusals left no pending
+  change. The `dns` and `harden` phases were run on the configured device and
+  changed nothing observable: both services running, key-only SSH still enforced,
+  lookups, filtering, a rewrite and DNSSEC failure handling as before. Not
+  verified: the `network` phase and a first-time `dns` run on a stock device.
+- Browsing Security: the owner switched it off in the AdGuard dashboard on
+  2026-11-24. Read from the device afterwards: `safebrowsing_enabled: false`,
+  `parental_enabled: false`, no remaining connection to 94.140.14.15 in
+  `/proc/net/nf_conntrack` (it closed within about two minutes), and lookups plus
+  ad blocking still answer from the server.
+- Alert worker realigned (2026-11-24 21:33 IST): the installed
+  `/usr/local/lib/ohara/alerts.py` still named the pre-rename key
+  `ADGUARD_EXTERNAL_IP` (install-time only, no runtime effect). Reran
+  `sudo scripts/ntfy install-alerts` with every monitored service running;
+  ntfy authentication verified, the installed worker is byte-identical to
+  `scripts/lib/alerts.py`, `/etc/ohara/alerts.json` keeps the DNS probe
+  192.168.1.105, a manual `systemctl start ohara-alerts.service` finished
+  cleanly and the timer is active. Previous worker, configuration and units:
+  `/var/backups/ohara/ntfy-alerts-20261124-213322-855868`. Rollback: copy those
+  files back and run `sudo systemctl daemon-reload`.
+- OpenWrt Wi-Fi and Unbound (2026-11-24, about 22:05 IST, owner-approved): first
+  copies of `/etc/config/wireless` and `/etc/config/unbound` in
+  `/root/ohara-backup/20261124-pre-radio-unbound/` on the device. Applied
+  `unbound.ub_main.interface_auto=0`, `wireless.radio0.htmode=HE20`, and
+  `country=IN` on both radios, then restarted Unbound and ran `wifi reload`.
+  Verified: Unbound listens only on 127.0.0.1:5335 and the server's query to
+  192.168.1.105:5335 is refused; through AdGuard from the server, `example.org`
+  resolves, `doubleclick.net` returns 0.0.0.0, `adguard.xdadwal.in` returns
+  192.168.1.101 and `dnssec-failed.org` returns SERVFAIL; `iw reg get` reports
+  country IN; both hostapd configurations have `ieee80211ax=1` and `ieee80211n=1`;
+  a 2.4 GHz client reconnected at 65 Mbit/s MCS 7 (above the 54 Mbit/s legacy
+  limit) and the 5 GHz client at 1200 Mbit/s HE-MCS 11. The new `wifi` phase of
+  `configs/openwrt/setup.sh` and the `interface_auto` line of its `dns` phase
+  were written after the live change. The `wifi` phase was then run on the device: it reapplied the same values, `wifi reload` returned and both radios came back with country IN and `ieee80211ax=1`; it refuses a missing or malformed `COUNTRY` before changing anything. The `interface_auto` line of the `dns` phase was not rerun (already applied live). Rollback: copy the two
+  saved files back to `/etc/config/`, then `/etc/init.d/unbound restart` and
+  `wifi reload`.
+
+### Repository compared with the live host; Bambuddy 2FA and portfolio assistant recorded (2026-11-25)
+
+- Compared read-only from the host checkout at `544dd5a` (branch
+  `feat/adguard-primary-resolver`, including #64). Byte-identical: the seven
+  `configs/nginx/deployed/*.conf` files and `/etc/nginx/conf.d/` (no untracked
+  files there), `/usr/local/lib/ohara/alerts.py` and `storage_watchdog.py`, and the
+  SSH key-only policy. Nginx package `1.26.3-3+deb13u11`. All 20 running images
+  match the pins in `versions/` (Immich's Valkey by digest). Projects running:
+  `ohara`, `ohara-bambuddy`, `ohara-immich`, `ohara-kutt`, `ohara-maintainerr`,
+  `ohara-ntfy`, `ohara-orcaslicer`; `ohara-dns` stopped by owner decision. Every
+  `.env` key is known and `scripts/check` passes. The live Homepage files match
+  the templates apart from rendered hostnames and the script-added Bambuddy and
+  ntfy widgets.
+- Docs corrected: Bambuddy's `admin` has TOTP two-factor enabled (the docs said
+  no MFA); the portfolio's chat assistant, private `.env` and `/var/lib/portfolio`
+  state are now described in operations.md and replication.md.
+- Not compared: root-only `/etc/ohara/alerts.json` and `/etc/ohara/tls`,
+  `nginx -t`, certificate expiry, and the OpenWrt device's live state.
+

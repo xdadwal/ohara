@@ -87,6 +87,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   Migrate legacy split files with `scripts/migrate-credentials` before setup/up;
   never source `.env` or pass the whole file to containers. Media setup preserves
   account state; changing input values alone does not rotate existing passwords.
+  Jellyfin and the five Arr/Bazarr login passwords are setup-only and may be absent
+  from .env (the owner removed them on this host); ask for one only when a command
+  names it. The 16-character media minimum applies where setup creates a login.
 - When tasked with initial setup, follow docs/agent-setup.md: inspect the target
   machine and existing configuration first, then ask only for missing facts or
   choices that cannot be safely inferred. Do not assume example IPs/emails are real.
@@ -143,7 +146,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   /etc/ohara/storage-watchdog.json and timer; ordinary setup does not enable it.
 - Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
   docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
-  native password login, explicitly without adding MFA. Keep the backend
+  native password login, explicitly without requiring MFA. The owner later enabled
+  TOTP two-factor on the admin account (present 2026-11-25); keep it, never bypass
+  or reset it, and never reset the owner password from the database. Keep the backend
   loopback-only and use scripts/bambuddy-proxy with the owner-ready guard.
   Preserve other LAN-only admin routes and the dedicated SQLite/archive directory. Owner/printer access codes stay in its UI;
   never assume credentials or start/queue a print during deployment. Use bridge
@@ -180,8 +185,20 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
   IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
   DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  Upstreams are Cloudflare and Quad9 DoH with no plaintext fallback; add them to an
-  existing resolver with scripts/adguard upstreams, never by stopping DNS.
+  The bundled project's only upstream is Cloudflare DoH; apply that policy with
+  scripts/adguard upstreams, never by stopping DNS.
+  Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision.
+  LAN DNS runs on the owner's separate OpenWrt device (DNS_IP in private .env):
+  AdGuard Home, then Unbound resolving recursively, with the owner's plain resolver
+  only as fallback; no Cloudflare or Quad9 in the path. This repository does not
+  manage that device beyond configs/openwrt/setup.sh, which reproduces its
+  network role and the AdGuard/Unbound installation; its accounts, Wi-Fi and
+  AdGuard settings stay manual. With DNS_IP set, scripts/adguard status, the
+  service scripts' rewrite steps, the alert DNS probe and the Homepage widget use
+  that device (ADGUARD_PASSWORD is its login), the LAN route https://adguard.DOMAIN
+  proxies to it, and scripts/adguard up/upstreams refuse to run. Do not restart the bundled project
+  or change that device without an owner decision. Read docs/network.md first for
+  the topology, DNS path, OpenWrt configuration and open items.
   Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
   use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
   UI/API LAN-only. Reuse existing private application keys, preserve its state,

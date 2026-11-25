@@ -14,10 +14,14 @@ import host
 import runtime
 
 
-# Encrypted upstreams from two independent providers, so one provider's outage
-# does not stop LAN DNS. Plain addresses only resolve those resolver hostnames.
-UPSTREAMS = ('https://dns.cloudflare.com/dns-query', 'https://dns.quad9.net/dns-query')
-BOOTSTRAP = ('1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112')
+# Encrypted default upstream; its plain addresses only resolve that hostname.
+ENCRYPTED = 'https://dns.cloudflare.com/dns-query'
+BOOTSTRAP = ('1.1.1.1', '1.0.0.1')
+
+
+def policy(c):
+    """Upstream, fallback and bootstrap lists: one encrypted upstream, no fallback."""
+    return {'upstream_dns': [ENCRYPTED], 'fallback_dns': [], 'bootstrap_dns': list(BOOTSTRAP)}
 
 
 def settings(c):
@@ -33,6 +37,22 @@ def settings(c):
     return str(address), str(network)
 
 
+def api_base(c):
+    """Authenticated API of the resolver in use.
+
+    The bundled project's loopback dashboard, or, when the owner runs AdGuard on
+    another device (DNS_IP), that device's dashboard on its default port.
+    """
+    return f"http://{c['DNS_IP']}:3000" if c.get('DNS_IP') else 'http://127.0.0.1:3003'
+
+
+def require_bundled(c, action):
+    if c.get('DNS_IP'):
+        raise ValueError(f'DNS_IP is set: LAN DNS runs on the owner\'s device, so "{action}" would change or '
+                         'restart the retired bundled AdGuard. Manage that device in its dashboard, or remove '
+                         'DNS_IP first for a deliberate rollback')
+
+
 def initial_config(c, password_hash):
     address, network = settings(c)
     names = sorted({c[k] for k in ('DOMAIN', 'HOMEPAGE_HOST', 'REQUESTS_HOST',
@@ -46,9 +66,7 @@ def initial_config(c, password_hash):
         'dns': {
             'bind_hosts': ['0.0.0.0'], 'port': 1053,
             'allowed_clients': [network],
-            'upstream_dns': list(UPSTREAMS),
-            'bootstrap_dns': list(BOOTSTRAP),
-            'fallback_dns': [], 'use_private_ptr_resolvers': False,
+            **policy(c), 'use_private_ptr_resolvers': False,
             'hostsfile_enabled': False,
         },
         'filtering': {
@@ -158,44 +176,35 @@ def prepare(c, root):
         os.chown(target, uid, gid)
 
 
-def api(root, path, body=None):
+def api(root, path, body=None, base='http://127.0.0.1:3003'):
     token = base64.b64encode(('admin:'+password(root)).encode()).decode()
     headers = {'Authorization': 'Basic '+token}
     data = None
     if body is not None:
         data = json.dumps(body).encode()
         headers['Content-Type'] = 'application/json'
-    request = urllib.request.Request('http://127.0.0.1:3003/control/'+path, data=data, headers=headers)
+    request = urllib.request.Request(base+'/control/'+path, data=data, headers=headers)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open(request, timeout=30) as response:
         raw = response.read()
     return json.loads(raw) if raw.strip() else {}
 
 
-def merged(existing, reviewed):
-    """Existing entries in their order, then any reviewed entry still missing."""
-    existing = list(existing or [])
-    return existing+[item for item in reviewed if item not in existing]
-
-
 def upstreams(c, root):
-    """Add the reviewed upstream/bootstrap entries to a running resolver.
+    """Apply this target's upstream policy to a running resolver.
 
-    Uses the live API, so DNS is not restarted. Owner-added entries, fallback
-    settings, accounts, rewrites and filters are left as they are.
+    Uses the live API, so DNS is not restarted. The three lists are set exactly;
+    replaced values are printed. Accounts, rewrites, filters and all other DNS
+    settings are left as they are.
     """
+    require_bundled(c, 'upstreams')
+    wanted = policy(c)
     try:
         info = api(root, 'dns_info')
-        wanted = {'upstream_dns': merged(info.get('upstream_dns'), UPSTREAMS),
-                  'bootstrap_dns': merged(info.get('bootstrap_dns'), BOOTSTRAP)}
-        if all(info.get(key) == value for key, value in wanted.items()):
-            print('AdGuard upstreams already include the reviewed providers; nothing changed.')
+        if all((info.get(key) or []) == value for key, value in wanted.items()):
+            print('AdGuard upstreams already match the configured policy; nothing changed.')
             return 0
-        if not all(u.startswith(('https://', 'tls://', 'quic://', 'h3://', 'sdns://', '[/', '#'))
-                   for u in wanted['upstream_dns']):
-            raise ValueError('Existing AdGuard upstreams include a plaintext resolver; review them in the dashboard')
-        tested = api(root, 'test_upstream_dns', dict(wanted, fallback_dns=info.get('fallback_dns') or [],
-                                                     private_upstream=info.get('local_ptr_upstreams') or []))
+        tested = api(root, 'test_upstream_dns', dict(wanted, private_upstream=info.get('local_ptr_upstreams') or []))
         failed = sorted(name for name, result in tested.items() if result != 'OK')
         if failed:
             raise ValueError('AdGuard upstream test failed for '+', '.join(failed)+'; nothing changed')
@@ -204,9 +213,13 @@ def upstreams(c, root):
     except (OSError, urllib.error.URLError):
         print('AdGuard authenticated API unavailable; inspect the service locally.')
         return 1
-    if any(applied.get(key) != value for key, value in wanted.items()):
+    if any((applied.get(key) or []) != value for key, value in wanted.items()):
         raise ValueError('AdGuard did not report the requested upstreams; review the dashboard')
-    print('AdGuard upstreams: '+', '.join(applied['upstream_dns']))
+    for key in wanted:
+        if (info.get(key) or []) != wanted[key]:
+            print(f'{key}: replaced '+(', '.join(info.get(key) or []) or '(empty)'))
+    print('AdGuard upstreams: '+', '.join(applied['upstream_dns'])+
+          '; fallback: '+(', '.join(applied.get('fallback_dns') or []) or 'none'))
     print('Verify UDP/TCP queries from a LAN device.')
     return 0
 
@@ -214,7 +227,7 @@ def upstreams(c, root):
 def status(c, root):
     secret = password(root)
     token = base64.b64encode(('admin:'+secret).encode()).decode()
-    request = urllib.request.Request('http://127.0.0.1:3003/control/status',
+    request = urllib.request.Request(api_base(c)+'/control/status',
                                      headers={'Authorization': 'Basic '+token})
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -223,7 +236,7 @@ def status(c, root):
     except (OSError, urllib.error.URLError):
         print('AdGuard authenticated API unavailable; inspect the service locally.')
         return 1
-    good = data.get('running') is True and data.get('dns_port') == 1053
+    good = data.get('running') is True and data.get('dns_port') == (53 if c.get('DNS_IP') else 1053)
     print('AdGuard: authenticated API reachable; DNS '+('running' if good else 'not ready'))
     print('Verify UDP/TCP queries from a LAN device before changing router DHCP DNS.')
     return 0 if good else 1

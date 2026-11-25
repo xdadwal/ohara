@@ -29,6 +29,8 @@ def connect(url, password):
         raise RuntimeError('Navidrome bootstrap state unavailable; inspect service locally')
     credentials = {'username': 'admin', 'password': password}
     if config['firstTime']:
+        if len(password) < 16:
+            raise ValueError('NAVIDROME_PASSWORD: first Navidrome setup creates this login; supply at least 16 characters')
         # Upstream independently rejects createAdmin when any user already exists.
         # A race or interrupted request fails closed; rerun to prove the login.
         client.call('/auth/createAdmin', credentials)

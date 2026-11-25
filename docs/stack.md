@@ -8,6 +8,7 @@ This is the implemented repository configuration, not a claim that a production
 server is deployed or publicly reachable. Eleven applications run in the main Docker Compose project,
 with optional AdGuard Home in the separate `ohara-dns` project.
 Nginx and Certbot run on the Linux host. Public DNS is managed at GoDaddy.
+For this host's routers, addresses and DNS path, see [network architecture](network.md).
 
 Jellyfin optionally uses the pinned Abyss web theme and Spotlight through a
 persistent read-only overlay; see [theme operations](jellyfin-theme.md).
@@ -28,7 +29,7 @@ persistent read-only overlay; see [theme operations](jellyfin-theme.md).
 | Nginx (host) | Public HTTPS reverse proxy | TCP 80/443 |
 | Immich (optional separate project) | Personal photos/videos; no ML | immich.xdadwal.in; loopback 2283 |
 | Bambuddy (optional separate project) | A1 mini management; native password login | bambuddy.xdadwal.in; loopback 8008 |
-| AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003 |
+| AdGuard Home (optional) | LAN DNS, filtering, domain rewrites | Reserved LAN IPv4 TCP/UDP 53; loopback dashboard 3003. Stopped on this host since 2026-11-24; DNS runs on a separate device ([network](network.md)) |
 | Tailscale (optional host client) | Private remote OpenSSH; separate enrollment | Tailnet SSH port only via operator network policy |
 | Certbot (host) | Certificates and renewal | Host service/timer |
 | ntfy (optional separate project) | Private notification topics and host alerts | ntfy.xdadwal.in; loopback 2586 |
@@ -40,7 +41,8 @@ process from its own repository, not a Compose application. See replication.md.
 
 Only router TCP 80/443 is forwarded to Ohara. Application web ports remain
 loopback-only; private administration uses SSH forwarding. Optional AdGuard DNS
-is the explicit LAN-only exception, never a router port forward.
+is the explicit LAN-only exception, never a router port forward. On this host it
+is stopped, so the server's only non-loopback listeners are SSH, Nginx and Tailscale.
 There is no shared authentication service.
 This host also has approved [LAN-only HTTPS administration routes](lan-services.md)
 for AdGuard, Radarr, Sonarr, Prowlarr, qBittorrent, Lidarr and Bazarr. Their backend

@@ -38,6 +38,25 @@ def ensure_packages(packages):
             env=dict(os.environ, DEBIAN_FRONTEND='noninteractive'))
 
 
+# Lowest reviewed host Nginx package per distribution: a security floor, not an
+# exact pin, so later distribution security releases still install.
+NGINX_MINIMUM = {'debian': '1.26.3-3+deb13u11'}
+NGINX_UPGRADE = ('sudo apt-get update && sudo apt-get install --only-upgrade '
+                 '-o Dpkg::Options::=--force-confold nginx nginx-common')
+
+
+def require_nginx_minimum(identity):
+    minimum = NGINX_MINIMUM.get(identity)
+    if not minimum:
+        return
+    version = run(['dpkg-query', '-W', '-f=${Version}', 'nginx'], capture=True).strip()
+    try:
+        run(['dpkg', '--compare-versions', version, 'ge', minimum])
+    except RuntimeError:
+        raise RuntimeError(f'Host Nginx {version} is older than the reviewed security release {minimum}; '
+                           f'existing packages are not upgraded automatically. Run: {NGINX_UPGRADE}') from None
+
+
 def reject_conflicts():
     for package in ['docker.io', 'docker-compose', 'docker-compose-v2', 'podman-docker', 'containerd', 'runc']:
         if installed(package):
@@ -61,7 +80,13 @@ def ensure_directory(path, uid, gid, mode=0o750):
 
 
 def prepare_storage(c, root):
-    credential_files.load(root)
+    _, media_values = credential_files.load(root)
+    # Check before creating anything: fresh Bazarr/qBittorrent are seeded with these logins.
+    data = Path(c['DATA_ROOT'])
+    if not (data/'bazarr/config/config.yaml').exists() and not (data/'bazarr/config/config.ini').exists():
+        credential_files.require_new_account(media_values, {'BAZARR_PASSWORD'}, 'First Bazarr setup')
+    if not (data/'qbittorrent/qBittorrent/qBittorrent.conf').exists():
+        credential_files.require_new_account(media_values, {'QBITTORRENT_PASSWORD'}, 'First qBittorrent setup')
     owner = int(os.environ.get('SUDO_UID', os.getuid()))
     group = int(os.environ.get('SUDO_GID', os.getgid()))
     local = root / 'local'
@@ -155,6 +180,7 @@ def prepare(c, root, dry_run=False):
     run(['docker', 'compose', 'version'], capture=True)
     new_nginx = not installed('nginx')
     ensure_packages(['nginx', 'certbot'])
+    require_nginx_minimum(identity)
     if new_nginx:
         # Only a default site just installed by us may be disabled automatically.
         default = Path('/etc/nginx/sites-enabled/default')

@@ -12,7 +12,13 @@ input collection, user-managed credentials, and account setup boundaries.
 Support target: Ubuntu 24.04 LTS or Debian 13 with systemd, amd64/arm64. Bootstrap
 installs missing Docker Engine/Buildx/Compose from Docker's official apt repository
 and distribution Nginx/Certbot/bpytop. It preserves existing package versions and fails
-on conflicting Docker packages. No curl-to-shell installer, Samba, shell-profile
+on conflicting Docker packages. Host Nginx has a reviewed security floor in
+`scripts/lib/host.py` (`NGINX_MINIMUM`; Debian 13: `1.26.3-3+deb13u11`). A fresh
+install takes the distribution's current package; setup then stops if Nginx is
+older than the floor and prints the upgrade command, because it does not upgrade
+existing packages itself. It is a minimum, not an exact pin: superseded security
+packages leave the archive, and an exact pin would block the next fix. No floor is
+recorded for Ubuntu 24.04, whose patched version has not been reviewed. No curl-to-shell installer, Samba, shell-profile
 replacement, Wi-Fi configuration, resolver disabling, or bot cron installation.
 
 Run `bpytop` in a terminal or an interactive SSH session for host resource
@@ -53,6 +59,9 @@ described there; stop its timer/worker before planned media-storage maintenance.
 Optional LAN DNS/filtering is managed separately; follow [AdGuard Home](adguard.md)
 for configuration, direct UDP/TCP tests, DHCP cutover and rollback. It does not
 change host/router/client DNS automatically and must never be publicly forwarded.
+On this host DNS, Wi-Fi bridging and the server's uplink run through the owner's
+OpenWrt device; see [network architecture](network.md) before diagnosing DNS or
+connectivity here.
 
 ## LAN-only administration
 
@@ -97,7 +106,15 @@ Use DNS mode below for certificate operations on this deployment: it preserves
 the separate apex route, private ACLs and existing wildcard lineage. HTTP mode
 rejects a separate dashboard hostname rather than replacing the portfolio route.
 Portfolio code/CSS updates and service restart instructions are in the portfolio
-checkout's `deploy/README.md`. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
+checkout's `deploy/README.md`. Since 2026-11-25 the portfolio also runs a chat
+assistant that calls the OpenAI API: its keys and settings are in the portfolio
+checkout's own private `.env` (mode 0600, separate from Ohara's), and its
+`portfolio.service` unit gives it a writable state directory `/var/lib/portfolio`
+(mode 0700) holding `logpose.db` (chats and traces, including question/answer
+text) and `feedback.db`, both kept for 30 days by default. Ohara's Nginx route is
+unchanged: the assistant streams through it via the app's `X-Accel-Buffering: no`
+header and the default 60-second read timeout. Include `/var/lib/portfolio` and
+the portfolio `.env` in encrypted backups if those chats should survive. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
 The exact stable host configuration, including localhost redirects and the
@@ -306,6 +323,23 @@ with `scripts/up` in a maintenance window. Verify local and external behavior.
 Rollback may require restoring the previous data snapshot as well as configuration
 and image references if an application upgraded its database schema. Do not promise
 that an old image can read a migrated database.
+
+Host Nginx and Certbot are distribution packages, not image pins, and this host
+has no automatic package updates. After applying a newer reviewed Nginx security
+release, raise `NGINX_MINIMUM` in the same change. Check for a pending host Nginx security release
+with `apt-cache policy nginx` and read it with `apt-get changelog nginx`. Apply it
+alone, keeping the installed configuration files:
+
+```bash
+sudo apt-get install --only-upgrade -o Dpkg::Options::=--force-confold nginx nginx-common
+sudo nginx -t
+```
+
+The package replaces the running binary itself. Verify the new version with
+`dpkg -l nginx nginx-common`, a fresh `ExecMainStartTimestamp` from
+`systemctl show nginx`, and a request to each public site. Rollback is
+`sudo apt-get install nginx=<previous> nginx-common=<previous>` while the previous
+version is still offered by the archive.
 
 ## Verification scope
 

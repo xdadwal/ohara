@@ -50,7 +50,17 @@ ports or Docker socket are needed.
 
 Jellyfin shows movie/series/episode counts and Now Playing, with usernames and
 playback controls hidden. Its version 2 widget matches the pinned Jellyfin 12.4.
-Seerr shows pending requests, processing requests and issues. Everyone with access
+Seerr shows pending requests, processing requests and issues. Its widget uses the
+internal `http://seerr:5055` URL, so it is unaffected by where the site is
+reachable. Its description is `HOMEPAGE_VAR_SEERR_DESCRIPTION`, which ends with
+"(local network)" when `.env` sets `SEERR_LAN_ONLY=true`, as on this host where
+the Seerr site is LAN-only (2026-11-18). The flag only labels the card; the
+access rule itself is in the host's Nginx configuration.
+
+Both variables are non-secret and derived in `compose/stack.yaml`. An existing
+dashboard needs the two template lines merged once into
+`DATA_ROOT/homepage/services.yaml` (`url: '{{HOMEPAGE_VAR_ADGUARD_URL}}'` and
+`description: '{{HOMEPAGE_VAR_SEERR_DESCRIPTION}}'`), then `scripts/up`. Everyone with access
 to the dashboard can see these widgets' information.
 
 ## Clock and weather
@@ -184,7 +194,10 @@ Radarr, Sonarr and Lidarr show only `queued`. qBittorrent shows `leech`, `seed`,
 `download` and `upload`, without expanded per-torrent progress rows. These native
 count blocks represent unfinished/completed torrents, including paused or queued
 ones; they are not strict counts of torrents currently transferring bytes. Rates
-are live sums. AdGuard shows only `blocked` and `latency`. Maintainerr retains
+are live sums. AdGuard shows only `blocked` and `latency`. Its URL is
+`HOMEPAGE_VAR_ADGUARD_URL`: the bundled `http://adguard:3000`, or
+`http://DNS_IP:3000` when `.env` sets `DNS_IP` for an owner-run AdGuard on another
+device, as on this host ([adguard.md](adguard.md)). Maintainerr retains
 handled items/reclaimable storage; the other enabled widgets are unchanged.
 
 Lifecycle commands map the existing RADARR_API_KEY, SONARR_API_KEY, LIDARR_API_KEY,

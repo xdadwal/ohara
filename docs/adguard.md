@@ -1,5 +1,11 @@
 # AdGuard Home LAN DNS
 
+> **This host (xdadwal.in) since 2026-11-24:** the bundled project described
+> below is stopped. LAN DNS is an owner-run AdGuard Home with Unbound on a
+> separate OpenWrt device. Read ["This host"](#this-host-bundled-adguard-retired-for-an-external-one-2026-11-24)
+> and [network.md](network.md) before using any command on this page here. The
+> rest of this page remains the procedure for a fresh or other target.
+
 AdGuard is optional and runs in the separate `ohara-dns` Compose project defined
 by `compose/adguard.yaml`. Starting it does not restart the eleven application
 containers. Public DNS stays at GoDaddy and host Nginx continues serving HTTPS.
@@ -50,28 +56,26 @@ ssh -N -L 3003:127.0.0.1:3003 akshay@192.168.1.101
 Open `http://localhost:3003`, username **admin**, using the supplied password.
 Use the actual SSH username/address for another host.
 
-Initial settings use two independent DNS-over-HTTPS providers, Cloudflare
-(`https://dns.cloudflare.com/dns-query`) and Quad9 (`https://dns.quad9.net/dns-query`),
-so one provider's outage does not stop LAN DNS. Both are free and need no account.
-Quad9's default endpoint also blocks known malicious domains. 1.1.1.1/1.0.0.1 and
-9.9.9.9/149.112.112.112 are used only for bootstrap resolution of those two
-hostnames; there is no plaintext fallback upstream.
-
-An existing installation keeps its own settings on `up`. To add the reviewed
-providers to a running resolver without restarting DNS:
+The only upstream is Cloudflare DNS over HTTPS
+(`https://dns.cloudflare.com/dns-query`), with 1.1.1.1/1.0.0.1 used only for
+bootstrap resolution of that hostname, no fallback and no plaintext upstream. A
+fresh setup writes this policy into the initial configuration. An existing
+installation keeps its own settings on `up`; apply the policy to a running
+resolver, without restarting DNS, with:
 
 ```sh
 scripts/adguard upstreams
 scripts/adguard status
 ```
 
-The command reads the private ADGUARD_PASSWORD, uses the loopback API, tests the
-resulting list first and changes nothing if any entry fails or an existing
-upstream is plaintext. It only appends missing entries: owner-added upstreams,
-fallback settings, accounts, rewrites and filters are preserved, and a second run
-reports no change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP.
-To undo it, remove the entry under Settings → DNS settings → Upstream DNS servers
-in the dashboard. The AdGuard DNS
+The command reads the private ADGUARD_PASSWORD, uses the loopback API and tests
+the resulting lists first, changing nothing if any entry fails. It sets
+`upstream_dns`, `fallback_dns` and `bootstrap_dns` exactly and prints what it
+replaced, so upstreams added by hand in the dashboard are removed; accounts,
+rewrites, filters and other DNS settings are preserved. A second run reports no
+change. Verify afterwards with UDP and TCP queries to ADGUARD_BIND_IP, a local
+rewrite, a blocked name and DNSSEC failure handling. A different upstream is an
+owner choice made in the dashboard, which this command would replace. The AdGuard DNS
 filter is enabled; Safe Search and parental controls are not imposed. Query logs
 and statistics retain one day initially. Verify filter download success in the
 dashboard. Review these privacy/provider choices there if desired.
@@ -159,3 +163,60 @@ credentials in its environment. See [Homepage widgets](homepage-widgets.md).
 AdGuard image pins live independently in `versions/adguard.env`, paired with
 `compose/adguard.yaml`; the main stack no longer carries the optional DNS pin.
 See [deployment layout](deployment-layout.md).
+
+## This host: bundled AdGuard retired for an external one (2026-11-24)
+
+By owner decision the bundled project is **stopped** on this host. LAN DNS is
+served by an AdGuard Home the owner runs on a separate OpenWrt device at
+192.168.1.105 (AdGuard on port 53, dashboard on port 3000, Unbound on port 5335
+as its upstream, the owner's chosen plain resolver as fallback). That device is
+not managed by this repository; its login stays with the owner.
+Its configuration and the whole topology are recorded in [network.md](network.md).
+
+- Stop, only after the router forwards to the other resolver and the bundled
+  query log shows no router queries: `scripts/adguard stop --allow-dns-outage`.
+  `restart: unless-stopped` keeps it stopped across reboots. Its configuration and
+  data stay in `DATA_ROOT/adguard`.
+- Record the other resolver in private `.env` as `DNS_IP` (a private
+  LAN IPv4 of another device). It is used only by the alert DNS probe while the
+  bundled project is not running; reinstall alerts afterwards with
+  `sudo scripts/ntfy install-alerts`, which also drops the bundled container and
+  dashboard checks. The device itself is set up with `configs/openwrt/setup.sh`;
+  see [network.md](network.md).
+- Settings were copied once by editing the other AdGuard's configuration while it
+  was stopped: rewrites, client allowlist, query-log retention and the
+  private-PTR/hosts-file switches. Blocklists and rules already matched. Query
+  history was not moved. Later changes must be made on that device.
+- Homepage: the widget URL is the variable `HOMEPAGE_VAR_ADGUARD_URL`, which
+  `compose/stack.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
+  the bundled `http://adguard:3000` otherwise; the template and the installed
+  `DATA_ROOT/homepage/services.yaml` both use it. `scripts/up` recreates only
+  Homepage after a change. Test a changed `ADGUARD_PASSWORD` once with
+  `scripts/adguard status` before reloading Homepage: the device blocks an
+  address for 15 minutes after five failed logins, and the server's address is
+  also the one its LAN route uses.
+- LAN route: `configs/nginx/deployed/ohara-lan.conf` proxies
+  `https://adguard.DOMAIN` to `http://192.168.1.105:3000`, keeping the wildcard
+  certificate and the LAN-only source rule. Apply with
+  `sudo scripts/lan-proxy --apply`. The hop from the server to that device is
+  plain HTTP on the LAN. To roll back, restore `proxy_pass http://127.0.0.1:3003;`
+  and apply again.
+- Resolution on that device is AdGuard to Unbound (recursive, DNSSEC-validating,
+  plain DNS to authoritative servers), with the owner's plain resolver as
+  `fallback_dns`. No Cloudflare or Quad9 resolver is in the path, and
+  `scripts/adguard upstreams` has no effect on it. The ISP can see lookups; no resolver company does.
+- With `DNS_IP` set, `scripts/adguard status` and the rewrite steps of
+  `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and `scripts/ntfy` use
+  the external dashboard (`http://DNS_IP:3000`) with username `admin` and
+  `ADGUARD_PASSWORD`, which is now that device's login. `scripts/adguard up` and
+  `upstreams` refuse to run, because they would restart the bundled project or
+  replace the Unbound upstream with the bundled policy. Other rewrites and
+  filters are changed in the dashboard; verify with `dig NAME @192.168.1.1`. The
+  bundled account's previous password is in the ignored
+  `local/env.20261124-pre-key-cleanup`.
+- Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
+  router's DNS back to `ADGUARD_BIND_IP`, restore `proxy_pass http://127.0.0.1:3003;`
+  in the LAN route and apply it, remove `DNS_IP` and set `ADGUARD_PASSWORD` back,
+  run `scripts/up`, then reinstall alerts. Rewrites or filters added
+  on the external device since the cutover must be copied back by hand.
+

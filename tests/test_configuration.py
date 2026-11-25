@@ -15,6 +15,25 @@ class ConfigurationTests(unittest.TestCase):
             path.write_text(text)
             return config.load(path)
 
+    def test_external_dns_address_must_be_another_private_lan_device(self):
+        base = (ROOT / '.env.example').read_text()
+        self.assertEqual(self.load(base + 'DNS_IP=192.168.1.105\n')['DNS_IP'], '192.168.1.105')
+        for bad in ('8.8.8.8', '127.0.0.1', 'dns.lan', 'fd00::1'):
+            with self.assertRaises(ValueError):
+                self.load(base + f'DNS_IP={bad}\n')
+
+    def test_seerr_lan_only_flag_is_presence_based(self):
+        base = (ROOT / '.env.example').read_text()
+        self.assertEqual(self.load(base + 'SEERR_LAN_ONLY=true\n')['SEERR_LAN_ONLY'], 'true')
+        with self.assertRaises(ValueError):
+            self.load(base + 'SEERR_LAN_ONLY=false\n')
+        stack = (ROOT / 'compose/stack.yaml').read_text()
+        self.assertIn('HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000', stack)
+        self.assertIn('${SEERR_LAN_ONLY:+ (local network)}', stack)
+        template = (ROOT / 'configs/homepage/services.yaml').read_text()
+        self.assertIn("url: '{{HOMEPAGE_VAR_ADGUARD_URL}}'", template)
+        self.assertIn("description: '{{HOMEPAGE_VAR_SEERR_DESCRIPTION}}'", template)
+
     def test_example_valid(self):
         self.assertEqual(config.load(ROOT / '.env.example')['DOMAIN'], 'xdadwal.in')
 

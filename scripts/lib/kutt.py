@@ -218,7 +218,7 @@ def dns(c,root):
     import adguard
     name,_,_=settings(c);address,_=adguard.settings(c)
     with socket.socket() as probe:probe.bind((address,0))
-    api=media.Client('http://127.0.0.1:3003')
+    api=media.Client(adguard.api_base(c))
     api.headers['Authorization']='Basic '+base64.b64encode(('admin:'+adguard.password(root)).encode()).decode()
     rows=[r for r in api.call('/control/rewrite/list') if r['domain']==name]
     if rows and not all(r['answer']==address and r.get('enabled',True) for r in rows):raise ValueError('Conflicting Kutt DNS record; preserve and inspect')

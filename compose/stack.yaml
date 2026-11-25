@@ -34,6 +34,9 @@ services:
       HOMEPAGE_VAR_LIDARR_API_KEY: ${HOMEPAGE_VAR_LIDARR_API_KEY:-}
       HOMEPAGE_VAR_QBITTORRENT_PASSWORD: ${HOMEPAGE_VAR_QBITTORRENT_PASSWORD:-}
       HOMEPAGE_VAR_ADGUARD_PASSWORD: ${HOMEPAGE_VAR_ADGUARD_PASSWORD:-}
+      # Bundled AdGuard on the shared network, or the owner's device when DNS_IP is set.
+      HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000
+      HOMEPAGE_VAR_SEERR_DESCRIPTION: Discover and request movies and shows${SEERR_LAN_ONLY:+ (local network)}
       HOMEPAGE_VAR_NTFY_PASSWORD: ${HOMEPAGE_VAR_NTFY_PASSWORD:-}
     ports:
       - "127.0.0.1:3002:3000"
