@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import tempfile
 
+import config
 from runtime import run
 
 TARGET = Path('/etc/nginx/conf.d/ohara.conf')
@@ -18,26 +19,9 @@ def render(c, root, https=False, acme_names=()):
         text += '\n' + navidrome_config(c, root)
     if https and int(c.get('PORTFOLIO_PORT', '0')):
         text += '\n' + (root / 'configs/nginx/portfolio.template').read_text()
-    for key in [
-        'DOMAIN',
-        'REQUESTS_HOST',
-        'SPEED_HOST',
-        'JELLYFIN_HOST',
-        'HOMEPAGE_HOST',
-        'NAVIDROME_HOST',
-    ]:
+    for key in config.HOST_KEYS:
         text = text.replace('@' + key + '@', c[key])
-    names = {
-        c[k]
-        for k in [
-            'DOMAIN',
-            'REQUESTS_HOST',
-            'SPEED_HOST',
-            'JELLYFIN_HOST',
-            'HOMEPAGE_HOST',
-            'NAVIDROME_HOST',
-        ]
-    }
+    names = config.hostnames(c)
     # Keep renewal challenges for certificate names retained for rollback, while
     # never restoring their retired HTTPS application routes.
     text = text.replace('@HOSTS@', ' '.join(sorted(names | set(acme_names))))
@@ -115,17 +99,7 @@ def configured_names(text):
 
 
 def challenge_config(old, c):
-    names = {
-        c[k]
-        for k in [
-            'DOMAIN',
-            'REQUESTS_HOST',
-            'SPEED_HOST',
-            'JELLYFIN_HOST',
-            'HOMEPAGE_HOST',
-            'NAVIDROME_HOST',
-        ]
-    }
+    names = config.hostnames(c)
     missing = sorted(names - configured_names(old))
     if not missing:
         return old
@@ -154,20 +128,7 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     challenge = challenge_config(previous, c)
     # Retain old names in the certificate during cutover so restoring the previous
     # HTTPS config still serves a certificate covering its original names.
-    names = sorted(
-        configured_names(previous)
-        | {
-            c[k]
-            for k in [
-                'DOMAIN',
-                'REQUESTS_HOST',
-                'SPEED_HOST',
-                'JELLYFIN_HOST',
-                'HOMEPAGE_HOST',
-                'NAVIDROME_HOST',
-            ]
-        }
-    )
+    names = sorted(configured_names(previous) | config.hostnames(c))
     args = [
         'certbot',
         'certonly',

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import re
 
+import config
 import dns_godaddy
 import proxy
 from runtime import run
@@ -96,17 +97,7 @@ def nginx_config(old, c, root):
         return block
 
     result = re.sub(r'(?ms)^server \{\n.*?^\}', update, old)
-    required = {
-        c[k]
-        for k in (
-            'DOMAIN',
-            'REQUESTS_HOST',
-            'SPEED_HOST',
-            'JELLYFIN_HOST',
-            'HOMEPAGE_HOST',
-            'NAVIDROME_HOST',
-        )
-    }
+    required = config.hostnames(c)
     if required - changed == {c['NAVIDROME_HOST']} and c[
         'NAVIDROME_HOST'
     ] not in proxy.configured_names(old):

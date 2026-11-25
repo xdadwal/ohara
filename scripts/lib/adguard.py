@@ -66,17 +66,7 @@ def require_bundled(c, action):
 def initial_config(c, password_hash):
     address, network = settings(c)
     names = sorted(
-        {
-            c[k]
-            for k in (
-                'DOMAIN',
-                'HOMEPAGE_HOST',
-                'REQUESTS_HOST',
-                'SPEED_HOST',
-                'JELLYFIN_HOST',
-                'NAVIDROME_HOST',
-            )
-        }
+        config.hostnames(c)
         | {
             service + '.' + c['DOMAIN']
             for service in (

@@ -66,6 +66,21 @@ IMAGES = {
     'NAVIDROME_IMAGE',
 }
 
+# Settings that each name one hostname the main Nginx routes serve.
+HOST_KEYS = (
+    'DOMAIN',
+    'REQUESTS_HOST',
+    'SPEED_HOST',
+    'JELLYFIN_HOST',
+    'HOMEPAGE_HOST',
+    'NAVIDROME_HOST',
+)
+
+
+def hostnames(c):
+    """The distinct hostnames of the main routes for a loaded configuration."""
+    return {c[key] for key in HOST_KEYS}
+
 
 def parse(path, keys, optional=frozenset(), ignored=frozenset()):
     values = {}
