@@ -3,11 +3,11 @@
 
 import argparse
 from pathlib import Path
-import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
 import config
 import maintainerr
 
@@ -53,8 +53,4 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print('Ohara Maintainerr: ' + str(error), file=sys.stderr)
-        sys.exit(1)
+    cli.run(main, 'Ohara Maintainerr')

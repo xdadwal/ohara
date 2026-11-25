@@ -1,13 +1,12 @@
 # Formatting and lint rules for scripts/ and tests/. Run `make lint` (see Makefile).
 target-version = "py312"
 line-length = 100
-# Entry points in scripts/ have no .py suffix; lint them too. Bash ones are excluded.
+# Entry points in scripts/ have no .py suffix; lint them too. Only setup is bash.
 extend-include = ["scripts/*"]
 # Modules in scripts/lib and tests import each other by bare name.
 src = ["scripts/lib", "tests"]
 extend-exclude = [
-    "scripts/adguard", "scripts/check", "scripts/immich", "scripts/media-setup",
-    "scripts/setup", "scripts/status", "scripts/tailscale", "scripts/tls", "scripts/up",
+    "scripts/setup",
     # Installed byte-for-byte as /usr/local/lib/ohara/storage_watchdog.py, and
     # `scripts/storage-watchdog install` refuses to rerun when the two differ.
     # Leave it untouched unless the worker itself has to change.

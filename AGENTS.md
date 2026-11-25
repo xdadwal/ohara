@@ -84,6 +84,9 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   `.env` and `local/` are private. Never print secrets or resolved Compose config.
 - Commands resolve their own repository path. Use `scripts/setup --help`,
   `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.
+  Each file in scripts/ is a thin argparse entry point that ends with `cli.run`
+  (scripts/lib/cli.py); put operational logic in a scripts/lib module, where tests
+  import it. Only scripts/setup is bash, because it may have to install Python first.
 - Setup prepares a supported Linux host; `up` starts local services; TLS activation
   is a separate explicit step after owner/account setup. Do not deploy to a live
   host merely because a code change was requested.
