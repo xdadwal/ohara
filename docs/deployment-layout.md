@@ -13,7 +13,6 @@ ignored/private. The scripts resolve their repository root themselves.
 | Printer management | `compose/bambuddy.yaml` | `versions/bambuddy.env` | `scripts/bambuddy` |
 | Media maintenance | `compose/maintainerr.yaml` | `versions/maintainerr.env` | `scripts/maintainerr` |
 | Notifications | `compose/ntfy.yaml` | `versions/ntfy.env` | `scripts/ntfy` |
-| Short links | `compose/kutt.yaml` | `versions/kutt.env` | `scripts/kutt` |
 
 Reusable main-stack overrides live in `compose/overrides/media-pool.yaml` and
 `compose/overrides/jellyfin-theme.yaml`. Their helpers include them only when the
@@ -25,8 +24,6 @@ move. AdGuard's existing pin was moved out of the main manifest into its own
 manifest; it was not upgraded. There is one canonical copy of each pin. No
 production container, application directory, volume, account, private input,
 network, port or host service needs to move or restart for this layout change.
-Historical private Kutt backup archives retain the filename `versions.kutt.env`
-inside each backup for compatibility; that is not an active deployment manifest.
 
 ## Fresh setup
 
@@ -42,7 +39,6 @@ scripts/check --static
 scripts/immich check --static
 scripts/bambuddy check --static
 scripts/ntfy check --static
-scripts/kutt check --static
 ```
 
 `--static` is inspection, not preparation/deployment or proof of host/Internet
@@ -99,7 +95,6 @@ tests/static.sh
 tests/smoke.sh
 python3 tests/smoke_immich.py
 python3 tests/smoke_bambuddy.py
-python3 tests/smoke_kutt.py
 ```
 
 The disposable tests copy the new directory structure into isolated roots and

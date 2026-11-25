@@ -350,8 +350,7 @@ def install(c,root):
     for name,port,path,project in [('Immich',2283,'/api/server/ping','ohara-immich/immich-server'),
                                    ('Bambuddy',8008,'/health','ohara-bambuddy/bambuddy'),
                                    ('Maintainerr',6246,'/','ohara-maintainerr/maintainerr'),
-                                   ('AdGuard',3003,'/','ohara-dns/adguard'),
-                                   ('Kutt',3010,'/api/health','ohara-kutt/kutt')]:
+                                   ('AdGuard',3003,'/','ohara-dns/adguard')]:
         if project in running:rows.append((name,port,path,False))
     d={'url':ntfy.BASE,'username':ntfy.USER,'password':ntfy.password(root),'topic':ntfy.TOPIC,
        'checks':[{'label':n,'url':f'http://127.0.0.1:{p}'+path,'media':m} for n,p,path,m in rows],
@@ -367,14 +366,11 @@ def install(c,root):
     d['integrations']={
         'containers':[{'project':p,'service':svc,'media':svc in media_names}
                       for p,svc in (r.split('/',1) for r in running) if p in
-                      {'ohara','ohara-ntfy','ohara-bambuddy','ohara-maintainerr','ohara-dns','ohara-immich','ohara-kutt'}],
+                      {'ohara','ohara-ntfy','ohara-bambuddy','ohara-maintainerr','ohara-dns','ohara-immich'}],
         'tailscale':Path('/usr/bin/tailscale').exists(),
         'watchdog':bool(d['pool']),
         'tls':[ntfy.settings(c)[0],c['REQUESTS_HOST'],c['JELLYFIN_HOST']],
     }
-    if 'ohara-kutt/kutt' in running:
-        import kutt
-        d['integrations']['tls'].append(kutt.settings(c)[0])
     probe=dns_probe(c,running)
     if probe:d['integrations']['dns']=probe
     if 'ohara-bambuddy/bambuddy' in running and values.get('HOMEPAGE_VAR_BAMBUDDY_API_KEY'):

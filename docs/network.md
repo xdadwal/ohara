@@ -58,6 +58,8 @@ LAN device -> ISP router (192.168.1.1)
   `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`, `speed` and `tv` under
   the domain. They serve
   [LAN-only routes](lan-services.md) live in that AdGuard.
+  The `kutt` rewrite is stale since Kutt was retired on 2026-11-25; it answers
+  for a name with no route and can be deleted in that AdGuard by the owner.
 - No third-party resolver answers lookups. Unbound has no forwarders and speaks
   plain DNS to the root, TLD and authoritative servers, so the ISP can read the
   names; `fallback_dns` (one plain resolver) is used only when Unbound fails, and
@@ -89,7 +91,7 @@ Unchanged by the network move and described in [stack](stack.md),
 - Host Nginx (Debian package, security floor in `scripts/lib/host.py`) is the only
   public listener, on TCP 80/443, with Certbot certificates. Every application
   backend binds to loopback. SSH is key-only on 22. There is no host firewall.
-- Compose projects: `ohara` (eleven applications), `ohara-immich`, `ohara-kutt`,
+- Compose projects: `ohara` (eleven applications), `ohara-immich`,
   `ohara-ntfy`, `ohara-bambuddy`, `ohara-orcaslicer`, `ohara-maintainerr`, and the
   stopped `ohara-dns`.
 - Media lives on the mergerfs pool at `/ohara/mnt` over an internal directory and
@@ -144,7 +146,7 @@ address outside the ISP router's DHCP range, reserved there.
      reverse resolvers off. General settings: query log retention 24 hours.
    - AdGuard, Filters, DNS rewrites: the eighteen names listed under "DNS path",
      each answering 192.168.1.101. The server's service scripts add their own
-     name when they run (`scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt`,
+     name when they run (`scripts/bambuddy`, `scripts/maintainerr`,
      `scripts/ntfy`), because `DNS_IP` points them at this dashboard.
    - OpenWrt UI, Network, Wireless: the same network name, WPA2 passphrase and
      security mode as the ISP router on both radios, on different channels (11

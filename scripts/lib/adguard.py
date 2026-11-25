@@ -58,7 +58,7 @@ def initial_config(c, password_hash):
     names = sorted({c[k] for k in ('DOMAIN', 'HOMEPAGE_HOST', 'REQUESTS_HOST',
                                   'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')} |
                    {service+'.'+c['DOMAIN'] for service in
-                    ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'immich', 'maintainerr', 'bambuddy', 'ntfy')} | {c.get('KUTT_HOST','kutt.'+c['DOMAIN'])})
+                    ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'immich', 'maintainerr', 'bambuddy', 'ntfy')})
     return {
         'schema_version': 34,  # Unchanged in pinned AdGuard v0.107.80.
         'http': {'address': '0.0.0.0:3000'},
