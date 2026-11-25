@@ -88,6 +88,8 @@ a guide disagrees.
 ## Repository map
 
 - `compose/stack.yaml`, `.env.example`, and `versions/stack.env` define deployment.
+  `compose/stack.yaml` includes the main stack's group files in `compose/stack/`;
+  services that call each other share a file (see `compose/README.md`).
 - Commands resolve their own repository path. Use `scripts/setup --help`,
   `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`,
   and `scripts/tls --help`.

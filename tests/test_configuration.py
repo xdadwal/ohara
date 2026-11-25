@@ -28,7 +28,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(self.load(base + 'SEERR_LAN_ONLY=true\n')['SEERR_LAN_ONLY'], 'true')
         with self.assertRaises(ValueError):
             self.load(base + 'SEERR_LAN_ONLY=false\n')
-        stack = (ROOT / 'compose/stack.yaml').read_text()
+        stack = (ROOT / 'compose/stack/homepage.yaml').read_text()
         self.assertIn('HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000', stack)
         self.assertIn('${SEERR_LAN_ONLY:+ (local network)}', stack)
         template = (ROOT / 'configs/homepage/services.yaml').read_text()

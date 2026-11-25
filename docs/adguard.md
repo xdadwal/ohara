@@ -190,7 +190,7 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   private-PTR/hosts-file switches. Blocklists and rules already matched. Query
   history was not moved. Later changes must be made on that device.
 - Homepage: the widget URL is the variable `HOMEPAGE_VAR_ADGUARD_URL`, which
-  `compose/stack.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
+  `compose/stack/homepage.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
   the bundled `http://adguard:3000` otherwise; the template and the installed
   `DATA_ROOT/homepage/services.yaml` both use it. `scripts/up` recreates only
   Homepage after a change. Test a changed `ADGUARD_PASSWORD` once with
