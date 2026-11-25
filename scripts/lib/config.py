@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 
 BAMBUDDY_KEYS = {'BAMBUDDY_ROOT', 'BAMBUDDY_MOUNT'}
+# Retired Kutt settings: accepted but ignored so existing .env files keep loading.
 KUTT_KEYS = {'KUTT_HOST','KUTT_ROOT','KUTT_MOUNT','KUTT_LAN_NETWORK','KUTT_TLS_CERT','KUTT_TLS_KEY','KUTT_ALLOW_SHORT_DB_PASSWORD'}
 NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY', 'NTFY_ALLOW_SHORT_PASSWORD'}
 DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK', 'DNS_IP', 'SEERR_LAN_ONLY'}
@@ -49,10 +50,6 @@ def load(path):
             raise ValueError('DNS_IP must be one literal LAN IPv4 address') from None
         if not external.is_private or external.is_loopback or values['DNS_IP'] == values.get('ADGUARD_BIND_IP'):
             raise ValueError('DNS_IP must be the private LAN address of another device')
-    if values.get('KUTT_ALLOW_SHORT_DB_PASSWORD','false') not in {'true','false'}:
-        raise ValueError('KUTT_ALLOW_SHORT_DB_PASSWORD must be true or false')
-    if values.get('KUTT_HOST') and not HOST.fullmatch(values['KUTT_HOST']):
-        raise ValueError('KUTT_HOST must be a valid hostname')
     if values.get('NTFY_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
         raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
     values.pop('FILES_ROOT', None)

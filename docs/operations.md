@@ -518,20 +518,29 @@ changes and configure Seerr separately; preserve private inputs and alert state.
 Repeated media outages: follow the [USB/storage incident investigation](storage-incident-2026-10-31.md)
 to correlate kernel disconnects with the guarded media unit before restarting services.
 
-## Optional URL shortener
+## Retired: Kutt short links (2026-11-25)
 
-For Kutt and its independent PostgreSQL project, follow [Kutt setup and recovery](kutt.md).
-Discover the target's real hostname, private LAN CIDR, certificate paths and
-independent local storage first. The owner supplies only KUTT_DB_PASSWORD and KUTT_JWT_SECRET privately in .env;
-never infer or generate them. Start the containers before UI owner creation.
-The owner chooses their login password in that UI; public activation prompts
-privately for it without saving it. Persistent KUTT_PASSWORD is deprecated.
-Use the separate prepare/up/proxy/homepage/dns commands and LAN-only native owner
-onboarding. Public proxy activation proves native login using existing account
-state; it never creates/resets an owner. Reinstall the optional authenticated ntfy
-alert configuration after startup to include both containers and the HTTPS route.
-Existing-state recovery retains secret files, PostgreSQL state, account/short-code
-identity and reviewed pins. See the guide for exact commands, private backup,
-explicitly authorized restore, verification and scoped rollback.
+The owner retired Kutt and chose to delete its data: every short link and Kutt
+account is gone, and `kutt.DOMAIN` no longer has a route. The repository no longer
+contains its Compose project, pins, helpers, Nginx template or tests. A host that
+still runs it is torn down as follows, from a master checkout, as root:
+
+```sh
+docker compose -p ohara-kutt down            # containers and private network
+docker image rm kutt/kutt:v3.2.6 postgres:17.11-alpine3.24   # only if unused
+backup=/var/backups/ohara/kutt-retire-$(date +%Y%m%d-%H%M%S)
+install -d -m 0700 "$backup"
+cp -p /etc/nginx/conf.d/ohara-kutt.conf "$backup"/
+rm /etc/nginx/conf.d/ohara-kutt.conf && nginx -t && systemctl reload nginx
+```
+
+Then remove the Kutt card from the live `DATA_ROOT/homepage/services.yaml`
+(Homepage reloads it), reinstall alerts with `sudo scripts/ntfy install-alerts`
+so Kutt's checks, containers and TLS route are dropped, and delete the `KUTT_*`
+lines from `.env` (they are ignored if left). Deleting `KUTT_ROOT` (default
+`DATA_ROOT/kutt`, which holds PostgreSQL and the DB/JWT secret files) and any
+`/var/backups/ohara/kutt-*` or `local/kutt-backups` archives is permanent; do it
+only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard is on
+the owner's OpenWrt device and is removed there by the owner, if at all.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).

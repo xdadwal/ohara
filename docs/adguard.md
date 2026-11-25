@@ -206,7 +206,7 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   `fallback_dns`. No Cloudflare or Quad9 resolver is in the path, and
   `scripts/adguard upstreams` has no effect on it. The ISP can see lookups; no resolver company does.
 - With `DNS_IP` set, `scripts/adguard status` and the rewrite steps of
-  `scripts/bambuddy`, `scripts/maintainerr`, `scripts/kutt` and `scripts/ntfy` use
+  `scripts/bambuddy`, `scripts/maintainerr` and `scripts/ntfy` use
   the external dashboard (`http://DNS_IP:3000`) with username `admin` and
   `ADGUARD_PASSWORD`, which is now that device's login. `scripts/adguard up` and
   `upstreams` refuse to run, because they would restart the bundled project or
