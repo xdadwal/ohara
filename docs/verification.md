@@ -1218,3 +1218,30 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
 - Not compared: root-only `/etc/ohara/alerts.json` and `/etc/ohara/tls`,
   `nginx -t`, certificate expiry, and the OpenWrt device's live state.
 
+
+### Root-only checks; Kutt retired and its data deleted (2026-11-25)
+
+- Root-only comparison: the installed alert worker and both units match the repo;
+  `/etc/ohara/alerts.json` is root:root 0600 and its checks and containers matched
+  the running projects. `nginx -t` passes and `/etc/nginx/conf.d/` matched the
+  deployed baseline. Private keys are 0600. The `ohara-wildcard` certificate
+  (`*.xdadwal.in`, `xdadwal.in`) expires 2027-01-14.
+- **Open: wildcard renewal is not automated.** The renewal config still uses the
+  original manual hook (`local/wildcard-tls/manual-auth.py`), which only records
+  the challenge locally; it has no cleanup hook. The GoDaddy hook and
+  `/etc/ohara/dns-godaddy.json` are not installed. Certbot's timer will fail to
+  renew from about 2026-12-15 until `sudo scripts/tls --configure-renewal` is run
+  with an owner-supplied PAT (operations.md, GoDaddy DNS validation).
+- Kutt retired by owner decision after #66, following the operations.md steps:
+  `ohara-kutt` containers and network removed (no Kutt or PostgreSQL image was
+  left on the host); `ohara-kutt.conf` and the live Homepage `services.yaml` backed
+  up to root-only `/var/backups/ohara/kutt-retire-20261125-130933/`, the route
+  removed, `nginx -t` passed and Nginx reloaded; the Homepage card and the four
+  `KUTT_*` lines in `.env` removed; alerts reinstalled (no Kutt check, container
+  or TLS entry; first run succeeded); `/ohara/kutt` (63 MB of PostgreSQL data and
+  secret files) deleted. Nginx now rejects the TLS handshake for kutt.xdadwal.in;
+  ohara.xdadwal.in and tv.xdadwal.in still answer, `scripts/check` and
+  `scripts/status` pass, and nothing listens on 3010.
+- Kept: older Kutt backups (six under `/var/backups/ohara/kutt*`, two under
+  `local/kutt-backups`), pending an owner decision. The `kutt` rewrite on the
+  OpenWrt AdGuard is the owner's to remove.
