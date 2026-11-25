@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Optional LAN DNS lifecycle; never changes router, host or client DNS."""
+
 import argparse
 from pathlib import Path
 import subprocess
@@ -15,10 +16,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['check', 'up', 'status', 'upstreams', 'stop'])
-    parser.add_argument('--allow-dns-outage', action='store_true',
-                        help='only for an approved maintenance window with a verified fallback resolver')
+    parser.add_argument(
+        '--allow-dns-outage',
+        action='store_true',
+        help='only for an approved maintenance window with a verified fallback resolver',
+    )
     args = parser.parse_args()
-    c = config.load(ROOT/'.env')
+    c = config.load(ROOT / '.env')
     adguard.settings(c)
     if args.command == 'up':
         adguard.require_bundled(c, 'up')

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Operate the independent Immich project; never modifies Nginx, DNS or the media stack."""
+
 import argparse
 from pathlib import Path
 import subprocess
@@ -15,9 +16,16 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['check', 'prepare', 'up', 'status', 'stop', 'oauth'])
-    parser.add_argument('--static', action='store_true', help='check Compose without private credentials, storage or Docker daemon')
-    parser.add_argument('--allow-short-db-password', action='store_true',
-                        help='explicit operator exception: accept a nonempty alphanumeric DB password shorter than 16 characters')
+    parser.add_argument(
+        '--static',
+        action='store_true',
+        help='check Compose without private credentials, storage or Docker daemon',
+    )
+    parser.add_argument(
+        '--allow-short-db-password',
+        action='store_true',
+        help='explicit operator exception: accept a nonempty alphanumeric DB password shorter than 16 characters',
+    )
     args = parser.parse_args()
     if args.static and args.command != 'check':
         parser.error('--static is only supported with check')
@@ -46,5 +54,8 @@ if __name__ == '__main__':
         sys.exit(1)
     except (OSError, KeyError, subprocess.TimeoutExpired):
         # Never echo subprocess output, dotenv values, or JSON containing secrets.
-        print('Immich operation failed; check private inputs, mounts and local service logs. See docs/immich.md.', file=sys.stderr)
+        print(
+            'Immich operation failed; check private inputs, mounts and local service logs. See docs/immich.md.',
+            file=sys.stderr,
+        )
         sys.exit(1)

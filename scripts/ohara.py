@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Small command dispatcher; operational code lives in focused modules."""
+
 import argparse
 from pathlib import Path
 import subprocess
@@ -15,7 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=['check', 'up', 'status'])
-    parser.add_argument('--static', action='store_true', help='check only: skip private files/storage')
+    parser.add_argument(
+        '--static', action='store_true', help='check only: skip private files/storage'
+    )
     args = parser.parse_args()
     if args.static and args.command != 'check':
         parser.error('--static is only supported by check')
@@ -25,10 +28,13 @@ def main():
     elif args.command == 'up':
         runtime.check(c, ROOT)
         runtime.compose(c, ROOT, ['up', '-d', '--wait', '--wait-timeout', '180'], timeout=900)
-        print('Local stack started. Complete account setup through SSH forwarding before public activation.')
+        print(
+            'Local stack started. Complete account setup through SSH forwarding before public activation.'
+        )
     else:
         return runtime.status(c, ROOT)
     return 0
+
 
 if __name__ == '__main__':
     try:

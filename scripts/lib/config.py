@@ -1,20 +1,70 @@
 """Strict, non-executable configuration shared by Ohara's commands."""
+
 import os
 from pathlib import Path
 import re
 
 BAMBUDDY_KEYS = {'BAMBUDDY_ROOT', 'BAMBUDDY_MOUNT'}
 # Retired Kutt settings: accepted but ignored so existing .env files keep loading.
-KUTT_KEYS = {'KUTT_HOST','KUTT_ROOT','KUTT_MOUNT','KUTT_LAN_NETWORK','KUTT_TLS_CERT','KUTT_TLS_KEY','KUTT_ALLOW_SHORT_DB_PASSWORD'}
+KUTT_KEYS = {
+    'KUTT_HOST',
+    'KUTT_ROOT',
+    'KUTT_MOUNT',
+    'KUTT_LAN_NETWORK',
+    'KUTT_TLS_CERT',
+    'KUTT_TLS_KEY',
+    'KUTT_ALLOW_SHORT_DB_PASSWORD',
+}
 NTFY_KEYS = {'NTFY_HOST', 'NTFY_ROOT', 'NTFY_MOUNT', 'NTFY_IOS_RELAY', 'NTFY_ALLOW_SHORT_PASSWORD'}
 DNS_KEYS = {'ADGUARD_BIND_IP', 'ADGUARD_NETWORK', 'DNS_IP', 'SEERR_LAN_ONLY'}
-IMMICH_KEYS = {'IMMICH_LIBRARY_ROOT', 'IMMICH_DATABASE_ROOT', 'IMMICH_LIBRARY_MOUNT', 'IMMICH_DATABASE_MOUNT'}
+IMMICH_KEYS = {
+    'IMMICH_LIBRARY_ROOT',
+    'IMMICH_DATABASE_ROOT',
+    'IMMICH_LIBRARY_MOUNT',
+    'IMMICH_DATABASE_MOUNT',
+}
 
-KEYS = DNS_KEYS | IMMICH_KEYS | BAMBUDDY_KEYS | NTFY_KEYS | KUTT_KEYS | {'DOMAIN', 'LAN_IP', 'TZ', 'DATA_ROOT', 'FILES_ROOT', 'RUN_UID',
-        'RUN_GID', 'ACME_EMAIL', 'REQUESTS_HOST', 'FILES_HOST', 'SPEED_HOST', 'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}
+KEYS = (
+    DNS_KEYS
+    | IMMICH_KEYS
+    | BAMBUDDY_KEYS
+    | NTFY_KEYS
+    | KUTT_KEYS
+    | {
+        'DOMAIN',
+        'LAN_IP',
+        'TZ',
+        'DATA_ROOT',
+        'FILES_ROOT',
+        'RUN_UID',
+        'RUN_GID',
+        'ACME_EMAIL',
+        'REQUESTS_HOST',
+        'FILES_HOST',
+        'SPEED_HOST',
+        'MEDIA_ROOT',
+        'MEDIA_POOL_MOUNT',
+        'JELLYFIN_HOST',
+        'HOMEPAGE_HOST',
+        'PORTFOLIO_PORT',
+        'NAVIDROME_HOST',
+    }
+)
 HOST = re.compile(r'(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}\Z')
 PATH = re.compile(r'/[a-zA-Z0-9_./-]+\Z')
-IMAGES = {'SEERR_IMAGE', 'SPEED_IMAGE', 'HOMEPAGE_IMAGE', 'JELLYFIN_IMAGE', 'RADARR_IMAGE', 'SONARR_IMAGE', 'PROWLARR_IMAGE', 'QBITTORRENT_IMAGE', 'LIDARR_IMAGE', 'BAZARR_IMAGE', 'NAVIDROME_IMAGE'}
+IMAGES = {
+    'SEERR_IMAGE',
+    'SPEED_IMAGE',
+    'HOMEPAGE_IMAGE',
+    'JELLYFIN_IMAGE',
+    'RADARR_IMAGE',
+    'SONARR_IMAGE',
+    'PROWLARR_IMAGE',
+    'QBITTORRENT_IMAGE',
+    'LIDARR_IMAGE',
+    'BAZARR_IMAGE',
+    'NAVIDROME_IMAGE',
+}
 
 
 def parse(path, keys, optional=frozenset(), ignored=frozenset()):
@@ -39,16 +89,42 @@ def parse(path, keys, optional=frozenset(), ignored=frozenset()):
 
 def load(path):
     import credentials
-    values = parse(path, KEYS, DNS_KEYS | IMMICH_KEYS | BAMBUDDY_KEYS | NTFY_KEYS | KUTT_KEYS | {'MEDIA_ROOT', 'MEDIA_POOL_MOUNT', 'JELLYFIN_HOST', 'LAN_IP', 'FILES_ROOT', 'FILES_HOST', 'HOMEPAGE_HOST', 'PORTFOLIO_PORT', 'NAVIDROME_HOST'}, credentials.ALL_KEYS)
+
+    values = parse(
+        path,
+        KEYS,
+        DNS_KEYS
+        | IMMICH_KEYS
+        | BAMBUDDY_KEYS
+        | NTFY_KEYS
+        | KUTT_KEYS
+        | {
+            'MEDIA_ROOT',
+            'MEDIA_POOL_MOUNT',
+            'JELLYFIN_HOST',
+            'LAN_IP',
+            'FILES_ROOT',
+            'FILES_HOST',
+            'HOMEPAGE_HOST',
+            'PORTFOLIO_PORT',
+            'NAVIDROME_HOST',
+        },
+        credentials.ALL_KEYS,
+    )
     if values.get('SEERR_LAN_ONLY', 'true') != 'true':
         raise ValueError('SEERR_LAN_ONLY may only be true; remove the line when Seerr is public')
     if values.get('DNS_IP'):
         import ipaddress
+
         try:
             external = ipaddress.IPv4Address(values['DNS_IP'])
         except ValueError:
             raise ValueError('DNS_IP must be one literal LAN IPv4 address') from None
-        if not external.is_private or external.is_loopback or values['DNS_IP'] == values.get('ADGUARD_BIND_IP'):
+        if (
+            not external.is_private
+            or external.is_loopback
+            or values['DNS_IP'] == values.get('ADGUARD_BIND_IP')
+        ):
             raise ValueError('DNS_IP must be the private LAN address of another device')
     if values.get('NTFY_ALLOW_SHORT_PASSWORD', 'false') not in {'true', 'false'}:
         raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
@@ -62,21 +138,55 @@ def load(path):
     values.setdefault('PORTFOLIO_PORT', '0')
     if not values['PORTFOLIO_PORT'].isdigit() or not 0 <= int(values['PORTFOLIO_PORT']) <= 65535:
         raise ValueError('PORTFOLIO_PORT must be 0 (disabled) or a valid TCP port')
-    if int(values['PORTFOLIO_PORT']) and (int(values['PORTFOLIO_PORT']) < 1024 or values['HOMEPAGE_HOST'] == values['DOMAIN']):
+    if int(values['PORTFOLIO_PORT']) and (
+        int(values['PORTFOLIO_PORT']) < 1024 or values['HOMEPAGE_HOST'] == values['DOMAIN']
+    ):
         raise ValueError('Portfolio requires a nonprivileged port and a separate HOMEPAGE_HOST')
-    if int(values['PORTFOLIO_PORT']) in {2283, 2586, 3010, 8008, 3000, 3002, 3003, 3923, 4533, 5055, 6246, 6767, 7878, 8081, 8096, 8686, 8888, 8989, 9696}:
-        raise ValueError('PORTFOLIO_PORT must not expose an existing application or private admin port')
-    if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (values['HOMEPAGE_HOST'] != values['DOMAIN'] and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])):
+    if int(values['PORTFOLIO_PORT']) in {
+        2283,
+        2586,
+        3010,
+        8008,
+        3000,
+        3002,
+        3003,
+        3923,
+        4533,
+        5055,
+        6246,
+        6767,
+        7878,
+        8081,
+        8096,
+        8686,
+        8888,
+        8989,
+        9696,
+    }:
+        raise ValueError(
+            'PORTFOLIO_PORT must not expose an existing application or private admin port'
+        )
+    if not HOST.fullmatch(values['HOMEPAGE_HOST']) or (
+        values['HOMEPAGE_HOST'] != values['DOMAIN']
+        and not values['HOMEPAGE_HOST'].endswith('.' + values['DOMAIN'])
+    ):
         raise ValueError('HOMEPAGE_HOST must be DOMAIN or a subdomain')
-    if values['HOMEPAGE_HOST'] in [values[k] for k in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')]:
+    if values['HOMEPAGE_HOST'] in [
+        values[k] for k in ('REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')
+    ]:
         raise ValueError('HOMEPAGE_HOST must not overlap another service')
     for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']:
         if not HOST.fullmatch(values[key]):
             raise ValueError(f'{key}: invalid DNS hostname')
-    names = [values[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']]
+    names = [
+        values[k]
+        for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST']
+    ]
     if len(set(names)) != 5 or any(not n.endswith('.' + values['DOMAIN']) for n in names[1:]):
         raise ValueError('Service hostnames must be distinct subdomains of DOMAIN')
-    for key in ['DATA_ROOT', 'MEDIA_ROOT'] + (['MEDIA_POOL_MOUNT'] if 'MEDIA_POOL_MOUNT' in values else []):
+    for key in ['DATA_ROOT', 'MEDIA_ROOT'] + (
+        ['MEDIA_POOL_MOUNT'] if 'MEDIA_POOL_MOUNT' in values else []
+    ):
         value = values[key]
         if not PATH.fullmatch(value) or value == '/' or '..' in value.split('/') or '//' in value:
             raise ValueError(f'{key}: require a safe absolute path without spaces or traversal')

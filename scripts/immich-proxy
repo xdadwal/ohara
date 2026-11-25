@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Activate Immich on the existing xdadwal.in wildcard Nginx host."""
+
 import argparse
 import os
 from pathlib import Path
@@ -21,31 +22,51 @@ KEY = '/etc/letsencrypt/live/ohara-wildcard/privkey.pem'
 
 def render(*, onboarding_only=False):
     text = (ROOT / 'configs/nginx/immich.template').read_text()
-    for key, value in {'IMMICH_HOST': 'immich.xdadwal.in', 'CERTIFICATE': CERTIFICATE,
-                       'CERTIFICATE_KEY': KEY}.items():
+    for key, value in {
+        'IMMICH_HOST': 'immich.xdadwal.in',
+        'CERTIFICATE': CERTIFICATE,
+        'CERTIFICATE_KEY': KEY,
+    }.items():
         text = text.replace('${' + key + '}', value)
-    candidate = ('# Managed by scripts/immich-proxy; independent of the main Ohara routes.\n'
-            'server {\n    listen 80;\n    listen [::]:80;\n'
-            '    server_name immich.xdadwal.in;\n'
-            '    location ^~ /.well-known/acme-challenge/ {\n'
-            '        root /var/lib/ohara/acme;\n        default_type text/plain;\n'
-            '        try_files $uri =404;\n    }\n'
-            '    location / { return 301 https://$host$request_uri; }\n}\n' + text)
+    candidate = (
+        '# Managed by scripts/immich-proxy; independent of the main Ohara routes.\n'
+        'server {\n    listen 80;\n    listen [::]:80;\n'
+        '    server_name immich.xdadwal.in;\n'
+        '    location ^~ /.well-known/acme-challenge/ {\n'
+        '        root /var/lib/ohara/acme;\n        default_type text/plain;\n'
+        '        try_files $uri =404;\n    }\n'
+        '    location / { return 301 https://$host$request_uri; }\n}\n' + text
+    )
     if onboarding_only:
         guard = '\n    if ($ohara_immich_onboarding_allowed = 0) { return 403; }'
-        candidate = candidate.replace('server_name immich.xdadwal.in;', 'server_name immich.xdadwal.in;' + guard)
-        candidate = ('# Managed by scripts/immich-proxy; LAN-only owner onboarding.\n'
-                     'geo $ohara_immich_onboarding_allowed {\n'
-                     '    default 0;\n    127.0.0.1/32 1;\n    ::1/128 1;\n    192.168.1.0/24 1;\n}\n' + candidate)
+        candidate = candidate.replace(
+            'server_name immich.xdadwal.in;', 'server_name immich.xdadwal.in;' + guard
+        )
+        candidate = (
+            '# Managed by scripts/immich-proxy; LAN-only owner onboarding.\n'
+            'geo $ohara_immich_onboarding_allowed {\n'
+            '    default 0;\n    127.0.0.1/32 1;\n    ::1/128 1;\n    192.168.1.0/24 1;\n}\n'
+            + candidate
+        )
     return candidate
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--apply', action='store_true', help='root only: back up, test and reload Nginx')
+    parser.add_argument(
+        '--apply', action='store_true', help='root only: back up, test and reload Nginx'
+    )
     access = parser.add_mutually_exclusive_group()
-    access.add_argument('--onboarding-only', action='store_true', help='restrict HTTP/HTTPS to loopback and the verified 192.168.1.0/24 LAN before owner signup')
-    access.add_argument('--accounts-ready', action='store_true', help='attest that private owner login has been verified')
+    access.add_argument(
+        '--onboarding-only',
+        action='store_true',
+        help='restrict HTTP/HTTPS to loopback and the verified 192.168.1.0/24 LAN before owner signup',
+    )
+    access.add_argument(
+        '--accounts-ready',
+        action='store_true',
+        help='attest that private owner login has been verified',
+    )
     args = parser.parse_args()
     if not args.apply:
         sys.stdout.write(render(onboarding_only=args.onboarding_only))
@@ -53,15 +74,28 @@ def main():
     if not args.accounts_ready and not args.onboarding_only:
         raise ValueError('Verify private owner login first, then use --accounts-ready')
     if os.geteuid() != 0:
-        raise ValueError('Administrator access is required: sudo scripts/immich-proxy --apply ' +
-                         ('--onboarding-only' if args.onboarding_only else '--accounts-ready'))
+        raise ValueError(
+            'Administrator access is required: sudo scripts/immich-proxy --apply '
+            + ('--onboarding-only' if args.onboarding_only else '--accounts-ready')
+        )
     if config.load(ROOT / '.env')['DOMAIN'] != 'xdadwal.in':
         raise ValueError('This installer is specific to the existing xdadwal.in host')
     for path in (CERTIFICATE, KEY, '/etc/nginx/conf.d/ohara.conf'):
         if not Path(path).is_file():
             raise ValueError('Existing wildcard certificate and Ohara Nginx host are required')
-    runtime.run(['openssl', 'verify', '-CApath', '/etc/ssl/certs', '-untrusted', CERTIFICATE,
-                 '-verify_hostname', 'immich.xdadwal.in', CERTIFICATE])
+    runtime.run(
+        [
+            'openssl',
+            'verify',
+            '-CApath',
+            '/etc/ssl/certs',
+            '-untrusted',
+            CERTIFICATE,
+            '-verify_hostname',
+            'immich.xdadwal.in',
+            CERTIFICATE,
+        ]
+    )
     runtime.run(['openssl', 'x509', '-in', CERTIFICATE, '-noout', '-checkend', '86400'])
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open('http://127.0.0.1:2283/api/server/config', timeout=10) as response:
@@ -79,7 +113,9 @@ def main():
             continue
         names = re.findall(r'\bserver_name\s+([^;]+);', path.read_text())
         if any('immich.xdadwal.in' in nameset.split() for nameset in names):
-            raise ValueError('Another Nginx file already defines immich.xdadwal.in; review it first')
+            raise ValueError(
+                'Another Nginx file already defines immich.xdadwal.in; review it first'
+            )
     nginx = '/usr/sbin/nginx'
     runtime.run([nginx, '-t'])
     previous = target.read_bytes() if target.exists() else None
@@ -108,6 +144,7 @@ def main():
         finally:
             if os.path.exists(temporary):
                 os.unlink(temporary)
+
     try:
         replace(render(onboarding_only=args.onboarding_only).encode(), 0o644)
         runtime.run([nginx, '-t'])
@@ -119,9 +156,13 @@ def main():
             replace(previous, mode)
         runtime.run([nginx, '-t'])
         runtime.run(['systemctl', 'reload', 'nginx'])
-        raise RuntimeError('Immich route activation failed; previous Nginx configuration restored') from None
-    print(('LAN-only Immich onboarding' if args.onboarding_only else 'Public Immich') +
-          ' HTTPS activated; other routes and certificates preserved.')
+        raise RuntimeError(
+            'Immich route activation failed; previous Nginx configuration restored'
+        ) from None
+    print(
+        ('LAN-only Immich onboarding' if args.onboarding_only else 'Public Immich')
+        + ' HTTPS activated; other routes and certificates preserved.'
+    )
     return 0
 
 

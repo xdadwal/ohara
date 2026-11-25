@@ -10,6 +10,7 @@ import config
 import host
 import credential_fixtures
 
+
 class HostTests(unittest.TestCase):
     def test_supported_and_unsupported_hosts(self):
         self.assertEqual(host.os_info('ID=ubuntu\nVERSION_ID="24.04"\n'), ('ubuntu', 'noble'))
@@ -22,8 +23,12 @@ class HostTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'),
-                     RUN_UID=str(__import__('os').getuid()), RUN_GID=str(__import__('os').getgid()))
+            c.update(
+                DATA_ROOT=str(root / 'data'),
+                MEDIA_ROOT=str(root / 'media'),
+                RUN_UID=str(__import__('os').getuid()),
+                RUN_GID=str(__import__('os').getgid()),
+            )
             credential_fixtures.write(root)
             host.prepare_storage(c, root)
             files = [root / '.env']
@@ -35,11 +40,13 @@ class HostTests(unittest.TestCase):
 
     def test_conflicting_docker_packages_are_not_removed(self):
         calls = []
+
         def fake(args, **kwargs):
             calls.append(args)
             if args[0] == 'dpkg-query':
                 return 'install ok installed'
             return ''
+
         with patch.object(host, 'run', side_effect=fake), self.assertRaises(RuntimeError):
             host.reject_conflicts()
         self.assertFalse(any('remove' in a for a in calls))
@@ -51,29 +58,35 @@ class HostTests(unittest.TestCase):
 
     def test_existing_packages_do_not_reinstall(self):
         calls = []
+
         def fake(args, **kwargs):
             calls.append(args)
             return 'install ok installed'
+
         with patch.object(host, 'run', side_effect=fake):
             host.ensure_packages(['nginx', 'certbot'])
         self.assertTrue(all(c[0] == 'dpkg-query' for c in calls))
 
     def nginx_floor(self, identity, version, newer):
         calls = []
+
         def fake(args, **kwargs):
             calls.append(args)
             if args[0] == 'dpkg-query':
                 return version
             if not newer:
                 raise RuntimeError('dpkg: command failed')
+
         with patch.object(host, 'run', side_effect=fake):
             host.require_nginx_minimum(identity)
         return calls
 
     def test_nginx_security_floor_accepts_reviewed_or_newer_release(self):
         calls = self.nginx_floor('debian', '1.26.3-3+deb13u12', True)
-        self.assertEqual(calls[-1], ['dpkg', '--compare-versions', '1.26.3-3+deb13u12', 'ge',
-                                     host.NGINX_MINIMUM['debian']])
+        self.assertEqual(
+            calls[-1],
+            ['dpkg', '--compare-versions', '1.26.3-3+deb13u12', 'ge', host.NGINX_MINIMUM['debian']],
+        )
 
     def test_nginx_security_floor_rejects_older_release_without_upgrading(self):
         with self.assertRaises(RuntimeError) as caught:
@@ -95,8 +108,10 @@ class HostTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 host.ensure_directory(path, 1000, 1000)
 
+
 if __name__ == '__main__':
     unittest.main()
+
 
 class StorageSafetyTests(unittest.TestCase):
     def test_private_symlink_rejected_before_read(self):
@@ -107,15 +122,21 @@ class StorageSafetyTests(unittest.TestCase):
             target.write_text('private-value')
             (root / '.env').symlink_to(target)
             c = config.load(ROOT / '.env.example')
-            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
+            c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'))
             with self.assertRaisesRegex(ValueError, 'Symlink private'):
                 host.prepare_storage(c, root)
             self.assertEqual(target.read_text(), 'private-value')
 
+
 class PreflightTests(unittest.TestCase):
     def test_missing_ss_does_not_block_fresh_host(self):
         from unittest.mock import MagicMock
-        with patch('shutil.which', return_value=None), patch.object(host.socket, 'socket') as sock, patch.object(host, 'run') as runner:
+
+        with (
+            patch('shutil.which', return_value=None),
+            patch.object(host.socket, 'socket') as sock,
+            patch.object(host, 'run') as runner,
+        ):
             sock.return_value.__enter__.return_value = MagicMock()
             host.check_web_ports()
             runner.assert_not_called()

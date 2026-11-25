@@ -31,7 +31,9 @@ class TailscaleTests(unittest.TestCase):
     def test_dry_run_writes_nothing(self):
         before = sorted(str(p.relative_to(self.root)) for p in self.root.rglob('*'))
         ts.install(True, self.root)
-        self.assertEqual(before, sorted(str(p.relative_to(self.root)) for p in self.root.rglob('*')))
+        self.assertEqual(
+            before, sorted(str(p.relative_to(self.root)) for p in self.root.rglob('*'))
+        )
         self.packages.assert_not_called()
         self.run.assert_called_once_with(['dpkg', '--print-architecture'], capture=True)
 
@@ -43,7 +45,9 @@ class TailscaleTests(unittest.TestCase):
         self.assertFalse((self.root / 'usr').exists())
 
     def test_competing_source_rejected_before_mutation(self):
-        (self.root / 'etc/apt/sources.list').write_text('deb https://pkgs.tailscale.com/stable/ubuntu noble main\n')
+        (self.root / 'etc/apt/sources.list').write_text(
+            'deb https://pkgs.tailscale.com/stable/ubuntu noble main\n'
+        )
         with self.assertRaisesRegex(ValueError, 'Existing Tailscale apt source'):
             ts.install(False, self.root)
         self.packages.assert_not_called()
@@ -55,19 +59,25 @@ class TailscaleTests(unittest.TestCase):
             if command[0] == 'curl':
                 Path(command[-1]).write_bytes(b'test signing key')
             return ''
+
         self.run.side_effect = execute
         ts.install(False, self.root)
         commands = [call.args[0] for call in self.run.call_args_list]
         self.assertEqual(commands[-1], ['systemctl', 'enable', '--now', 'tailscaled'])
         self.assertFalse(any(command[0] == 'tailscale' for command in commands))
-        self.assertIn('noble main', (self.root / 'etc/apt/sources.list.d/ohara-tailscale.list').read_text())
-        self.assertEqual((self.root / 'usr/share/keyrings/ohara-tailscale.gpg').stat().st_mode & 0o777, 0o644)
+        self.assertIn(
+            'noble main', (self.root / 'etc/apt/sources.list.d/ohara-tailscale.list').read_text()
+        )
+        self.assertEqual(
+            (self.root / 'usr/share/keyrings/ohara-tailscale.gpg').stat().st_mode & 0o777, 0o644
+        )
 
     def test_failed_key_download_leaves_no_repository(self):
         def execute(command, **kwargs):
             if command[0] == 'dpkg':
                 return 'arm64'
             raise RuntimeError('download failed')
+
         self.run.side_effect = execute
         with self.assertRaisesRegex(RuntimeError, 'download failed'):
             ts.install(False, self.root)

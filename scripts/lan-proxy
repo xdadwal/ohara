@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Apply the reviewed xdadwal.in LAN-only Nginx baseline on its existing host."""
+
 import argparse
 import datetime
 import os
@@ -10,17 +11,19 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT/'scripts/lib'))
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import runtime
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--apply', action='store_true', help='root only: back up, validate and reload Nginx')
+    parser.add_argument(
+        '--apply', action='store_true', help='root only: back up, validate and reload Nginx'
+    )
     args = parser.parse_args()
-    source = ROOT/'configs/nginx/deployed/ohara-lan.conf'
+    source = ROOT / 'configs/nginx/deployed/ohara-lan.conf'
     if not args.apply:
-        print('Reviewed candidate: '+str(source))
+        print('Reviewed candidate: ' + str(source))
         print('Host-specific: xdadwal.in, LAN 192.168.1.0/24, existing ohara-wildcard certificate.')
         print('Apply with sudo scripts/lan-proxy --apply; preserves unrelated Nginx sites.')
         return 0
@@ -29,9 +32,11 @@ def main():
     # This is deliberately not a fresh-host or arbitrary-domain installer.
     with socket.socket() as probe:
         probe.bind(('192.168.1.101', 0))
-    for required in ('/etc/letsencrypt/live/ohara-wildcard/fullchain.pem',
-                     '/etc/letsencrypt/live/ohara-wildcard/privkey.pem',
-                     '/etc/nginx/conf.d/ohara.conf'):
+    for required in (
+        '/etc/letsencrypt/live/ohara-wildcard/fullchain.pem',
+        '/etc/letsencrypt/live/ohara-wildcard/privkey.pem',
+        '/etc/nginx/conf.d/ohara.conf',
+    ):
         if not Path(required).is_file():
             raise RuntimeError('Existing host certificate and Nginx baseline are required')
     target = Path('/etc/nginx/conf.d/ohara-lan.conf')
@@ -45,10 +50,13 @@ def main():
     backup_dir = Path('/var/backups/ohara')
     backup_dir.mkdir(mode=0o700, exist_ok=True)
     if previous is not None:
-        descriptor, backup = tempfile.mkstemp(prefix='ohara-lan-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S')+'-', dir=backup_dir)
+        descriptor, backup = tempfile.mkstemp(
+            prefix='ohara-lan-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=backup_dir,
+        )
         with os.fdopen(descriptor, 'wb') as stream:
             stream.write(previous)
-        print('Previous LAN configuration backed up to '+backup)
+        print('Previous LAN configuration backed up to ' + backup)
 
     def replace(data, permissions):
         descriptor, temporary = tempfile.mkstemp(prefix='.ohara-lan-', dir=target.parent)
@@ -76,7 +84,9 @@ def main():
         runtime.run([nginx, '-t'])
         runtime.run(['systemctl', 'reload', 'nginx'])
         raise RuntimeError('LAN route deployment failed; previous configuration restored') from None
-    print('LAN-only routes installed and Nginx reloaded; public routes and backend bindings preserved.')
+    print(
+        'LAN-only routes installed and Nginx reloaded; public routes and backend bindings preserved.'
+    )
     return 0
 
 
@@ -84,5 +94,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print('Ohara LAN proxy: '+str(error), file=sys.stderr)
+        print('Ohara LAN proxy: ' + str(error), file=sys.stderr)
         sys.exit(1)

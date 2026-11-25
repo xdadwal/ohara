@@ -27,8 +27,10 @@ class ImmichOAuthTests(unittest.TestCase):
 
     def inputs(self):
         path = self.root / '.env'
-        path.write_text('IMMICH_GOOGLE_CLIENT_ID=123456-test.apps.googleusercontent.com\n'
-                        'IMMICH_GOOGLE_CLIENT_SECRET=' + self.secret + '\n')
+        path.write_text(
+            'IMMICH_GOOGLE_CLIENT_ID=123456-test.apps.googleusercontent.com\n'
+            'IMMICH_GOOGLE_CLIENT_SECRET=' + self.secret + '\n'
+        )
         path.chmod(0o600)
 
     def test_missing_inputs_leave_configuration_untouched(self):
@@ -46,13 +48,19 @@ class ImmichOAuthTests(unittest.TestCase):
         self.assertIs(policy['machineLearning']['enabled'], False)
         self.assertEqual(policy['oauth']['clientSecret'], self.secret)
         self.assertEqual(policy['oauth']['issuerUrl'], 'https://accounts.google.com')
-        self.assertEqual(policy['oauth']['mobileRedirectUri'], 'https://immich.xdadwal.in/api/oauth/mobile-redirect')
+        self.assertEqual(
+            policy['oauth']['mobileRedirectUri'],
+            'https://immich.xdadwal.in/api/oauth/mobile-redirect',
+        )
 
     def test_policy_rejects_open_registration_redirects_and_ml(self):
         self.inputs()
         policy = json.loads(immich_oauth.render(self.root, self.c))
-        for section, key, value in [('oauth', 'autoRegister', True), ('oauth', 'autoLaunch', True),
-                                    ('machineLearning', 'enabled', True)]:
+        for section, key, value in [
+            ('oauth', 'autoRegister', True),
+            ('oauth', 'autoLaunch', True),
+            ('machineLearning', 'enabled', True),
+        ]:
             broken = json.loads(json.dumps(policy))
             broken[section][key] = value
             with self.subTest(section=section, key=key), self.assertRaises(ValueError):
@@ -83,9 +91,13 @@ class ImmichOAuthTests(unittest.TestCase):
     def test_static_path_never_consumes_private_oauth_configuration(self):
         self.inputs()
         immich_oauth.prepare(self.root, self.c)
-        self.assertEqual(immich_oauth.configuration_path(self.root, static=True),
-                         self.root / 'configs/immich/immich.json')
-        self.assertEqual(immich_oauth.configuration_path(self.root), self.root / 'local/immich/immich.json')
+        self.assertEqual(
+            immich_oauth.configuration_path(self.root, static=True),
+            self.root / 'configs/immich/immich.json',
+        )
+        self.assertEqual(
+            immich_oauth.configuration_path(self.root), self.root / 'local/immich/immich.json'
+        )
 
     def test_insecure_or_symlink_generated_config_is_rejected(self):
         self.inputs()
@@ -102,18 +114,24 @@ class ImmichOAuthTests(unittest.TestCase):
     def test_google_credentials_never_enter_compose_environment_or_argv(self):
         self.inputs()
         immich_oauth.prepare(self.root, self.c)
-        copy_deployment(self.root,'versions/immich.env')
-        with patch.dict(os.environ, {'IMMICH_GOOGLE_CLIENT_SECRET': self.secret}), \
-                patch('immich.password', return_value='DisposableDBOnly1234'), \
-                patch('immich.runtime.docker_prefix', return_value=['docker']), patch('immich.runtime.run') as run:
+        copy_deployment(self.root, 'versions/immich.env')
+        with (
+            patch.dict(os.environ, {'IMMICH_GOOGLE_CLIENT_SECRET': self.secret}),
+            patch('immich.password', return_value='DisposableDBOnly1234'),
+            patch('immich.runtime.docker_prefix', return_value=['docker']),
+            patch('immich.runtime.run') as run,
+        ):
             immich.compose(self.c, self.root, ['up', '-d'])
             args, kwargs = run.call_args
             self.assertNotIn('IMMICH_GOOGLE_CLIENT_SECRET', kwargs['env'])
             self.assertNotIn(self.secret, ' '.join(args[0]))
-            self.assertEqual(kwargs['env']['IMMICH_CONFIG_PATH'], str(self.root / 'local/immich/immich.json'))
+            self.assertEqual(
+                kwargs['env']['IMMICH_CONFIG_PATH'], str(self.root / 'local/immich/immich.json')
+            )
 
     def test_oauth_inputs_are_ignored_by_unrelated_services(self):
         import credential_fixtures
+
         self.inputs()
         credential_fixtures.write(self.root)
         homepage, media = credentials.load(self.root)
@@ -123,14 +141,21 @@ class ImmichOAuthTests(unittest.TestCase):
     def test_bad_client_id_does_not_echo_the_input(self):
         self.inputs()
         path = self.root / '.env'
-        path.write_text(path.read_text().replace('123456-test.apps.googleusercontent.com', 'private-invalid-input'))
+        path.write_text(
+            path.read_text().replace(
+                '123456-test.apps.googleusercontent.com', 'private-invalid-input'
+            )
+        )
         with self.assertRaises(ValueError) as caught:
             immich_oauth.render(self.root, self.c)
         self.assertNotIn('private-invalid-input', str(caught.exception))
 
     def test_failed_activation_restores_previous_mode_and_retains_private_candidate(self):
         self.inputs()
-        with patch('immich.check'), patch('immich.compose', side_effect=[RuntimeError('failed'), None]) as compose:
+        with (
+            patch('immich.check'),
+            patch('immich.compose', side_effect=[RuntimeError('failed'), None]) as compose,
+        ):
             with self.assertRaisesRegex(RuntimeError, 'previous configuration restored'):
                 immich.configure_oauth(self.c, self.root)
             self.assertEqual(compose.call_count, 2)
@@ -138,7 +163,9 @@ class ImmichOAuthTests(unittest.TestCase):
         self.assertFalse(target.exists())
         failed = next(target.parent.glob('immich-failed-*.json'))
         self.assertEqual(failed.stat().st_mode & 0o777, 0o600)
-        self.assertEqual(immich_oauth.configuration_path(self.root), self.root / 'configs/immich/immich.json')
+        self.assertEqual(
+            immich_oauth.configuration_path(self.root), self.root / 'configs/immich/immich.json'
+        )
 
     def test_failed_update_restores_existing_oauth_configuration(self):
         self.inputs()
@@ -147,7 +174,10 @@ class ImmichOAuthTests(unittest.TestCase):
         original = target.read_bytes()
         self.secret += ' changed'
         self.inputs()
-        with patch('immich.check'), patch('immich.compose', side_effect=[RuntimeError('failed'), None]):
+        with (
+            patch('immich.check'),
+            patch('immich.compose', side_effect=[RuntimeError('failed'), None]),
+        ):
             with self.assertRaises(RuntimeError):
                 immich.configure_oauth(self.c, self.root)
         self.assertEqual(target.read_bytes(), original)

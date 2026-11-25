@@ -21,22 +21,30 @@ class ImmichTests(unittest.TestCase):
     def test_optional_inputs_do_not_become_main_stack_requirements(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / '.env'
-            path.write_text((ROOT / '.env.example').read_text() + '\nIMMICH_LIBRARY_ROOT=/photos/immich\nIMMICH_DB_PASSWORD=onlyForDisposableTests1234\n')
+            path.write_text(
+                (ROOT / '.env.example').read_text()
+                + '\nIMMICH_LIBRARY_ROOT=/photos/immich\nIMMICH_DB_PASSWORD=onlyForDisposableTests1234\n'
+            )
             path.chmod(0o600)
             self.assertEqual(config.load(path)['IMMICH_LIBRARY_ROOT'], '/photos/immich')
             self.assertEqual(immich.password(Path(directory)), 'onlyForDisposableTests1234')
 
     def test_widget_key_is_optional_and_only_returned_to_homepage(self):
         import credential_fixtures
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / '.env').write_text((ROOT / '.env.example').read_text())
             credential_fixtures.write(root)
             with (root / '.env').open('a') as stream:
-                stream.write('HOMEPAGE_VAR_IMMICH_API_KEY=DisposableWidgetKeyOnly12345\nIMMICH_DB_PASSWORD=TestOnly7\n')
+                stream.write(
+                    'HOMEPAGE_VAR_IMMICH_API_KEY=DisposableWidgetKeyOnly12345\nIMMICH_DB_PASSWORD=TestOnly7\n'
+                )
             config.load(root / '.env')
             homepage, media = credentials.load(root)
-            self.assertEqual(homepage['HOMEPAGE_VAR_IMMICH_API_KEY'], 'DisposableWidgetKeyOnly12345')
+            self.assertEqual(
+                homepage['HOMEPAGE_VAR_IMMICH_API_KEY'], 'DisposableWidgetKeyOnly12345'
+            )
             self.assertNotIn('HOMEPAGE_VAR_IMMICH_API_KEY', media)
             self.assertNotIn('IMMICH_DB_PASSWORD', homepage)
 
@@ -62,33 +70,55 @@ class ImmichTests(unittest.TestCase):
     def test_missing_mount_fails_before_creating_storage(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'unmounted'
-            c = self.c | {'IMMICH_LIBRARY_ROOT': str(path / 'photos'), 'IMMICH_LIBRARY_MOUNT': str(path)}
+            c = self.c | {
+                'IMMICH_LIBRARY_ROOT': str(path / 'photos'),
+                'IMMICH_LIBRARY_MOUNT': str(path),
+            }
             with self.assertRaisesRegex(ValueError, 'not mounted'):
                 immich.storage(c)
             self.assertFalse(path.exists())
 
     def test_network_database_rejected(self):
-        with patch('immich.runtime.run', return_value=json.dumps({'filesystems': [{'target': '/', 'fstype': 'nfs4'}]})):
+        with patch(
+            'immich.runtime.run',
+            return_value=json.dumps({'filesystems': [{'target': '/', 'fstype': 'nfs4'}]}),
+        ):
             with self.assertRaisesRegex(ValueError, 'local Linux storage'):
                 immich.storage(self.c)
 
     def test_wrong_mounted_device_rejected(self):
-        with patch('immich.runtime.run', return_value=json.dumps({'filesystems': [{'target': '/other', 'fstype': 'ext4'}]})):
+        with patch(
+            'immich.runtime.run',
+            return_value=json.dumps({'filesystems': [{'target': '/other', 'fstype': 'ext4'}]}),
+        ):
             with self.assertRaisesRegex(ValueError, 'different mount'):
                 immich.storage(self.c)
 
     def test_missing_password_does_not_create_storage(self):
-        with patch('immich.check'), patch('immich.password', side_effect=ValueError('missing password')), patch('immich.storage') as storage:
+        with (
+            patch('immich.check'),
+            patch('immich.password', side_effect=ValueError('missing password')),
+            patch('immich.storage') as storage,
+        ):
             with self.assertRaises(ValueError):
                 immich.prepare(self.c, ROOT)
             storage.assert_not_called()
 
     def test_compose_environment_is_allowlisted_and_sudo_preserves_names(self):
-        with patch.dict(os.environ, {'COMPOSE_FILE': '/evil', 'DB_PASSWORD': 'ambient-secret',
-                'HOMEPAGE_AUTH_PASSWORD': 'unrelated-secret', 'IMMICH_DB_PASSWORD': 'ambient-immich'}), \
-                patch('immich.password', return_value='onlyForDisposableTests1234'), \
-                patch('immich.runtime.docker_prefix', return_value=['sudo', '-n', 'docker']), \
-                patch('immich.runtime.run') as run:
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    'COMPOSE_FILE': '/evil',
+                    'DB_PASSWORD': 'ambient-secret',
+                    'HOMEPAGE_AUTH_PASSWORD': 'unrelated-secret',
+                    'IMMICH_DB_PASSWORD': 'ambient-immich',
+                },
+            ),
+            patch('immich.password', return_value='onlyForDisposableTests1234'),
+            patch('immich.runtime.docker_prefix', return_value=['sudo', '-n', 'docker']),
+            patch('immich.runtime.run') as run,
+        ):
             immich.compose(self.c, ROOT, ['up', '-d'])
             args, kwargs = run.call_args
             env = kwargs['env']
@@ -101,7 +131,11 @@ class ImmichTests(unittest.TestCase):
             self.assertIn('/dev/null', args[0])
 
     def test_static_compose_needs_no_password_or_daemon(self):
-        with patch('immich.password') as secret, patch('immich.runtime.docker_prefix') as daemon, patch('immich.runtime.run') as run:
+        with (
+            patch('immich.password') as secret,
+            patch('immich.runtime.docker_prefix') as daemon,
+            patch('immich.runtime.run') as run,
+        ):
             immich.compose(self.c, ROOT, ['config', '--format', 'json'], static=True)
             secret.assert_not_called()
             daemon.assert_not_called()
@@ -120,7 +154,10 @@ class ImmichTests(unittest.TestCase):
                 immich.password(root, allow_short=True)
 
     def test_password_rejects_unsupported_characters_without_echo(self):
-        with patch('immich.credentials.read', return_value={'IMMICH_DB_PASSWORD': 'sensitive$unsupported123'}):
+        with patch(
+            'immich.credentials.read',
+            return_value={'IMMICH_DB_PASSWORD': 'sensitive$unsupported123'},
+        ):
             with self.assertRaises(ValueError) as caught:
                 immich.password(ROOT)
             self.assertNotIn('sensitive', str(caught.exception))
@@ -133,35 +170,86 @@ class ImmichTests(unittest.TestCase):
             (library / 'original').write_bytes(b'preserve photo')
             (database / 'PG_VERSION').write_text('14')
             before = [p.stat() for p in (library, database)]
-            c = self.c | {'IMMICH_LIBRARY_ROOT': str(library), 'IMMICH_DATABASE_ROOT': str(database)}
+            c = self.c | {
+                'IMMICH_LIBRARY_ROOT': str(library),
+                'IMMICH_DATABASE_ROOT': str(database),
+            }
             with patch('immich.check'), patch('immich.password'), patch('immich.storage'):
                 immich.prepare(c, ROOT)
             self.assertEqual((library / 'original').read_bytes(), b'preserve photo')
             self.assertEqual((database / 'PG_VERSION').read_text(), '14')
             for path, old in zip((library, database), before):
-                self.assertEqual((path.stat().st_uid, path.stat().st_gid, path.stat().st_mode),
-                                 (old.st_uid, old.st_gid, old.st_mode))
+                self.assertEqual(
+                    (path.stat().st_uid, path.stat().st_gid, path.stat().st_mode),
+                    (old.st_uid, old.st_gid, old.st_mode),
+                )
 
     def test_stop_does_not_require_real_password(self):
-        with patch('immich.password') as secret, patch('immich.runtime.docker_prefix', return_value=['docker']), patch('immich.runtime.run'):
+        with (
+            patch('immich.password') as secret,
+            patch('immich.runtime.docker_prefix', return_value=['docker']),
+            patch('immich.runtime.run'),
+        ):
             immich.compose(self.c, ROOT, ['stop'], static=True)
             secret.assert_not_called()
 
     def test_model_rejects_public_ports_extra_services_and_secrets(self):
         # Real Compose parsing is covered separately by scripts/immich check --static.
         pins, values = immich.images(ROOT), immich.settings(self.c)
-        model = {'name': 'ohara-immich', 'services': {
-            'immich-server': {'image': pins['IMMICH_SERVER_IMAGE'],
-                'ports': [{'host_ip': '127.0.0.1', 'published': '2283', 'target': 2283}],
-                'environment': dict.fromkeys(['TZ', 'DB_HOSTNAME', 'DB_USERNAME', 'DB_DATABASE_NAME', 'DB_PASSWORD', 'REDIS_HOSTNAME', 'IMMICH_CONFIG_FILE'], ''),
-                'volumes': [
-                    {'source': values['IMMICH_LIBRARY_ROOT'], 'target': '/data', 'bind': {'create_host_path': False}},
-                    {'source': str(ROOT / 'configs/immich/immich.json'), 'target': '/etc/immich/immich.json', 'read_only': True},
-                    {'source': '/etc/localtime', 'target': '/etc/localtime', 'read_only': True}]},
-            'redis': {'image': pins['IMMICH_CACHE_IMAGE']},
-            'database': {'image': pins['IMMICH_DATABASE_IMAGE'],
-                'environment': dict.fromkeys(['POSTGRES_PASSWORD', 'POSTGRES_USER', 'POSTGRES_DB', 'POSTGRES_INITDB_ARGS'], ''),
-                'volumes': [{'source': values['IMMICH_DATABASE_ROOT'], 'target': '/var/lib/postgresql/data', 'bind': {'create_host_path': False}}]}}}
+        model = {
+            'name': 'ohara-immich',
+            'services': {
+                'immich-server': {
+                    'image': pins['IMMICH_SERVER_IMAGE'],
+                    'ports': [{'host_ip': '127.0.0.1', 'published': '2283', 'target': 2283}],
+                    'environment': dict.fromkeys(
+                        [
+                            'TZ',
+                            'DB_HOSTNAME',
+                            'DB_USERNAME',
+                            'DB_DATABASE_NAME',
+                            'DB_PASSWORD',
+                            'REDIS_HOSTNAME',
+                            'IMMICH_CONFIG_FILE',
+                        ],
+                        '',
+                    ),
+                    'volumes': [
+                        {
+                            'source': values['IMMICH_LIBRARY_ROOT'],
+                            'target': '/data',
+                            'bind': {'create_host_path': False},
+                        },
+                        {
+                            'source': str(ROOT / 'configs/immich/immich.json'),
+                            'target': '/etc/immich/immich.json',
+                            'read_only': True,
+                        },
+                        {'source': '/etc/localtime', 'target': '/etc/localtime', 'read_only': True},
+                    ],
+                },
+                'redis': {'image': pins['IMMICH_CACHE_IMAGE']},
+                'database': {
+                    'image': pins['IMMICH_DATABASE_IMAGE'],
+                    'environment': dict.fromkeys(
+                        [
+                            'POSTGRES_PASSWORD',
+                            'POSTGRES_USER',
+                            'POSTGRES_DB',
+                            'POSTGRES_INITDB_ARGS',
+                        ],
+                        '',
+                    ),
+                    'volumes': [
+                        {
+                            'source': values['IMMICH_DATABASE_ROOT'],
+                            'target': '/var/lib/postgresql/data',
+                            'bind': {'create_host_path': False},
+                        }
+                    ],
+                },
+            },
+        }
         immich.validate_model(model, self.c, ROOT)
         omitted = copy.deepcopy(model)
         for service in omitted['services'].values():
@@ -187,17 +275,30 @@ class ImmichTests(unittest.TestCase):
                 immich.validate_model(broken, self.c, ROOT)
 
     def test_compose_bind_boolean_serializations_are_calibrated(self):
-        for false, true, expected in [(None, True, False), (False, None, True), (False, True, True)]:
-            volumes = [{'target': target, 'bind': {} if value is None else {'create_host_path': value}}
-                       for target, value in [('/false', false), ('/true', true)]]
+        for false, true, expected in [
+            (None, True, False),
+            (False, None, True),
+            (False, True, True),
+        ]:
+            volumes = [
+                {'target': target, 'bind': {} if value is None else {'create_host_path': value}}
+                for target, value in [('/false', false), ('/true', true)]
+            ]
             result = json.dumps({'services': {'probe': {'volumes': volumes}}})
-            with self.subTest(false=false, true=true), patch('immich.runtime.run', return_value=result) as run:
+            with (
+                self.subTest(false=false, true=true),
+                patch('immich.runtime.run', return_value=result) as run,
+            ):
                 self.assertIs(immich.omitted_bind_creation_default(ROOT), expected)
                 self.assertEqual(run.call_args.args[0][0:2], ['docker', 'compose'])
                 self.assertNotIn('up', run.call_args.args[0])
 
     def test_compose_cannot_silently_ignore_explicit_bind_flags(self):
-        result = json.dumps({'services': {'probe': {'volumes': [
-            {'target': '/false'}, {'target': '/true'}]}}})
-        with patch('immich.runtime.run', return_value=result), self.assertRaisesRegex(ValueError, 'update Docker Compose'):
+        result = json.dumps(
+            {'services': {'probe': {'volumes': [{'target': '/false'}, {'target': '/true'}]}}}
+        )
+        with (
+            patch('immich.runtime.run', return_value=result),
+            self.assertRaisesRegex(ValueError, 'update Docker Compose'),
+        ):
             immich.omitted_bind_creation_default(ROOT)

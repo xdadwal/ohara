@@ -1,4 +1,5 @@
 """Explicit DNS certificate setup, preserving live routes during renewal migration."""
+
 import json
 from pathlib import Path
 import re
@@ -13,8 +14,14 @@ CERT_DIR = Path('/etc/letsencrypt/live') / CERT_NAME
 
 
 def installed_paths(staging=False):
-    return ((HOOK.with_name('dns_godaddy_staging.py'), dns_godaddy.CREDENTIALS.with_name('dns-godaddy-staging.json'))
-            if staging else (HOOK, dns_godaddy.CREDENTIALS))
+    return (
+        (
+            HOOK.with_name('dns_godaddy_staging.py'),
+            dns_godaddy.CREDENTIALS.with_name('dns-godaddy-staging.json'),
+        )
+        if staging
+        else (HOOK, dns_godaddy.CREDENTIALS)
+    )
 
 
 def install(root, data, staging=False):
@@ -24,7 +31,9 @@ def install(root, data, staging=False):
             raise ValueError('Installed DNS directory must not be a symlink')
         directory.mkdir(parents=True, exist_ok=True)
         if directory.stat().st_uid != 0 or directory.stat().st_mode & 0o022:
-            raise ValueError('Installed DNS directory must be root-owned and not writable by others')
+            raise ValueError(
+                'Installed DNS directory must be root-owned and not writable by others'
+            )
     # Installed copies survive checkout moves; tokens never enter command args.
     for path in (hook, credential):
         if path.is_symlink():
@@ -39,10 +48,17 @@ def install(root, data, staging=False):
 
 def options(staging=False):
     hook, _ = installed_paths(staging)
-    return ['--authenticator', 'manual', '--preferred-challenges', 'dns',
-            '--manual-auth-hook', '/usr/bin/python3 ' + str(hook) + ' auth',
-            '--manual-cleanup-hook', '/usr/bin/python3 ' + str(hook) + ' cleanup',
-            '--non-interactive']
+    return [
+        '--authenticator',
+        'manual',
+        '--preferred-challenges',
+        'dns',
+        '--manual-auth-hook',
+        '/usr/bin/python3 ' + str(hook) + ' auth',
+        '--manual-cleanup-hook',
+        '/usr/bin/python3 ' + str(hook) + ' cleanup',
+        '--non-interactive',
+    ]
 
 
 def nginx_config(old, c, root):
@@ -51,6 +67,7 @@ def nginx_config(old, c, root):
     if 'ssl_certificate ' not in old:
         return proxy.render(c, root, https=True).replace('/live/ohara/', '/live/' + CERT_NAME + '/')
     changed = set()
+
     def update(match):
         block = match.group(0)
         # Retire the removed file service without disturbing unrelated routes.
@@ -60,29 +77,67 @@ def nginx_config(old, c, root):
         if not names or 'ssl_certificate ' not in block:
             return block
         hosts = names.group(1).split()
-        if all(n == c['DOMAIN'] or (n.endswith('.' + c['DOMAIN'])
-                                   and n.count('.') == c['DOMAIN'].count('.') + 1) for n in hosts):
+        if all(
+            n == c['DOMAIN']
+            or (n.endswith('.' + c['DOMAIN']) and n.count('.') == c['DOMAIN'].count('.') + 1)
+            for n in hosts
+        ):
             changed.update(hosts)
-            block = re.sub(r'(?m)^(\s*ssl_certificate)\s+[^;]+;',
-                           r'\1 ' + str(CERT_DIR / 'fullchain.pem') + ';', block)
-            block = re.sub(r'(?m)^(\s*ssl_certificate_key)\s+[^;]+;',
-                           r'\1 ' + str(CERT_DIR / 'privkey.pem') + ';', block)
+            block = re.sub(
+                r'(?m)^(\s*ssl_certificate)\s+[^;]+;',
+                r'\1 ' + str(CERT_DIR / 'fullchain.pem') + ';',
+                block,
+            )
+            block = re.sub(
+                r'(?m)^(\s*ssl_certificate_key)\s+[^;]+;',
+                r'\1 ' + str(CERT_DIR / 'privkey.pem') + ';',
+                block,
+            )
         return block
+
     result = re.sub(r'(?ms)^server \{\n.*?^\}', update, old)
-    required = {c[k] for k in ('DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST')}
-    if required - changed == {c['NAVIDROME_HOST']} and c['NAVIDROME_HOST'] not in proxy.configured_names(old):
-        result += '\n' + proxy.navidrome_config(c, root).replace('/live/ohara/', '/live/' + CERT_NAME + '/')
-        result += ('\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name ' + c['NAVIDROME_HOST'] + ';\n'
-                   '    access_log off;\n    error_log /dev/null;\n'
-                   '    location / { return 301 https://$host$request_uri; }\n}\n')
+    required = {
+        c[k]
+        for k in (
+            'DOMAIN',
+            'REQUESTS_HOST',
+            'SPEED_HOST',
+            'JELLYFIN_HOST',
+            'HOMEPAGE_HOST',
+            'NAVIDROME_HOST',
+        )
+    }
+    if required - changed == {c['NAVIDROME_HOST']} and c[
+        'NAVIDROME_HOST'
+    ] not in proxy.configured_names(old):
+        result += '\n' + proxy.navidrome_config(c, root).replace(
+            '/live/ohara/', '/live/' + CERT_NAME + '/'
+        )
+        result += (
+            '\nserver {\n    listen 80;\n    listen [::]:80;\n    server_name '
+            + c['NAVIDROME_HOST']
+            + ';\n'
+            '    access_log off;\n    error_log /dev/null;\n'
+            '    location / { return 301 https://$host$request_uri; }\n}\n'
+        )
         changed.add(c['NAVIDROME_HOST'])
     if not required <= changed:
-        raise ValueError('Existing HTTPS routes are missing configured names; inspect before DNS activation')
+        raise ValueError(
+            'Existing HTTPS routes are missing configured names; inspect before DNS activation'
+        )
     return result
 
 
-def activate(c, root, credential_path, *, staging=False, renewal_only=False,
-             accounts_ready=False, agree=False):
+def activate(
+    c,
+    root,
+    credential_path,
+    *,
+    staging=False,
+    renewal_only=False,
+    accounts_ready=False,
+    agree=False,
+):
     if not agree:
         raise ValueError('Supply --agree-tos after reviewing the ACME subscriber agreement')
     if not staging and not renewal_only and not accounts_ready:
@@ -112,24 +167,43 @@ def activate(c, root, credential_path, *, staging=False, renewal_only=False,
         # Certbot tests staging validation before saving the new renewal options.
         run(['certbot', 'reconfigure', '--cert-name', CERT_NAME] + options(), timeout=15000)
     else:
-        args = ['certbot', 'certonly', '--cert-name', CERT_NAME, '--agree-tos',
-                '--email', c['ACME_EMAIL'],
-                '--force-renewal' if staging else '--keep-until-expiring'] + options(staging)
+        args = [
+            'certbot',
+            'certonly',
+            '--cert-name',
+            CERT_NAME,
+            '--agree-tos',
+            '--email',
+            c['ACME_EMAIL'],
+            '--force-renewal' if staging else '--keep-until-expiring',
+        ] + options(staging)
         args += ['-d', c['DOMAIN'], '-d', '*.' + c['DOMAIN']]
         if staging:
-            args += ['--staging', '--config-dir', '/etc/letsencrypt-staging',
-                     '--work-dir', '/var/lib/letsencrypt-staging', '--logs-dir', '/var/log/letsencrypt-staging']
+            args += [
+                '--staging',
+                '--config-dir',
+                '/etc/letsencrypt-staging',
+                '--work-dir',
+                '/var/lib/letsencrypt-staging',
+                '--logs-dir',
+                '/var/log/letsencrypt-staging',
+            ]
         run(args, timeout=15000)
         if staging:
             print('DNS staging issuance passed; production certificate and Nginx routes unchanged.')
             return
         if not all((CERT_DIR / n).is_file() for n in ('fullchain.pem', 'privkey.pem')):
-            raise ValueError('Production certificate files are missing; existing Nginx routes preserved')
+            raise ValueError(
+                'Production certificate files are missing; existing Nginx routes preserved'
+            )
         run(['certbot', 'reconfigure', '--cert-name', CERT_NAME] + options(), timeout=15000)
     hook.parent.mkdir(parents=True, exist_ok=True)
     proxy.atomic_write(hook, proxy.RENEW_HOOK, 0o755)
     if not renewal_only:
         proxy.apply_config(candidate)
     run(['systemctl', 'enable', '--now', 'certbot.timer'])
-    run(['certbot', 'renew', '--cert-name', CERT_NAME, '--dry-run', '--run-deploy-hooks'], timeout=15000)
+    run(
+        ['certbot', 'renew', '--cert-name', CERT_NAME, '--dry-run', '--run-deploy-hooks'],
+        timeout=15000,
+    )
     print('DNS renewal configured and dry run passed; verify HTTPS externally.')

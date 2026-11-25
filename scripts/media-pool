@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Manage mount-dependent media startup; see docs/storage-pool.md."""
+
 import argparse
 from pathlib import Path
 import subprocess
 import sys
+
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT/'scripts/lib'))
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import media_pool
 
@@ -14,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['install-unit', 'start', 'stop', 'check'])
     args = parser.parse_args()
-    c = config.load(ROOT/'.env')
+    c = config.load(ROOT / '.env')
     if not c.get('MEDIA_POOL_MOUNT'):
         raise ValueError('MEDIA_POOL_MOUNT is not configured')
     if args.command == 'install-unit':
@@ -30,5 +32,5 @@ if __name__ == '__main__':
     try:
         main()
     except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print('Ohara media pool: '+str(error), file=sys.stderr)
+        print('Ohara media pool: ' + str(error), file=sys.stderr)
         sys.exit(1)

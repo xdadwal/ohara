@@ -1,11 +1,21 @@
 """Opt-in mergerfs preflight and systemd startup for media consumers only."""
+
 import json
 import os
 from pathlib import Path
 import config
 import runtime
 
-SERVICES = ('homepage', 'jellyfin', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'qbittorrent')
+SERVICES = (
+    'homepage',
+    'jellyfin',
+    'navidrome',
+    'radarr',
+    'sonarr',
+    'lidarr',
+    'bazarr',
+    'qbittorrent',
+)
 MARKER = '# Managed by Ohara media-pool\n'
 
 
@@ -13,15 +23,22 @@ def require_mount(c):
     mount = c.get('MEDIA_POOL_MOUNT')
     if not mount:
         return
-    info = json.loads(runtime.run(['findmnt', '--json', '--mountpoint', mount,
-                                  '-o', 'TARGET,FSTYPE'], capture=True))
+    info = json.loads(
+        runtime.run(
+            ['findmnt', '--json', '--mountpoint', mount, '-o', 'TARGET,FSTYPE'], capture=True
+        )
+    )
     rows = info.get('filesystems', [])
     if len(rows) != 1 or rows[0]['target'] != mount or rows[0]['fstype'] != 'fuse.mergerfs':
-        raise ValueError('MEDIA_POOL_MOUNT is not the active mergerfs mount; start its systemd mount first')
+        raise ValueError(
+            'MEDIA_POOL_MOUNT is not the active mergerfs mount; start its systemd mount first'
+        )
 
 
 def override(c, root):
-    return ['-f', str(root/'compose/overrides/media-pool.yaml')] if c.get('MEDIA_POOL_MOUNT') else []
+    return (
+        ['-f', str(root / 'compose/overrides/media-pool.yaml')] if c.get('MEDIA_POOL_MOUNT') else []
+    )
 
 
 def unit(c, root):
@@ -29,9 +46,15 @@ def unit(c, root):
     if not mount:
         raise ValueError('Configure MEDIA_POOL_MOUNT and MEDIA_ROOT before installing the unit')
     if not config.PATH.fullmatch(str(root)):
-        raise ValueError('Systemd integration requires a repository path without spaces or special characters')
-    mount_unit = runtime.run(['systemd-escape', '--path', '--suffix=mount', mount], capture=True).strip()
-    return MARKER + f'''[Unit]
+        raise ValueError(
+            'Systemd integration requires a repository path without spaces or special characters'
+        )
+    mount_unit = runtime.run(
+        ['systemd-escape', '--path', '--suffix=mount', mount], capture=True
+    ).strip()
+    return (
+        MARKER
+        + f"""[Unit]
 Description=Ohara media services on mergerfs
 RequiresMountsFor={mount}
 BindsTo={mount_unit} docker.service
@@ -48,7 +71,8 @@ TimeoutStopSec=180
 
 [Install]
 WantedBy=docker.service
-'''
+"""
+    )
 
 
 def install(c, root):
@@ -69,7 +93,12 @@ def install(c, root):
 def start(c, root):
     require_mount(c)
     runtime.check(c, root)
-    runtime.compose(c, root, ['up', '-d', '--no-deps', '--wait', '--wait-timeout', '180', *SERVICES], timeout=240)
+    runtime.compose(
+        c,
+        root,
+        ['up', '-d', '--no-deps', '--wait', '--wait-timeout', '180', *SERVICES],
+        timeout=240,
+    )
 
 
 def stop(c, root):

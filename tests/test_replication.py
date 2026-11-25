@@ -29,7 +29,11 @@ class ReplicationTests(unittest.TestCase):
     def test_portfolio_rejects_admin_ports_and_bad_values(self):
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory) / '.env'
-            source = (ROOT / '.env.example').read_text().replace('HOMEPAGE_HOST=xdadwal.in', 'HOMEPAGE_HOST=ohara.xdadwal.in')
+            source = (
+                (ROOT / '.env.example')
+                .read_text()
+                .replace('HOMEPAGE_HOST=xdadwal.in', 'HOMEPAGE_HOST=ohara.xdadwal.in')
+            )
             for port in ['7878', '8081', '9696', '80', '-1', '65536', '8010;bad']:
                 p.write_text(source.replace('PORTFOLIO_PORT=0', 'PORTFOLIO_PORT=' + port))
                 with self.subTest(port=port), self.assertRaises(ValueError):
@@ -40,28 +44,53 @@ class ReplicationTests(unittest.TestCase):
             root = Path(directory).resolve()
             credential_fixtures.write(root)
             (root / 'configs/media').mkdir(parents=True)
-            (root / 'configs/media/ohara.json').write_text((ROOT / 'configs/media/ohara.json').read_text())
+            (root / 'configs/media/ohara.json').write_text(
+                (ROOT / 'configs/media/ohara.json').read_text()
+            )
             names = ['limetorrents', 'nyaasi', 'thepiratebay']
-            schemas = [dict(name=n, definitionName=n, indexerUrls=['https://example.test/'],
-                            fields=[{'name': 'baseUrl'}]) for n in names]
+            schemas = [
+                dict(
+                    name=n,
+                    definitionName=n,
+                    indexerUrls=['https://example.test/'],
+                    fields=[{'name': 'baseUrl'}],
+                )
+                for n in names
+            ]
             indexers = [dict(schemas[0], id=1, enable=False)]
-            naming = {name: {'renameMovies' if name == 'radarr' else 'renameEpisodes': False,
-                             'format': 'operator-custom-format'} for name in ['radarr', 'sonarr']}
+            naming = {
+                name: {
+                    'renameMovies' if name == 'radarr' else 'renameEpisodes': False,
+                    'format': 'operator-custom-format',
+                }
+                for name in ['radarr', 'sonarr']
+            }
             calls = []
+
             class Client:
                 def __init__(self, url, key):
-                    self.name = next(n for n, p in [('radarr', '7878'), ('sonarr', '8989'), ('prowlarr', '9696')] if p in url)
+                    self.name = next(
+                        n
+                        for n, p in [('radarr', '7878'), ('sonarr', '8989'), ('prowlarr', '9696')]
+                        if p in url
+                    )
+
                 def call(self, path, body=None, method=None):
                     calls.append((self.name, path, body, method))
-                    if path.endswith('/schema'): return copy.deepcopy(schemas)
-                    if path.endswith('/appprofile'): return [{'id': 1}]
+                    if path.endswith('/schema'):
+                        return copy.deepcopy(schemas)
+                    if path.endswith('/appprofile'):
+                        return [{'id': 1}]
                     if path == '/api/v1/indexer':
-                        if body is not None: indexers.append(copy.deepcopy(body))
+                        if body is not None:
+                            indexers.append(copy.deepcopy(body))
                         return copy.deepcopy(indexers)
                     if path.endswith('/config/naming'):
-                        if body is not None: naming[self.name] = copy.deepcopy(body)
+                        if body is not None:
+                            naming[self.name] = copy.deepcopy(body)
                         return copy.deepcopy(naming[self.name])
                     return {}
+
             before = (root / '.env').read_bytes()
             with patch.object(media_profile, 'Client', Client):
                 media_profile.apply(root)
@@ -79,9 +108,13 @@ class ReplicationTests(unittest.TestCase):
             root = Path(directory).resolve()
             credential_fixtures.write(root)
             (root / 'configs/media').mkdir(parents=True)
-            (root / 'configs/media/ohara.json').write_text(json.dumps({'rename': True, 'indexers': ['missing']}))
+            (root / 'configs/media/ohara.json').write_text(
+                json.dumps({'rename': True, 'indexers': ['missing']})
+            )
             with patch.object(media_profile, 'Client') as client:
                 client.return_value.call.side_effect = [[], [], [{'id': 1}]]
                 with self.assertRaisesRegex(ValueError, 'Unavailable'):
                     media_profile.apply(root)
-                self.assertTrue(all(call.args[1:] == () for call in client.return_value.call.call_args_list))
+                self.assertTrue(
+                    all(call.args[1:] == () for call in client.return_value.call.call_args_list)
+                )
