@@ -29,9 +29,13 @@ scripts. Ohara provisions the media/dashboard stack and Nginx; the separate
    Follow [operations.md](operations.md) for `scripts/setup --dry-run`, actual
    setup, checks, startup and private account setup.
 
-3. Clone/build the portfolio using its `deploy/README.md`. Install its systemd unit,
-   changing its user, checkout and virtual-environment paths for the new machine.
-   Confirm the portfolio responds at `http://127.0.0.1:8010` before TLS activation.
+3. Clone/build the portfolio using its `deploy/README.md` (Python 3.12+, its
+   requirements and Tailwind build). Create its private `.env` from its
+   `env.example`; the chat assistant needs the owner's OpenAI keys there and stays
+   off without them. Install its systemd unit, changing its user, checkout and
+   virtual-environment paths for the new machine; the unit creates
+   `/var/lib/portfolio` for the assistant's databases. Confirm the portfolio
+   responds at `http://127.0.0.1:8010` before TLS activation.
 
 4. On a **fresh** media deployment, initialize accounts and connections:
 
