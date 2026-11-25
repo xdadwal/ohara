@@ -1,4 +1,5 @@
 # Optional headless slicing backend; reached only through Bambuddy.
+# Operate it with scripts/orcaslicer; see docs/orcaslicer.md.
 name: ohara-orcaslicer
 services:
   orcaslicer:

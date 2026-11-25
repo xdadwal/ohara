@@ -1,3 +1,5 @@
+# Optional LAN-only media maintenance, on the main stack's network to reach its
+# applications. Operate it with scripts/maintainerr; see docs/maintainerr.md.
 name: ohara-maintainerr
 services:
   maintainerr:

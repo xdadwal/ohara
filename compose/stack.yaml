@@ -1,11 +1,26 @@
+# The eleven-application main stack. Operate it with scripts/check, scripts/up and
+# scripts/status, which supply validated values; never run Compose here directly.
 name: ohara
+
+# Every service: restart policy and bounded logs.
 x-defaults: &defaults
   restart: unless-stopped
   logging:
     driver: json-file
-    options:
-      max-size: "10m"
-      max-file: "3"
+    options: {max-size: "10m", max-file: "3"}
+
+# LinuxServer images (Arr applications, Bazarr, qBittorrent): run as the configured
+# user without capabilities; their init needs a writable, executable /run.
+x-linuxserver: &linuxserver
+  <<: *defaults
+  user: "${RUN_UID}:${RUN_GID}"
+  tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+x-linuxserver-environment: &linuxserver-environment
+  TZ: ${TZ}
+  UMASK: "002"
+
 services:
   homepage:
     <<: *defaults
@@ -37,22 +52,18 @@ services:
       HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000
       HOMEPAGE_VAR_SEERR_DESCRIPTION: Discover and request movies and shows${SEERR_LAN_ONLY:+ (local network)}
       HOMEPAGE_VAR_NTFY_PASSWORD: ${HOMEPAGE_VAR_NTFY_PASSWORD:-}
-    ports:
-      - "127.0.0.1:3002:3000"
+    ports: ["127.0.0.1:3002:3000"]
     volumes:
       - type: bind
         source: ${DATA_ROOT}/homepage
         target: /app/config
-        bind:
-          create_host_path: false
+        bind: {create_host_path: false}
       - type: bind
         source: ${MEDIA_ROOT}
         target: /media-storage
         read_only: true
-        bind:
-          create_host_path: false
-    tmpfs:
-      - /app/.next/cache:uid=${RUN_UID},gid=${RUN_GID}
+        bind: {create_host_path: false}
+    tmpfs: ["/app/.next/cache:uid=${RUN_UID},gid=${RUN_GID}"]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
   seerr:
@@ -62,14 +73,12 @@ services:
     environment:
       TZ: ${TZ}
       LOG_LEVEL: info
-    ports:
-      - "127.0.0.1:5055:5055"
+    ports: ["127.0.0.1:5055:5055"]
     volumes:
       - type: bind
         source: ${DATA_ROOT}/seerr
         target: /app/config
-        bind:
-          create_host_path: false
+        bind: {create_host_path: false}
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     healthcheck:
@@ -81,8 +90,7 @@ services:
   speedtest:
     <<: *defaults
     image: ${SPEED_IMAGE:?Run scripts/check}
-    ports:
-      - "127.0.0.1:3000:3000"
+    ports: ["127.0.0.1:3000:3000"]
     security_opt: ["no-new-privileges:true"]
   jellyfin:
     <<: *defaults
@@ -130,15 +138,9 @@ services:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
   radarr:
-    <<: *defaults
+    <<: *linuxserver
     image: ${RADARR_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    environment:
-      TZ: ${TZ}
-      UMASK: "002"
+    environment: *linuxserver-environment
     ports: ["127.0.0.1:7878:7878"]
     volumes:
       - type: bind
@@ -150,15 +152,9 @@ services:
         target: /data
         bind: {create_host_path: false}
   sonarr:
-    <<: *defaults
+    <<: *linuxserver
     image: ${SONARR_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    environment:
-      TZ: ${TZ}
-      UMASK: "002"
+    environment: *linuxserver-environment
     ports: ["127.0.0.1:8989:8989"]
     volumes:
       - type: bind
@@ -170,15 +166,9 @@ services:
         target: /data
         bind: {create_host_path: false}
   lidarr:
-    <<: *defaults
+    <<: *linuxserver
     image: ${LIDARR_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    environment:
-      TZ: ${TZ}
-      UMASK: "002"
+    environment: *linuxserver-environment
     ports: ["127.0.0.1:8686:8686"]
     volumes:
       - type: bind
@@ -190,15 +180,9 @@ services:
         target: /data
         bind: {create_host_path: false}
   bazarr:
-    <<: *defaults
+    <<: *linuxserver
     image: ${BAZARR_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    environment:
-      TZ: ${TZ}
-      UMASK: "002"
+    environment: *linuxserver-environment
     ports: ["127.0.0.1:6767:6767"]
     volumes:
       - type: bind
@@ -210,15 +194,9 @@ services:
         target: /data/library
         bind: {create_host_path: false}
   prowlarr:
-    <<: *defaults
+    <<: *linuxserver
     image: ${PROWLARR_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    environment:
-      TZ: ${TZ}
-      UMASK: "002"
+    environment: *linuxserver-environment
     ports: ["127.0.0.1:9696:9696"]
     volumes:
       - type: bind
@@ -226,15 +204,10 @@ services:
         target: /config
         bind: {create_host_path: false}
   qbittorrent:
-    <<: *defaults
+    <<: *linuxserver
     image: ${QBITTORRENT_IMAGE:?Run scripts/check}
-    user: "${RUN_UID}:${RUN_GID}"
-    tmpfs: ["/run:uid=${RUN_UID},gid=${RUN_GID},exec"]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
     environment:
-      TZ: ${TZ}
-      UMASK: "002"
+      <<: *linuxserver-environment
       WEBUI_PORT: "8081"
     ports: ["127.0.0.1:8081:8081"]
     volumes:
