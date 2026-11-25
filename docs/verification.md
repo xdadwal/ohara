@@ -979,7 +979,7 @@ The upstream Git tag is spelled `v.1.3.2`; the image tags are `1.3.2` and
   not an independent backup. No sudo was needed on this host because the
   operator account already has Docker access:
 
-  ```bash
+  ```sh
   scripts/orcaslicer stop
   scripts/bambuddy stop
   cp -a /ohara/bambuddy/. local/bambuddy-backups/<timestamp>-pre-1.3.2/

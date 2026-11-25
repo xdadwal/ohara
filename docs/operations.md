@@ -1,9 +1,5 @@
 # Ohara operations
 
-Deployment file paths and migration/rollback are documented in
-[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
-private at the repository root.
-
 ## Host preparation
 
 For an agent-led installation, follow [agent-setup.md](agent-setup.md) for
@@ -43,7 +39,7 @@ Bootstrap installs an HTTP maintenance/ACME site. On a fresh Nginx installation 
 disables only the package default site just installed by that invocation. If an
 existing site/default listener conflicts, inspect `sudo nginx -t` and resolve it
 manually; setup never disables unrelated preexisting sites. Reserved ports are
-loopback 3000/3002/5055/7878/8081/8096/8989/9696, and host 80/443 for Nginx.
+loopback 3000/3002/4533/5055/6767/7878/8081/8096/8686/8989/9696, and host 80/443 for Nginx.
 
 ## Host media pool
 
@@ -233,11 +229,12 @@ an already active HTTPS config.
 
 ## DNS and migration from a deployed Pi-hole
 
-Public domain records are managed at GoDaddy. Ohara no longer includes a local DNS
-server, DNS filtering, or DHCP service. The host and LAN clients use their existing
-router/ISP or explicitly configured resolver. LAN_IP is no longer required in .env;
-older LAN_IP lines are accepted and ignored. Port 53 and admin port 8888 are no
-longer published or checked by Ohara.
+Public domain records are managed at GoDaddy. The main stack includes no local DNS
+server, DNS filtering, or DHCP service; LAN DNS is the separate optional AdGuard
+project ([Optional LAN DNS](#optional-lan-dns)). Without it, the host and LAN
+clients use their existing router/ISP or explicitly configured resolver. LAN_IP is
+no longer required in .env; older LAN_IP lines are accepted and ignored. Pi-hole's
+port 53 and admin port 8888 are no longer published or checked by the main stack.
 
 If Pi-hole was actually deployed and clients/router DHCP still use its address,
 configure a working replacement DNS resolver first, renew client leases and verify
@@ -330,7 +327,7 @@ release, raise `NGINX_MINIMUM` in the same change. Check for a pending host Ngin
 with `apt-cache policy nginx` and read it with `apt-get changelog nginx`. Apply it
 alone, keeping the installed configuration files:
 
-```bash
+```sh
 sudo apt-get install --only-upgrade -o Dpkg::Options::=--force-confold nginx nginx-common
 sudo nginx -t
 ```
@@ -355,34 +352,19 @@ architecture availability is not the same as tested performance on your hardware
 
 Use [Immich operations](immich.md) and `scripts/immich` for its independent project,
 with machine learning disabled and no automatic public activation.
-See [immich-next.md](immich-next.md) for remaining deployment choices. Confirm host placement, hardware, storage capacity, backup location and photo
+See [immich-next.md](immich-next.md) for this host's deployment status and follow-up
+work. On another host, confirm host placement, hardware, storage capacity, backup location and photo
 hostname first. Use the official release-matched Compose deployment, including
 its required database/cache services; keep PostgreSQL on suitable local storage.
 Keep its database and personal photo storage isolated from other services. Use a dedicated subdomain with the documented large-upload/WebSocket
 proxy configuration. Back up media plus database and prove restoration before
 relying on it for your personal archive.
 
-## Upstream references
-
-- https://docs.docker.com/engine/install/ubuntu/
-- https://docs.docker.com/engine/install/debian/
-- https://docs.docker.com/engine/network/packet-filtering-firewalls/
-- https://docs.seerr.dev/getting-started/docker/
-- https://github.com/openspeedtest/Docker-Image
-- https://letsencrypt.org/docs/challenge-types/
-- https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates
-- https://docs.immich.app/install/docker-compose/
-
-See [verification.md](verification.md) for evidence collected during implementation.
-During a hostname change, ACME challenge routes are temporarily added for new
-names while existing HTTPS stays active; issuance failure restores the prior
-config. The certificate retains prior names for rollback safety, so keep their
-DNS/challenge paths working during the transition. Retiring old certificate names
-entirely requires a separately planned cutover rather than automatic removal.
-
 ## Homepage
 
-Homepage serves the HTTPS apex. Supply its password and cookie-signing secret
+Homepage serves `HOMEPAGE_HOST` over HTTPS: the apex by default, or a separate
+hostname when a portfolio serves the apex (ohara.xdadwal.in on this host). Supply
+its password and cookie-signing secret
 in user-created `.env` (mode 0600), with `HOMEPAGE_AUTH_ENABLED=true`.
 See [credentials.md](credentials.md) for empty templates and validation.
 After activation, sign in at `https://<HOMEPAGE_HOST>` with that password. Authentication
@@ -491,29 +473,16 @@ retention/actions in the UI before allowing automated removal.
 
 Bambuddy runs independently for the owner's A1 mini. Follow [Bambuddy setup and
 onboarding](bambuddy.md). Keep its HTTP backend loopback-only. The owner approved
-public HTTPS with native password login and no added MFA after LAN onboarding;
-use `scripts/bambuddy-proxy`. No printer-control or discovery ports are published. Owner setup
+public HTTPS with native password login after LAN onboarding, without requiring
+MFA; the owner later enabled TOTP on the admin account, which must be kept and
+never bypassed or reset. Use `scripts/bambuddy-proxy`. No printer-control or discovery ports are published. Owner setup
 and printer credentials stay in the HTTPS UI.
 
 ## Optional ntfy notifications
 
-Follow [ntfy.md](ntfy.md) and `scripts/ntfy` for the independently pinned server,
-local storage outside the media pool, native deny-by-default topic authentication,
-HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
-private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
-wake-up relay only with explicit approval. No notification text is forwarded to
-that relay. Verify the real supplied account before public proxy activation.
-Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
-readiness; it reads the actual configured storage UUIDs and preserves the existing
-storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
-delivery. Local publish success is not phone delivery or independent outage
-detection; same-host monitoring cannot report a complete host/network outage.
-Keep credentials out of Homepage, command arguments and logs.
-
-For optional ntfy event monitoring, Seerr new-request notifications and the
-read-only Homepage widget, follow
-[host and application alerts](alerts.md). Reinstall the host worker after alert
-changes and configure Seerr separately; preserve private inputs and alert state.
+Follow the [ntfy setup summary](ntfy.md#setup-summary) and its guide for the server,
+phone delivery and the host alert timer, and [host and application alerts](alerts.md)
+for event monitoring, Seerr notifications and the Homepage widget.
 
 Repeated media outages: follow the [USB/storage incident investigation](storage-incident-2026-10-31.md)
 to correlate kernel disconnects with the guarded media unit before restarting services.
@@ -544,3 +513,21 @@ only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard is on
 the owner's OpenWrt device and is removed there by the owner, if at all.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).
+
+## Upstream references
+
+- https://docs.docker.com/engine/install/ubuntu/
+- https://docs.docker.com/engine/install/debian/
+- https://docs.docker.com/engine/network/packet-filtering-firewalls/
+- https://docs.seerr.dev/getting-started/docker/
+- https://github.com/openspeedtest/Docker-Image
+- https://letsencrypt.org/docs/challenge-types/
+- https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates
+- https://docs.immich.app/install/docker-compose/
+
+See [verification.md](verification.md) for evidence collected during implementation.
+During a hostname change, ACME challenge routes are temporarily added for new
+names while existing HTTPS stays active; issuance failure restores the prior
+config. The certificate retains prior names for rollback safety, so keep their
+DNS/challenge paths working during the transition. Retiring old certificate names
+entirely requires a separately planned cutover rather than automatic removal.

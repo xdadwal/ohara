@@ -88,10 +88,7 @@ certificates, exact Nginx baselines and private service configurations are untou
 ## Verification and rollback
 
 ```sh
-python3 -m unittest discover -s tests -v
-tests/test_setup.sh
-tests/test_cli.sh
-tests/static.sh
+tests/verify.sh
 tests/smoke.sh
 python3 tests/smoke_immich.py
 python3 tests/smoke_bambuddy.py

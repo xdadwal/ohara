@@ -149,7 +149,8 @@ Immich instance and HTTPS route are verified. Preserve the rest of services.yaml
 including embedded widget credentials; do not print or replace the entire file.
 The current host has this live link, added selectively with a private backup;
 Homepage password login and the authenticated service-card response were verified.
-Immich currently serves LAN-only owner onboarding.
+Owner onboarding is complete and the public HTTPS route is active; see
+[Immich operations](immich.md).
 
 ### Immich statistics widget
 
@@ -178,11 +179,11 @@ The dashboard uses six groups selected by the owner:
 - **Media** (first section): Jellyfin and Navidrome.
 - **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
 - **3D Print:** optional Bambuddy (A1 mini management).
-- **Utility:** qBittorrent.
+- **Utility:** ntfy and qBittorrent.
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
 
-Maintainerr stays with Arr; qBittorrent has its own Utility section. Media stays
+Maintainerr stays with Arr; qBittorrent sits in Utility with ntfy. Media stays
 first, followed by 3D Print, Utility, Networking and Images & Videos as columns.
 Arr is a wide four-card row below those columns. Smaller displays wrap
 responsively; native CPU temperature remains enabled. Full service

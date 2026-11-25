@@ -92,10 +92,7 @@ unsliced .3mf to .gcode.3mf as a workaround.
 ```sh
 scripts/orcaslicer check
 scripts/orcaslicer status
-python3 -m unittest discover -s tests -v
-tests/test_setup.sh
-tests/test_cli.sh
-tests/static.sh
+tests/verify.sh
 tests/smoke.sh
 ```
 
