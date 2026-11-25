@@ -1,4 +1,4 @@
-# Formatting and lint rules for scripts/ and tests/. Run `make lint` (see Makefile).
+# Formatting and lint rules for scripts/ and tests/. Run tests/lint.sh (--fix to apply).
 target-version = "py312"
 line-length = 100
 # Entry points in scripts/ have no .py suffix; lint them too. Only setup is bash.
