@@ -1,11 +1,10 @@
-from deployment_fixtures import copy_deployment
-import importlib.util
 import json
 from pathlib import Path
 import sys
-import shutil
 import tempfile
 import unittest
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))

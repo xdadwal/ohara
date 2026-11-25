@@ -9,11 +9,11 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
-import config
 import adguard
+import bambuddy
+import config
 import immich
 import maintainerr
-import bambuddy
 import ntfy
 
 

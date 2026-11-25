@@ -4,6 +4,7 @@ import base64
 import hashlib
 from pathlib import Path
 import secrets
+
 import credentials as credential_files
 
 PORTS = {'radarr': 7878, 'sonarr': 8989, 'prowlarr': 9696, 'lidarr': 8686}
@@ -101,9 +102,9 @@ class Client:
 
     def call(self, path, body=None, method=None, form=False):
         import json
+        import urllib.error
         import urllib.parse
         import urllib.request
-        import urllib.error
 
         headers = {'Referer': self.base + '/', **self.headers}
         data = None

@@ -2,8 +2,8 @@
 
 import base64
 import datetime
-import json
 import ipaddress
+import json
 import os
 from pathlib import Path
 import re
@@ -327,8 +327,9 @@ def widget_config(domain, printer_id):
 
 def widget(c, root):
     """Install a status-only widget after an owner supplies an application key."""
-    import credentials
     import yaml
+
+    import credentials
 
     homepage_credentials, _ = credentials.load(root)
     key = homepage_credentials.get('HOMEPAGE_VAR_BAMBUDDY_API_KEY')

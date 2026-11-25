@@ -7,8 +7,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
-import host
 import credential_fixtures
+import host
 
 
 class HostTests(unittest.TestCase):

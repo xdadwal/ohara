@@ -17,8 +17,7 @@ def run(args, *, capture=False, timeout=60, env=None, input=None):
         args,
         input=input,
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         timeout=timeout,
         env=env,
     )

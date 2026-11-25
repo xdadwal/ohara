@@ -1,4 +1,3 @@
-from deployment_fixtures import copy_deployment
 import json
 import os
 from pathlib import Path
@@ -7,6 +6,8 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))

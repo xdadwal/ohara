@@ -111,9 +111,9 @@ class IntegrationTests(unittest.TestCase):
                 alerts.validate_integrations(c)
 
     def test_seerr_changes_only_native_provider_and_keeps_existing_event_bits(self):
+        import credentials
         import media
         import ntfy
-        import credentials
 
         before = {
             'enabled': True,

@@ -1,15 +1,16 @@
-from deployment_fixtures import copy_deployment
-from pathlib import Path
 import os
+from pathlib import Path
 import sys
 import tempfile
 import unittest
 
+from deployment_fixtures import copy_deployment
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
-import host
 import credential_fixtures
+import host
 import proxy
 
 
@@ -76,6 +77,7 @@ class HomepageRecoveryTests(unittest.TestCase):
 class HomepageExposureTests(unittest.TestCase):
     def test_model_rejects_disabled_login_or_wildcard_host(self):
         import json
+
         import runtime
 
         c = config.load(ROOT / '.env.example')
@@ -92,9 +94,10 @@ class HomepageExposureTests(unittest.TestCase):
 
 class ConfiguredPasswordTests(unittest.TestCase):
     def test_operator_password_is_preserved_and_accepted(self):
-        import shutil
-        import runtime
         import re
+        import shutil
+
+        import runtime
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -129,8 +132,9 @@ class ConfiguredPasswordTests(unittest.TestCase):
 
 class DashboardHostnameTests(unittest.TestCase):
     def test_subdomain_configuration_reaches_compose_proxy_and_status(self):
-        import runtime
         import json
+
+        import runtime
 
         c = config.load(ROOT / '.env.example')
         c['HOMEPAGE_HOST'] = 'ohara.xdadwal.in'

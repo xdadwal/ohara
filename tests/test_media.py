@@ -1,17 +1,17 @@
-from pathlib import Path
+import copy
+import json
 import os
+from pathlib import Path
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-import copy
-import json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
-import host
 import credential_fixtures
+import host
 import media
 
 
@@ -164,6 +164,7 @@ class MediaTests(unittest.TestCase):
 
     def test_public_media_admin_exposure_is_rejected(self):
         import json
+
         import runtime
 
         c = config.load(ROOT / '.env.example')

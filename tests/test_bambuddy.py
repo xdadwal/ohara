@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]

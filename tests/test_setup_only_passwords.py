@@ -17,9 +17,9 @@ import media
 def write_env(root, drop=(), **changes):
     path = root / '.env'
     lines = [
-        l
-        for l in path.read_text().splitlines()
-        if l.partition('=')[0] not in set(drop) | set(changes)
+        line
+        for line in path.read_text().splitlines()
+        if line.partition('=')[0] not in set(drop) | set(changes)
     ]
     lines += [f'{k}={v}' for k, v in changes.items()]
     path.write_text('\n'.join(lines) + '\n')

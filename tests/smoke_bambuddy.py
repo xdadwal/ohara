@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Disposable official Bambuddy check; never connects a printer or starts a print."""
 
-from deployment_fixtures import copy_deployment
 import json
 import os
 from pathlib import Path
-import shutil
-import subprocess
 import sys
 import tempfile
-import time
 import uuid
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))

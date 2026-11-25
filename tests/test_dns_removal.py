@@ -1,5 +1,5 @@
-from pathlib import Path
 import json
+from pathlib import Path
 import sys
 import tempfile
 import unittest
@@ -46,9 +46,9 @@ class DnsRemovalTests(unittest.TestCase):
             self.assertEqual(user_file.read_text(), original)
 
     def test_status_checks_only_remaining_services(self):
-        from unittest.mock import patch
         import contextlib
         import io
+        from unittest.mock import patch
 
         output = io.StringIO()
         with (

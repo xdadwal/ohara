@@ -282,4 +282,4 @@ if __name__ == '__main__':
         run()
     except Exception as error:
         print('Storage watchdog: ' + str(error), flush=True)
-        raise SystemExit(1)
+        raise SystemExit(1) from None

@@ -1,10 +1,11 @@
-from deployment_fixtures import copy_deployment
-from pathlib import Path
 import json
+from pathlib import Path
 import sys
 import tempfile
 import unittest
 from unittest.mock import Mock
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
@@ -95,6 +96,7 @@ class BazarrLegacyStartupTests(unittest.TestCase):
     def test_runtime_check_allows_preserved_ini_to_reach_application_migration(self):
         import os
         import shutil
+
         import config
         import credential_fixtures
         import host

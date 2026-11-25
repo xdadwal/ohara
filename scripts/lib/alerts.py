@@ -9,8 +9,8 @@ from pathlib import Path
 import re
 import socket
 import ssl
-import subprocess
 import stat
+import subprocess
 import time
 import urllib.error
 import urllib.parse
@@ -443,7 +443,7 @@ def extra_checks(c, state, pool_good):
             container_events(state, row, info)
             if row['service'] == 'maintainerr':
                 since = state.setdefault('log_since', {}).get(name)
-                now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                now = datetime.datetime.now(datetime.UTC).isoformat()
                 if since:
                     logs = command(
                         ['docker', 'logs', '--since', since, '--tail', '200', ids[0]],
@@ -712,4 +712,4 @@ if __name__ == '__main__':
         run()
     except Exception as e:
         print('Ohara alerts: ' + type(e).__name__, flush=True)
-        raise SystemExit(1)
+        raise SystemExit(1) from None

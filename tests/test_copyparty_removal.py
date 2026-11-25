@@ -1,5 +1,5 @@
-from pathlib import Path
 import json
+from pathlib import Path
 import sys
 import tempfile
 import unittest
@@ -7,8 +7,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
-import credentials
 import credential_fixtures
+import credentials
 import host
 import proxy
 import runtime

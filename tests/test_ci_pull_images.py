@@ -3,6 +3,7 @@ import io
 import subprocess
 import unittest
 from unittest.mock import patch
+
 import ci_pull_images as ci
 
 

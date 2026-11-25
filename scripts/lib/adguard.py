@@ -4,8 +4,8 @@ import base64
 import ipaddress
 import json
 import os
-import re
 from pathlib import Path
+import re
 import urllib.error
 import urllib.request
 
@@ -13,7 +13,6 @@ import config
 import credentials
 import host
 import runtime
-
 
 # Encrypted default upstream; its plain addresses only resolve that hostname.
 ENCRYPTED = 'https://dns.cloudflare.com/dns-query'

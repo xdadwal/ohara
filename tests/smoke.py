@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Exercise pinned applications and rendered Nginx using only disposable data."""
 
-from deployment_fixtures import copy_deployment
-import http.client
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
@@ -14,17 +13,19 @@ import subprocess
 import sys
 import tempfile
 import time
-import uuid
 import urllib.parse
+import uuid
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
-import host
 import credential_fixtures
 import credentials as credential_files
-import media
+import host
 import jellyfin_theme
+import media
 import proxy
 import runtime
 

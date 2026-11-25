@@ -2,8 +2,8 @@
 
 import fcntl
 import os
-import re
 from pathlib import Path
+import re
 import tempfile
 
 from runtime import run

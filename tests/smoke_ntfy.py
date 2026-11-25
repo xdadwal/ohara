@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 """Disposable ntfy auth/cache/publish/subscribe checks; never production credentials."""
 
-from deployment_fixtures import copy_deployment
-import json
 import base64
 import http.client
+import json
 import os
 from pathlib import Path
 import shutil
-import sys
 import ssl
+import sys
 import tempfile
 import time
 import uuid
 
+from deployment_fixtures import copy_deployment
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
-import config
-import ntfy
+import yaml
+
 import alerts
+import config
+import media
+import ntfy
 import ntfy_proxy
 import runtime
-import media
-import yaml
 
 NGINX = 'nginx@sha256:ed84151ed2d47ef93c0939eb9b9754c6990db6092cd2081e11988a47a83d47ea'
 
@@ -101,7 +103,7 @@ def proxy_check(c, root, project):
             finally:
                 connection.close()
 
-        for attempt in range(20):
+        for _ in range(20):
             try:
                 if request('/v1/health')[0] == 200:
                     break
@@ -256,7 +258,7 @@ def main():
             compose(['restart', 'ntfy'])
             port = compose(['port', 'ntfy', '8080'], capture=True).strip().rsplit(':', 1)[1]
             ntfy.BASE = 'http://127.0.0.1:' + port
-            for attempt in range(60):
+            for _ in range(60):
                 try:
                     if ntfy.request('/v1/health')[0] == 200:
                         break

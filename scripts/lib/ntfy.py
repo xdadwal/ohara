@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import re
-import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -320,6 +319,7 @@ def test(c, root):
 
 def homepage(c, root):
     import yaml
+
     import jellyfin_theme
 
     path = jellyfin_theme.safe(Path(c['DATA_ROOT']) / 'homepage/services.yaml')
@@ -388,10 +388,11 @@ def rotate_reviewed(image):
 
 def rotate_account(c, root):
     """Explicit owner-authorized offline rename/password update, with rollback."""
-    import bcrypt
     from contextlib import closing
     import sqlite3
     import tempfile
+
+    import bcrypt
 
     if os.geteuid() != 0:
         raise ValueError('Use sudo scripts/ntfy rotate-account after pausing alert timer/worker')
@@ -522,6 +523,7 @@ def reader_password(root):
 def reader_config(server, secret):
     """Add one bounded reader; preserve all publisher accounts/preferences."""
     import copy
+
     import bcrypt
 
     d = copy.deepcopy(server)
@@ -571,10 +573,12 @@ def widget_profile(c):
 
 def widget(c, root):
     """Provision the supplied private reader and selectively merge its widget."""
-    import sqlite3
     from contextlib import closing
+    import sqlite3
     import tempfile
+
     import yaml
+
     import jellyfin_theme
 
     if os.geteuid() != 0:

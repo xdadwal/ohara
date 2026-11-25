@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Start the pinned Immich release with disposable volumes and machine learning off."""
 
-from deployment_fixtures import copy_deployment
 import json
 from pathlib import Path
 import shutil
+import struct
 import sys
 import tempfile
-import struct
-import zlib
 import urllib.request
 import uuid
+import zlib
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))

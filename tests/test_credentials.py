@@ -1,8 +1,9 @@
-from deployment_fixtures import copy_deployment
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
@@ -97,9 +98,10 @@ class UserCredentialTests(unittest.TestCase):
                 credentials.read(link, credentials.HOMEPAGE_KEYS)
 
     def test_missing_service_config_blocks_upstream_credential_fallback(self):
+        import shutil
+
         import credential_fixtures
         import runtime
-        import shutil
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
