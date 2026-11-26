@@ -100,29 +100,37 @@ class ProxyTests(unittest.TestCase):
         self.assertFalse((ROOT / 'configs/nginx/deployed/ohara-public-ip-test.conf').exists())
         self.assertNotIn('45.120.160.21', deployed)
 
-    def test_portfolio_static_files_are_cached_briefly_and_compressed(self):
+    def test_portfolio_static_files_are_cached_and_compressed(self):
         c = config.load(ROOT / '.env.example')
         c.update(PORTFOLIO_PORT='8010')
         rendered = proxy.render(c, ROOT, https=True)
         portfolio = rendered[rendered.index('# Optional portfolio process') :]
         # Directives only: the template's comments mention the words checked below.
         portfolio = re.sub(r'(?m)^\s*#.*\n', '', portfolio)
-        for location, age in [
-            ('location ^~ /static/img/ {', 604800),
-            ('location = /favicon.ico {', 604800),
-            ('location ^~ /static/ {', 3600),
+        year = 'public, max-age=31536000, immutable'
+        for location, policy in [
+            # Linked by the portfolio with a content version (?v=).
+            ('location ^~ /static/css/ {', year),
+            ('location ^~ /static/fonts/ {', year),
+            # Not versioned.
+            ('location ^~ /static/img/ {', 'public, max-age=604800'),
+            ('location = /favicon.ico {', 'public, max-age=604800'),
+            ('location ^~ /static/ {', 'public, max-age=3600'),
         ]:
             block = portfolio[portfolio.index(location) :]
             block = block[: block.index('\n    }\n')]
             self.assertIn('proxy_pass http://127.0.0.1:8010;', block)
             self.assertIn('proxy_set_header Host $host;', block)
-            self.assertIn(f'add_header Cache-Control "public, max-age={age}";', block)
-        # File names are not versioned, and errors must not be cached.
-        self.assertNotIn('immutable', portfolio)
+            self.assertIn(f'add_header Cache-Control "{policy}";', block)
+        # Only the two versioned directories are immutable; errors must not be cached.
+        self.assertEqual(portfolio.count('immutable'), 2)
         self.assertNotIn('always', portfolio)
-        self.assertEqual(portfolio.count('add_header'), 3)
-        # Nothing but the three static locations sets a cache lifetime.
-        self.assertEqual(rendered.count('Cache-Control'), 3)
+        self.assertEqual(portfolio.count('add_header'), 5)
+        # Nothing but the five static locations sets a cache lifetime: pages stay fresh.
+        directives = re.sub(r'(?m)^\s*#.*\n', '', rendered)
+        self.assertEqual(directives.count('Cache-Control'), 5)
+        page = portfolio[portfolio.index('    location / {') :]
+        self.assertNotIn('add_header', page)
         types = re.search(r'gzip_types ([^;]+);', portfolio)[1].split()
         self.assertIn('text/css', types)
         self.assertNotIn('text/html', types)  # always compressed; listing it warns

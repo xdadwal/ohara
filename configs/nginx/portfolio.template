@@ -9,9 +9,22 @@ server {
     # nginx.conf compresses only text/html; cover the portfolio's other text types.
     gzip_types text/css application/javascript text/javascript application/json application/xml text/xml text/plain image/svg+xml;
     gzip_vary on;
-    # Static file names are not versioned, so lifetimes stay short and nothing is
-    # immutable. No "always": 404s and errors must not be cached.
-    # Images and icons rarely change: a week, then revalidate by ETag.
+    # Browser caching for static files. HTML gets no Cache-Control here: every visit
+    # must fetch a fresh page, because the page points at the current CSS version.
+    # No "always": 404s and errors must not be cached.
+    # The portfolio links CSS and fonts with a content version (?v=), so they can be
+    # cached for a year. This depends on the app always linking them that way.
+    location ^~ /static/css/ {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    location ^~ /static/fonts/ {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    # Images and the favicon are not versioned: a week, then revalidate by ETag.
     location ^~ /static/img/ {
         proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
         include /etc/nginx/ohara-proxy-headers.conf;
@@ -22,7 +35,7 @@ server {
         include /etc/nginx/ohara-proxy-headers.conf;
         add_header Cache-Control "public, max-age=604800";
     }
-    # CSS and anything else under /static changes with deploys: one hour.
+    # Anything else under /static: one hour.
     location ^~ /static/ {
         proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
         include /etc/nginx/ohara-proxy-headers.conf;

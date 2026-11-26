@@ -1481,3 +1481,108 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   from outside the LAN, and a browser's own cache behaviour.
 - Rollback: copy `ohara.conf` from the backup directory to `/etc/nginx/conf.d/`,
   run `sudo nginx -t`, then `sudo systemctl reload nginx`, and revert this commit.
+
+### Portfolio CSS and fonts cached for a year (2026-11-26)
+
+- Live change on the xdadwal.in host, by owner request, replacing nothing and
+  adding two locations to the `server_name xdadwal.in` HTTPS block of
+  `/etc/nginx/conf.d/ohara.conf`: `/static/css/` and `/static/fonts/` now get
+  `Cache-Control: public, max-age=31536000, immutable`. The week for
+  `/static/img/` and `/favicon.ico`, the hour for the rest of `/static/` and the
+  compression settings from earlier the same day are unchanged.
+- Precondition: the first check found the stylesheet linked without a version,
+  so nothing was applied. Portfolio PR #12 (self-hosted fonts, `?v=<content
+  hash>` on CSS and font URLs) was then merged by owner request and deployed at
+  `4d7c740`. After that, every `/static/css/` and `/static/fonts/` URL on `/`,
+  `/projects` and `/blog` ends in `?v=<hex>`, and the pages reference no Google
+  font hosts.
+- The tracked file was byte-identical to the live one before editing. Backup:
+  `/var/backups/ohara/nginx-portfolio-static-cache-v2-20261126-160849/`. `nginx -t`
+  passed before and after; Nginx was reloaded. There is still no other
+  `add_header` in the live configuration. The tracked `ohara.conf` is
+  byte-identical to the live file again.
+- Verified from the server (selected headers):
+
+  ```text
+  CSS=/static/css/output.css?v=5117afd18b5b
+  FONT=/static/fonts/hanken-grotesk-latin.woff2?v=1f21c6eaa000
+  $ curl -sI "https://xdadwal.in/static/css/output.css?v=5117afd18b5b"
+    HTTP/1.1 200 OK
+    Content-Type: text/css; charset=utf-8
+    Vary: Accept-Encoding
+    Cache-Control: public, max-age=31536000, immutable
+  $ curl -sI -H 'Accept-Encoding: gzip' "https://xdadwal.in/static/css/output.css?v=5117afd18b5b"
+    HTTP/1.1 200 OK
+    Content-Type: text/css; charset=utf-8
+    Vary: Accept-Encoding
+    Cache-Control: public, max-age=31536000, immutable
+    Content-Encoding: gzip
+  $ curl -sI "https://xdadwal.in/static/fonts/hanken-grotesk-latin.woff2?v=1f21c6eaa000"
+    HTTP/1.1 200 OK
+    Content-Type: font/woff2
+    Cache-Control: public, max-age=31536000, immutable
+  $ curl -sI -H 'Accept-Encoding: gzip' "https://xdadwal.in/static/fonts/hanken-grotesk-latin.woff2?v=1f21c6eaa000"
+    HTTP/1.1 200 OK
+    Content-Type: font/woff2
+    Cache-Control: public, max-age=31536000, immutable
+  $ curl -sI https://xdadwal.in/static/img/og.png
+    HTTP/1.1 200 OK
+    Content-Type: image/png
+    Cache-Control: public, max-age=604800
+  $ curl -sI https://xdadwal.in/favicon.ico
+    HTTP/1.1 200 OK
+    Content-Type: image/x-icon
+    Cache-Control: public, max-age=604800
+  $ curl -sI https://xdadwal.in/static/fonts/README.md
+    HTTP/1.1 200 OK
+    Content-Type: text/markdown; charset=utf-8
+    Cache-Control: public, max-age=31536000, immutable
+  $ curl -sI https://xdadwal.in/static/nope.css
+    HTTP/1.1 404 Not Found
+    Content-Type: application/json
+    Vary: Accept-Encoding
+  $ curl -sI https://xdadwal.in/
+    HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Vary: Accept-Encoding
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/
+    HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Vary: Accept-Encoding
+    Content-Encoding: gzip
+  $ curl -sI https://xdadwal.in/projects
+    HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Vary: Accept-Encoding
+  $ curl -sI https://xdadwal.in/robots.txt
+    HTTP/1.1 200 OK
+    Content-Type: text/plain; charset=utf-8
+    Vary: Accept-Encoding
+  $ curl -sI https://xdadwal.in/api/chat/history
+    HTTP/1.1 405 Method Not Allowed
+    Content-Type: application/json
+  $ curl -s -D - -o /dev/null https://xdadwal.in/api/chat/history
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+  $ curl -s -o /dev/null -w '%{http_code}' -H 'If-None-Match: "db939913ac129ada81b49756506df7b7"' https://xdadwal.in/static/img/og.png
+    304
+  $ spot checks (https status and redirect | http status and redirect)
+    tv.xdadwal.in https 302 https://tv.xdadwal.in/web/ | http 301 https://tv.xdadwal.in/
+    music.xdadwal.in https 302 https://music.xdadwal.in/app/ | http 301 https://music.xdadwal.in/
+    ohara.xdadwal.in https 307 https://ohara.xdadwal.in/auth/signin?callbackUrl=%2F | http 301 https://ohara.xdadwal.in/
+  ```
+
+  All five font files named in the stylesheet return 200 with the year-long
+  policy. Immich, Bambuddy, ntfy and OpenSpeedTest still return 200; the
+  Jellyfin, Navidrome and Homepage responses equal the earlier ones.
+- The rule matches by path, not by the presence of `?v=`: the bare
+  `/static/css/output.css` and `/static/fonts/README.md` also get the year. Pages
+  no longer link the bare stylesheet URL. The rule therefore depends on the
+  portfolio linking these files only through `static_url()`.
+- Not verified: a browser's own cache behaviour across a portfolio deploy, a
+  request from outside the LAN, and a chat message after the change.
+- Rollback: copy `ohara.conf` from the backup directory to `/etc/nginx/conf.d/`,
+  run `sudo nginx -t`, then `sudo systemctl reload nginx`, and revert this commit.
+  Browsers that already stored the stylesheet or a font keep it for up to a year
+  under that versioned URL, which is harmless because the content under a given
+  version never changes.

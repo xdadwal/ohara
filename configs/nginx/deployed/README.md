@@ -22,12 +22,21 @@ other LAN routes retain their existing restrictions.
   the existing wildcard certificate (`*.xdadwal.in` covers it; nothing was
   issued). The reusable templates have no `www` redirect: their HTTP-mode
   certificate lists only the configured hostnames. Since 2026-11-26 the
-  portfolio block also sets browser caching for static files: one week for
-  `/static/img/` and `/favicon.ico`, one hour for everything else under
-  `/static/`. Nothing is `immutable` and lifetimes stay short because the
-  portfolio's file names are not versioned; errors are not cached. The same
-  block compresses CSS, JavaScript, JSON, XML, plain text and SVG (`gzip_types`
-  plus `gzip_vary on`); the global `nginx.conf` only compresses HTML and is
+  portfolio block also sets browser caching for static files:
+  - `/static/css/` and `/static/fonts/`: one year, `immutable`, because the
+    portfolio links those files with a content version (`?v=<content hash>`).
+    This rule depends on the app always linking them that way; a file linked
+    without a version would stay stale in browsers for up to a year.
+  - `/static/img/` and `/favicon.ico`: one week (not versioned).
+  - Everything else under `/static/`: one hour.
+  - HTML pages, `/api/`, `robots.txt`, `sitemap.xml` and `llms.txt`: no
+    `Cache-Control` from Nginx. Each visit must fetch a fresh page, because the
+    page is what points browsers at the current CSS version. Errors are not
+    cached either.
+
+  The same block compresses CSS, JavaScript, JSON, XML, plain text and SVG
+  (`gzip_types` plus `gzip_vary on`); fonts and images are already compressed
+  and are left alone. The global `nginx.conf` only compresses HTML and is
   unchanged, so no other site is affected. `../portfolio.template` carries the
   same settings.
 - `ohara-immich.conf`: separate public photo HTTPS route, promoted from LAN-only
