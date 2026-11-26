@@ -6,6 +6,28 @@ server {
     ssl_certificate /etc/letsencrypt/live/ohara/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/ohara/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
+    # nginx.conf compresses only text/html; cover the portfolio's other text types.
+    gzip_types text/css application/javascript text/javascript application/json application/xml text/xml text/plain image/svg+xml;
+    gzip_vary on;
+    # Static file names are not versioned, so lifetimes stay short and nothing is
+    # immutable. No "always": 404s and errors must not be cached.
+    # Images and icons rarely change: a week, then revalidate by ETag.
+    location ^~ /static/img/ {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        add_header Cache-Control "public, max-age=604800";
+    }
+    location = /favicon.ico {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        add_header Cache-Control "public, max-age=604800";
+    }
+    # CSS and anything else under /static changes with deploys: one hour.
+    location ^~ /static/ {
+        proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
+        include /etc/nginx/ohara-proxy-headers.conf;
+        add_header Cache-Control "public, max-age=3600";
+    }
     location / {
         proxy_pass http://127.0.0.1:@PORTFOLIO_PORT@;
         include /etc/nginx/ohara-proxy-headers.conf;

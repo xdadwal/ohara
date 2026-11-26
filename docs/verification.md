@@ -1356,3 +1356,128 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   and ntfy status commands pass.
 - Consequence: rolling an application back to a previous image now needs a pull
   from its registry.
+
+### Portfolio static files cached and compressed (2026-11-26)
+
+- Live change on the xdadwal.in host, by owner request, in the `server_name
+  xdadwal.in` HTTPS block of `/etc/nginx/conf.d/ohara.conf` only. Three new
+  locations proxy to 127.0.0.1:8010 exactly like `location /` and add
+  `Cache-Control`: one week for `/static/img/` and `/favicon.ico`, one hour for
+  the rest of `/static/`. No `immutable` and no `always`. The same block gains
+  `gzip_types` (CSS, JavaScript, JSON, XML, plain text, SVG) and `gzip_vary on`.
+- Found first: no `add_header` exists anywhere in the live Nginx configuration,
+  so the new locations drop no inherited header. `/etc/nginx/ohara-proxy-headers.conf`
+  does not exist on this host; the live file inlines those headers, and the new
+  locations do the same. `gzip on` is set in the distribution's
+  `/etc/nginx/nginx.conf`, which has no tracked copy; it was left untouched and
+  the types were set in the portfolio block instead, so no other site changes.
+- The tracked file was byte-identical to the live one before editing. Backup:
+  `/var/backups/ohara/nginx-portfolio-static-cache-20261126-153424/`. `nginx -t`
+  passed before and after; Nginx was reloaded. The tracked `ohara.conf` is
+  byte-identical to the live file again.
+- Verified from the server (selected headers):
+
+  ```text
+  $ curl -sI https://xdadwal.in/static/css/output.css
+    HTTP/1.1 200 OK
+    Content-Type: text/css; charset=utf-8
+    Content-Length: 25622
+    Vary: Accept-Encoding
+    etag: "6f4999367c0a9a65c1954a704ad4cc08"
+    Cache-Control: public, max-age=3600
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/static/css/output.css
+    HTTP/1.1 200 OK
+    Content-Type: text/css; charset=utf-8
+    Vary: Accept-Encoding
+    etag: W/"6f4999367c0a9a65c1954a704ad4cc08"
+    Cache-Control: public, max-age=3600
+    Content-Encoding: gzip
+  $ curl -sI https://xdadwal.in/static/img/og.png
+    HTTP/1.1 200 OK
+    Content-Type: image/png
+    Content-Length: 44950
+    etag: "db939913ac129ada81b49756506df7b7"
+    Cache-Control: public, max-age=604800
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/static/img/og.png
+    HTTP/1.1 200 OK
+    Content-Type: image/png
+    Content-Length: 44950
+    etag: "db939913ac129ada81b49756506df7b7"
+    Cache-Control: public, max-age=604800
+  $ curl -sI https://xdadwal.in/favicon.ico
+    HTTP/1.1 200 OK
+    Content-Type: image/x-icon
+    Content-Length: 2945
+    etag: "13545db75886e6fe70581cb3e7903370"
+    Cache-Control: public, max-age=604800
+  $ curl -sI https://xdadwal.in/static/nope.css
+    HTTP/1.1 404 Not Found
+    Content-Type: application/json
+    Content-Length: 22
+    Vary: Accept-Encoding
+  $ curl -sI https://xdadwal.in/
+    HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Content-Length: 31103
+    Vary: Accept-Encoding
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/
+    HTTP/1.1 200 OK
+    Content-Type: text/html; charset=utf-8
+    Vary: Accept-Encoding
+    Content-Encoding: gzip
+  $ curl -sI https://xdadwal.in/api/chat/history
+    HTTP/1.1 405 Method Not Allowed
+    Content-Type: application/json
+    Content-Length: 31
+  $ curl -s -D - -o /dev/null https://xdadwal.in/api/chat/history
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+    Content-Length: 2
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/robots.txt
+    HTTP/1.1 200 OK
+    Content-Type: text/plain; charset=utf-8
+    Vary: Accept-Encoding
+    Content-Encoding: gzip
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/sitemap.xml
+    HTTP/1.1 200 OK
+    Content-Type: application/xml
+    Vary: Accept-Encoding
+    Content-Encoding: gzip
+  $ curl -sI -H 'Accept-Encoding: gzip' https://xdadwal.in/llms.txt
+    HTTP/1.1 200 OK
+    Content-Type: text/plain; charset=utf-8
+    Vary: Accept-Encoding
+    Content-Encoding: gzip
+  $ curl -s -o /dev/null -w '%{http_code}' -H 'If-None-Match: "6f4999367c0a9a65c1954a704ad4cc08"' https://xdadwal.in/static/css/output.css
+    304
+  $ CSS bytes on the wire: plain vs gzip (GET)
+    25622 -> 6640
+  $ gzip body decodes to the same file
+    identical
+  $ spot checks (https status and redirect | http status and redirect)
+    tv.xdadwal.in https 302 https://tv.xdadwal.in/web/ | http 301 https://tv.xdadwal.in/
+    music.xdadwal.in https 302 https://music.xdadwal.in/app/ | http 301 https://music.xdadwal.in/
+    ohara.xdadwal.in https 307 https://ohara.xdadwal.in/auth/signin?callbackUrl=%2F | http 301 https://ohara.xdadwal.in/
+  $ browser-style revalidation: gzip + weak ETag as Nginx now sends it
+    304
+  $ same with a wrong ETag (must download again)
+    200
+  $ 304 response headers
+    HTTP/1.1 304 Not Modified
+    etag: "6f4999367c0a9a65c1954a704ad4cc08"
+    Cache-Control: public, max-age=3600
+  ```
+
+  The stylesheet goes from 25,622 to 6,640 bytes on the wire and decodes to the
+  identical file. Nginx weakens the ETag of a compressed response (`W/"..."`);
+  the application still answers that with 304. The Jellyfin, Navidrome and
+  Homepage responses equal those recorded before the change, and a Jellyfin
+  script is still served uncompressed, as before.
+- Side effects inside the portfolio block: HTML, `robots.txt`, `sitemap.xml`,
+  `llms.txt` and JSON responses now carry `Vary: Accept-Encoding`, and the text
+  ones are compressed when the client asks. None of them gets `Cache-Control`.
+  The chat stream is `text/event-stream`, which is not in `gzip_types`.
+- Not verified: a chat message through the assistant after the change, a request
+  from outside the LAN, and a browser's own cache behaviour.
+- Rollback: copy `ohara.conf` from the backup directory to `/etc/nginx/conf.d/`,
+  run `sudo nginx -t`, then `sudo systemctl reload nginx`, and revert this commit.
