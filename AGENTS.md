@@ -192,7 +192,7 @@ integration, exact privileged commands and LAN-only owner onboarding where neede
   Backend web ports bind to loopback; only host Nginx uses public 80/443.
   Do not modify router/client DNS or delete retired DNS data during repo changes.
 - `configs/nginx/deployed/` tracks the stable xdadwal.in host baseline, including
-  localhost and public-IP routes. Keep it aligned with deliberate live changes;
+  localhost and www-redirect routes. Keep it aligned with deliberate live changes;
   do not deploy host-specific certificate/IP assumptions to arbitrary fresh hosts.
 - Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,
   SSH access, networking, and host DNS. No recursive chown or destructive cleanup.
