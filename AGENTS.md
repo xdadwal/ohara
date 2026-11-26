@@ -98,7 +98,7 @@ a guide disagrees.
   tests import it. Only `scripts/setup` is bash, because it may have to install
   Python first.
 - `configs/nginx/deployed/` tracks the stable xdadwal.in host baseline, including
-  localhost and public-IP routes. Keep it aligned with deliberate live changes;
+  localhost and www-redirect routes. Keep it aligned with deliberate live changes;
   do not deploy host-specific certificate/IP assumptions to arbitrary fresh hosts.
 
 ## This host (xdadwal.in)

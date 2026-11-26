@@ -1218,6 +1218,33 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
 - Not compared: root-only `/etc/ohara/alerts.json` and `/etc/ohara/tls`,
   `nginx -t`, certificate expiry, and the OpenWrt device's live state.
 
+### Root-only checks; Kutt retired and its data deleted (2026-11-25)
+
+- Root-only comparison: the installed alert worker and both units match the repo;
+  `/etc/ohara/alerts.json` is root:root 0600 and its checks and containers matched
+  the running projects. `nginx -t` passes and `/etc/nginx/conf.d/` matched the
+  deployed baseline. Private keys are 0600. The `ohara-wildcard` certificate
+  (`*.xdadwal.in`, `xdadwal.in`) expires 2027-01-14.
+- **Open: wildcard renewal is not automated.** The renewal config still uses the
+  original manual hook (`local/wildcard-tls/manual-auth.py`), which only records
+  the challenge locally; it has no cleanup hook. The GoDaddy hook and
+  `/etc/ohara/dns-godaddy.json` are not installed. Certbot's timer will fail to
+  renew from about 2026-12-15 until `sudo scripts/tls --configure-renewal` is run
+  with an owner-supplied PAT (operations.md, GoDaddy DNS validation).
+- Kutt retired by owner decision after #66, following the operations.md steps:
+  `ohara-kutt` containers and network removed (no Kutt or PostgreSQL image was
+  left on the host); `ohara-kutt.conf` and the live Homepage `services.yaml` backed
+  up to root-only `/var/backups/ohara/kutt-retire-20261125-130933/`, the route
+  removed, `nginx -t` passed and Nginx reloaded; the Homepage card and the four
+  `KUTT_*` lines in `.env` removed; alerts reinstalled (no Kutt check, container
+  or TLS entry; first run succeeded); `/ohara/kutt` (63 MB of PostgreSQL data and
+  secret files) deleted. Nginx now rejects the TLS handshake for kutt.xdadwal.in;
+  ohara.xdadwal.in and tv.xdadwal.in still answer, `scripts/check` and
+  `scripts/status` pass, and nothing listens on 3010.
+- Kept: older Kutt backups (six under `/var/backups/ohara/kutt*`, two under
+  `local/kutt-backups`), pending an owner decision. The `kutt` rewrite on the
+  OpenWrt AdGuard is the owner's to remove.
+
 ### Main stack split into dependency group files (2026-11-25)
 
 - Repository change only; nothing was deployed, restarted or pulled on the host.
@@ -1244,3 +1271,61 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
   The CI container job starts the main stack from them.
 - Rollback: revert the commit. No container, volume, network or host file changes
   either way.
+
+### www redirect added; public-IP probe removed (2026-11-26)
+
+- Live change on the xdadwal.in host, by owner request. `www.xdadwal.in` had a
+  public DNS record but no server block, so HTTP was closed (444) and HTTPS
+  refused the handshake. Two server blocks in `/etc/nginx/conf.d/ohara.conf` now
+  return 301 to `https://xdadwal.in$request_uri` on ports 80 and 443, using the
+  existing `ohara-wildcard` certificate (names `*.xdadwal.in`, `xdadwal.in`). No
+  certificate, DNS record or port forward was changed.
+- `/etc/nginx/conf.d/ohara-public-ip-test.conf` was removed: the router now
+  forwards port 80, which is what the probe existed to confirm. Its access log
+  `/var/log/nginx/ohara-public-ip-test.access.log` was left in place.
+- Before editing, both tracked files were byte-identical to the live ones. Backup:
+  `/var/backups/ohara/nginx-www-redirect-20261126-143712/` (both original files).
+  `nginx -t` passed before and after; Nginx was reloaded, not restarted. The
+  tracked `ohara.conf` is byte-identical to the live file again.
+- Verified from the server:
+
+  ```text
+  $ curl -sI -H 'Host: www.xdadwal.in' http://127.0.0.1/
+  HTTP/1.1 301 Moved Permanently
+  Location: https://xdadwal.in/
+  $ curl -sI --resolve www.xdadwal.in:443:127.0.0.1 'https://www.xdadwal.in/some/path?q=1'
+  HTTP/1.1 301 Moved Permanently
+  Location: https://xdadwal.in/some/path?q=1
+  $ curl -sI https://xdadwal.in/
+  HTTP/1.1 405 Method Not Allowed
+  $ curl -sI -H 'Host: xdadwal.in' http://127.0.0.1/
+  HTTP/1.1 301 Moved Permanently
+  Location: https://xdadwal.in/
+  $ curl -s -m 5 -H 'Host: 45.120.160.21' http://127.0.0.1/
+  (curl exit 52: 52 = empty reply from server)
+  $ spot checks (https status and redirect | http status and redirect)
+  tv.xdadwal.in https 302 https://tv.xdadwal.in/web/ | http 301 https://tv.xdadwal.in/
+  music.xdadwal.in https 302 https://music.xdadwal.in/app/ | http 301 https://music.xdadwal.in/
+  ohara.xdadwal.in https 307 https://ohara.xdadwal.in/auth/signin?callbackUrl=%2F | http 301 https://ohara.xdadwal.in/
+  $ curl -sI http://127.0.0.1:8010/   (portfolio backend directly, bypassing Nginx)
+  HTTP/1.1 405 Method Not Allowed
+  allow: GET
+  $ curl -s -o /dev/null -w '%{http_code}' https://xdadwal.in/   (GET)
+  200
+  ```
+
+  Through public DNS, `http://www.xdadwal.in/` and `https://www.xdadwal.in/` both
+  return 301 to `https://xdadwal.in/`. Immich, Bambuddy, ntfy and OpenSpeedTest
+  still return 200; the Jellyfin, Navidrome and Homepage responses equal the ones
+  recorded immediately before the change.
+- `curl -sI https://xdadwal.in/` returns 405, not 200. That is the portfolio
+  application, which allows only GET on `/` (the backend answers HEAD with 405
+  directly on 127.0.0.1:8010); it predates this change and Nginx does not cause
+  it. A GET returns 200.
+- Not verified: a request from outside the LAN (the public checks ran on the
+  server through its public address) and a browser visit.
+- Rollback: copy both files from the backup directory to `/etc/nginx/conf.d/`,
+  run `sudo nginx -t`, then `sudo systemctl reload nginx`, and revert this commit.
+- The reusable templates were left alone: they reference the HTTP-mode
+  certificate, which lists only the configured hostnames, so a `www` HTTPS block
+  there would present a certificate that does not cover `www`.

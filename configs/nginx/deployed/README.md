@@ -17,14 +17,16 @@ other LAN routes retain their existing restrictions.
   sources allowed by `$ohara_lan_allowed`. That variable is defined in
   `ohara-lan.conf`, so `ohara.conf` no longer validates without it: install
   `ohara-lan.conf` first on a rebuild. The reusable `../https.template` keeps a
-  public Seerr route for other hosts.
+  public Seerr route for other hosts. Since 2026-11-26 `www.xdadwal.in`
+  redirects with 301 straight to `https://xdadwal.in` on HTTP and HTTPS, using
+  the existing wildcard certificate (`*.xdadwal.in` covers it; nothing was
+  issued). The reusable templates have no `www` redirect: their HTTP-mode
+  certificate lists only the configured hostnames.
 - `ohara-immich.conf`: separate public photo HTTPS route, promoted from LAN-only
   onboarding on 2026-10-22 after the operator confirmed owner setup and the API
   reported initialized/onboarded. Uses the existing wildcard certificate and
   loopback 2283, with large uploads, WebSockets and mobile discovery routing.
   The previous LAN-only route is backed up privately under /var/backups/ohara.
-- `ohara-public-ip-test.conf`: HTTP-only reachability probe for 45.120.160.21.
-  It returns a fixed message and exposes no application data.
 - `ohara-bambuddy.conf`: public Bambuddy HTTPS and HTTP redirect, with native
   owner authentication. Use `scripts/bambuddy-proxy --apply --onboarding-only`
   for fresh LAN-only signup, then `--accounts-ready` after owner login. The helper
@@ -44,14 +46,13 @@ Compare against the running host without changing anything:
 
 ```sh
 cmp configs/nginx/deployed/ohara.conf /etc/nginx/conf.d/ohara.conf
-cmp configs/nginx/deployed/ohara-public-ip-test.conf /etc/nginx/conf.d/ohara-public-ip-test.conf
 ```
 
 To apply this reference configuration, restore/issue the wildcard certificate at
 `/etc/letsencrypt/live/ohara-wildcard/{fullchain,privkey}.pem` and restore the local
 certificate/key at `/etc/ohara/tls/server.{crt,key}` privately first. Also prepare
 the documented loopback services and `/var/lib/ohara/acme`. Review these public
-names and the IP probe for the target machine before installing either file.
+names for the target machine before installing the file.
 Back up existing Nginx configuration, test the candidate with `nginx -t`, and
 reload only after validation. Do not overwrite unrelated sites or replace a
 working certificate. DNS renewal remains a separate operation.
@@ -65,6 +66,12 @@ and the repository, followed by playback verification.
 `files.xdadwal.in` appears only in the old HTTP ACME/redirect host list; there is
 no HTTPS file service. Localhost redirects to the apex portfolio. Keep these
 details when comparing/restoring this baseline, rather than inferring new routes.
+
+The temporary public-IP probe (`ohara-public-ip-test.conf`, a fixed message on
+HTTP for 45.120.160.21) was removed on 2026-11-26 after the router's port-80
+forward was confirmed. Requests to the bare IP now reach the default servers,
+which close the connection. The removed file is backed up privately under
+/var/backups/ohara.
 
 ## ntfy route
 

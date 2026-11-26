@@ -100,7 +100,7 @@ reviewed stopped torrents manually as described in [media.md](media.md).
 Recreate the portfolio service separately. Preserve or deliberately migrate
 existing Nginx routes; DNS renewal configuration does not install new routes.
 For an exact copy of this server's stable routes, including localhost and the
-public-IP test, follow [the tracked Nginx baseline](../configs/nginx/deployed/README.md).
+www redirect, follow [the tracked Nginx baseline](../configs/nginx/deployed/README.md).
 It requires the existing wildcard and local TLS materials at their documented
 paths; the generic fresh-host templates intentionally do not assume those files.
 Configure and test renewal on the target host. The currently deployed certificate
