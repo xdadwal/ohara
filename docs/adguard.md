@@ -82,11 +82,12 @@ dashboard. Review these privacy/provider choices there if desired.
 
 Initial DNS rewrites cover DOMAIN, HOMEPAGE_HOST, REQUESTS_HOST, SPEED_HOST,
 JELLYFIN_HOST and NAVIDROME_HOST, plus adguard, radarr, sonarr, prowlarr, qbittorrent,
-lidarr, bazarr and immich subdomains of DOMAIN, all pointing to ADGUARD_BIND_IP. They do not
+lidarr, bazarr, immich, maintainerr, bambuddy and ntfy subdomains of DOMAIN, all
+pointing to ADGUARD_BIND_IP. They do not
 import the host's loopback entries, retired Pi-hole/files names, or a wildcard. On this
 host those are xdadwal.in, ohara.xdadwal.in, seerr.xdadwal.in, speed.xdadwal.in,
-tv.xdadwal.in and music.xdadwal.in, plus the seven administration names documented
-in [LAN services](lan-services.md), and immich.xdadwal.in for photo onboarding.
+tv.xdadwal.in and music.xdadwal.in, plus the eight administration names documented
+in [LAN services](lan-services.md), and the immich, bambuddy and ntfy names.
 The Immich rewrite was added to this existing host through the authenticated API,
 preserving all prior rules; UDP and TCP queries return 192.168.1.101. The latter still require the separate LAN-only
 Nginx configuration. Existing public services retain the same HTTPS names locally
@@ -178,8 +179,9 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   `restart: unless-stopped` keeps it stopped across reboots. Its configuration and
   data stay in `DATA_ROOT/adguard`.
 - Record the other resolver in private `.env` as `DNS_IP` (a private
-  LAN IPv4 of another device). It is used only by the alert DNS probe while the
-  bundled project is not running; reinstall alerts afterwards with
+  LAN IPv4 of another device). The alert DNS probe, `scripts/adguard status`, the
+  service rewrite steps, the Homepage widget and the LAN route then use that
+  device, as described below; reinstall alerts afterwards with
   `sudo scripts/ntfy install-alerts`, which also drops the bundled container and
   dashboard checks. The device itself is set up with `configs/openwrt/setup.sh`;
   see [network.md](network.md).
@@ -188,7 +190,7 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   private-PTR/hosts-file switches. Blocklists and rules already matched. Query
   history was not moved. Later changes must be made on that device.
 - Homepage: the widget URL is the variable `HOMEPAGE_VAR_ADGUARD_URL`, which
-  `compose/stack.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
+  `compose/stack/homepage.yaml` sets to `http://DNS_IP:3000` when `DNS_IP` is set and to
   the bundled `http://adguard:3000` otherwise; the template and the installed
   `DATA_ROOT/homepage/services.yaml` both use it. `scripts/up` recreates only
   Homepage after a change. Test a changed `ADGUARD_PASSWORD` once with
@@ -214,9 +216,11 @@ Its configuration and the whole topology are recorded in [network.md](network.md
   filters are changed in the dashboard; verify with `dig NAME @192.168.1.1`. The
   bundled account's previous password is in the ignored
   `local/env.20261124-pre-key-cleanup`.
-- Rollback: `scripts/adguard up`, verify with `scripts/adguard status`, point the
-  router's DNS back to `ADGUARD_BIND_IP`, restore `proxy_pass http://127.0.0.1:3003;`
-  in the LAN route and apply it, remove `DNS_IP` and set `ADGUARD_PASSWORD` back,
-  run `scripts/up`, then reinstall alerts. Rewrites or filters added
-  on the external device since the cutover must be copied back by hand.
+- Rollback: first remove `DNS_IP` from private `.env` and set `ADGUARD_PASSWORD`
+  back to the bundled account's password, because `scripts/adguard up` refuses to
+  run while `DNS_IP` is set. Then run `scripts/adguard up`, verify with
+  `scripts/adguard status`, point the router's DNS back to `ADGUARD_BIND_IP`,
+  restore `proxy_pass http://127.0.0.1:3003;` in the LAN route and apply it, run
+  `scripts/up`, then reinstall alerts. Rewrites or filters added on the external
+  device since the cutover must be copied back by hand.
 

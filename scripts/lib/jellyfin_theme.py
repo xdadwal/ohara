@@ -6,12 +6,14 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import tempfile
 import urllib.parse
 
 import config
 import credentials
 import media
+import runtime
 
 FILES = ('abyss.css', 'abyss-je.css', 'spotlight.html', 'spotlight.css', 'spotlight-loader.js')
 START = '/* OHARA ABYSS START */'
@@ -177,9 +179,7 @@ def css(existing, *, remove=False):
 
 def client(root):
     key = 'HOMEPAGE_VAR_JELLYFIN_API_KEY'
-    values = credentials.read(
-        root / '.env', {key}, ignored=config.KEYS | (credentials.ALL_KEYS - {key})
-    )
+    values = credentials.read_env(root, {key})
     api = media.Client('http://127.0.0.1:8096')
     api.headers['Authorization'] = (
         'MediaBrowser Client="Ohara Theme", Device="Server", '
@@ -238,4 +238,61 @@ def apply(api, root, *, remove=False):
                 'Theme API rollback incomplete; inspect private backup ' + str(backup)
             ) from None
         raise
+    return backup
+
+
+def _recreate(c, root):
+    """Recreate only Jellyfin so a changed overlay mount takes effect."""
+    runtime.compose(
+        c,
+        root,
+        [
+            'up',
+            '-d',
+            '--no-deps',
+            '--force-recreate',
+            '--wait',
+            '--wait-timeout',
+            '120',
+            'jellyfin',
+        ],
+        timeout=240,
+    )
+
+
+def _disable(c, manifest):
+    manifest['enabled'] = False
+    write(
+        Path(c['DATA_ROOT']) / 'jellyfin-theme/manifest.json',
+        (json.dumps(manifest, indent=2) + '\n').encode(),
+        c,
+    )
+
+
+def install(c, root):
+    """Enable the overlay, recreate Jellyfin and apply branding; return the private backup.
+
+    A failure after enabling restores the previous disabled state before re-raising.
+    """
+    api = client(root)
+    was_enabled = bool((state(c) or {}).get('enabled'))
+    prepare(c, root, enabled=True)
+    try:
+        _recreate(c, root)
+        return apply(api, root)
+    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired):
+        if not was_enabled:
+            _disable(c, state(c))
+            _recreate(c, root)
+        raise
+
+
+def uninstall(c, root):
+    """Remove managed CSS and Spotlight, disable the overlay; return the private backup."""
+    api = client(root)
+    backup = apply(api, root, remove=True)
+    manifest = state(c)
+    if manifest:
+        _disable(c, manifest)
+    _recreate(c, root)
     return backup

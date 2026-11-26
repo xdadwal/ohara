@@ -1,0 +1,10 @@
+# Main stack: OpenSpeedTest. Calls no other service. Included by ../stack.yaml.
+services:
+  speedtest:
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    image: ${SPEED_IMAGE:?Run scripts/check}
+    ports: ["127.0.0.1:3000:3000"]
+    security_opt: ["no-new-privileges:true"]

@@ -7,10 +7,12 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
 import config
 import ntfy
 
-if __name__ == '__main__':
+
+def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         'command',
@@ -31,26 +33,26 @@ if __name__ == '__main__':
     )
     p.add_argument('--static', action='store_true')
     a = p.parse_args()
-    try:
-        if a.static and a.command != 'check':
-            p.error('--static is only for check')
-        c = config.load(ROOT / ('.env.example' if a.static else '.env'))
-        if a.command == 'check':
-            ntfy.check(c, ROOT, static=a.static)
-        elif a.command == 'up':
-            ntfy.check(c, ROOT)
-            ntfy.compose(c, ROOT, ['up', '-d', '--wait', '--wait-timeout', '90'], timeout=300)
-            ntfy.status(c, ROOT)
-        elif a.command == 'stop':
-            ntfy.compose(c, ROOT, ['stop'])
-        elif a.command == 'rotate-account':
-            ntfy.rotate_account(c, ROOT)
-        elif a.command in ('install-alerts', 'seerr'):
-            import alerts
+    if a.static and a.command != 'check':
+        p.error('--static is only for check')
+    c = config.load(ROOT / ('.env.example' if a.static else '.env'))
+    if a.command == 'check':
+        ntfy.check(c, ROOT, static=a.static)
+    elif a.command == 'up':
+        ntfy.check(c, ROOT)
+        ntfy.compose(c, ROOT, ['up', '-d', '--wait', '--wait-timeout', '90'], timeout=300)
+        ntfy.status(c, ROOT)
+    elif a.command == 'stop':
+        ntfy.compose(c, ROOT, ['stop'])
+    elif a.command == 'rotate-account':
+        ntfy.rotate_account(c, ROOT)
+    elif a.command in ('install-alerts', 'seerr'):
+        import alerts
 
-            getattr(alerts, 'install' if a.command == 'install-alerts' else 'seerr')(c, ROOT)
-        else:
-            getattr(ntfy, a.command)(c, ROOT)
-    except Exception as e:
-        print('Ohara ntfy: ' + str(e), file=sys.stderr)
-        sys.exit(1)
+        getattr(alerts, 'install' if a.command == 'install-alerts' else 'seerr')(c, ROOT)
+    else:
+        getattr(ntfy, a.command)(c, ROOT)
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara ntfy', errors=Exception)

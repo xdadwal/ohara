@@ -1,4 +1,5 @@
 # Official Bambuddy, manually configured printer IP; no multicast/virtual proxy.
+# Operate it with scripts/bambuddy; see docs/bambuddy.md.
 name: ohara-bambuddy
 services:
   bambuddy:

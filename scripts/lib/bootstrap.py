@@ -1,12 +1,13 @@
-#!/usr/bin/env python3
+"""Host preparation behind scripts/setup, which first makes sure Python 3 exists."""
+
 import argparse
 from pathlib import Path
-import subprocess
-import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
+import cli
 import config
 import host
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def main():
@@ -18,21 +19,16 @@ def main():
         help='fail instead of prompting (default behavior)',
     )
     args = parser.parse_args()
-    root = Path(__file__).resolve().parents[1]
-    c = config.load(root / '.env')
+    c = config.load(ROOT / '.env')
     if args.dry_run:
-        host.prepare(c, root, True)
+        host.prepare(c, ROOT, True)
     else:
         host.require_root()
         from proxy import lock
 
         with lock():
-            host.prepare(c, root)
+            host.prepare(c, ROOT)
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print(f'Ohara setup: {error}', file=sys.stderr)
-        sys.exit(1)
+    cli.run(main, 'Ohara setup')

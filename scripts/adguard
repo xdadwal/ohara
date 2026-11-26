@@ -1,4 +1,43 @@
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "$SCRIPT_DIR/adguard.py" "$@"
+#!/usr/bin/env python3
+"""Optional LAN DNS lifecycle; never changes router, host or client DNS."""
+
+import argparse
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import adguard
+import cli
+import config
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['check', 'up', 'status', 'upstreams', 'stop'])
+    parser.add_argument(
+        '--allow-dns-outage',
+        action='store_true',
+        help='only for an approved maintenance window with a verified fallback resolver',
+    )
+    args = parser.parse_args()
+    c = config.load(ROOT / '.env')
+    adguard.settings(c)
+    if args.command == 'up':
+        adguard.require_bundled(c, 'up')
+        adguard.prepare(c, ROOT)
+        adguard.compose(c, ROOT, ['up', '-d'], timeout=300)
+        print('AdGuard started; run scripts/adguard status before configuring any clients.')
+    elif args.command == 'check':
+        adguard.check(c, ROOT)
+    elif args.command == 'stop':
+        adguard.stop(c, ROOT, allow_dns_outage=args.allow_dns_outage)
+    elif args.command == 'upstreams':
+        return adguard.upstreams(c, ROOT)
+    else:
+        return adguard.status(c, ROOT)
+    return 0
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara DNS')

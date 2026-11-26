@@ -1,20 +1,16 @@
-import importlib.machinery
-import importlib.util
 from pathlib import Path
 import sys
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-loader = importlib.machinery.SourceFileLoader('immich_proxy', str(ROOT / 'scripts/immich-proxy'))
-spec = importlib.util.spec_from_loader(loader.name, loader)
-proxy = importlib.util.module_from_spec(spec)
-loader.exec_module(proxy)
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import immich_proxy as proxy
 
 
 class ImmichProxyTests(unittest.TestCase):
     def test_render_has_dedicated_host_uploads_websockets_and_edge_headers(self):
-        text = proxy.render()
+        text = proxy.render(ROOT)
         self.assertNotIn('${', text)
         self.assertEqual(text.count('server_name immich.xdadwal.in;'), 2)
         for required in (
@@ -32,39 +28,34 @@ class ImmichProxyTests(unittest.TestCase):
         self.assertNotIn('location /immich', text)
 
     def test_apply_requires_account_attestation_before_host_changes(self):
-        with (
-            patch.object(sys, 'argv', ['immich-proxy', '--apply']),
-            patch.object(proxy.runtime, 'run') as run,
-        ):
+        with patch.object(proxy.runtime, 'run') as run:
             with self.assertRaisesRegex(ValueError, 'owner login'):
-                proxy.main()
+                proxy.apply(ROOT)
             run.assert_not_called()
 
     def test_apply_requires_administrator_before_host_changes(self):
         with (
-            patch.object(sys, 'argv', ['immich-proxy', '--apply', '--accounts-ready']),
             patch.object(proxy.os, 'geteuid', return_value=1000),
             patch.object(proxy.runtime, 'run') as run,
         ):
             with self.assertRaisesRegex(ValueError, 'Administrator access'):
-                proxy.main()
+                proxy.apply(ROOT, accounts_ready=True)
             run.assert_not_called()
 
     def test_onboarding_restricts_both_http_and_https_by_source(self):
-        text = proxy.render(onboarding_only=True)
+        text = proxy.render(ROOT, onboarding_only=True)
         self.assertIn('geo $ohara_immich_onboarding_allowed', text)
         self.assertIn('default 0;', text)
         self.assertIn('192.168.1.0/24 1;', text)
         self.assertIn('::1/128 1;', text)
         self.assertEqual(text.count('if ($ohara_immich_onboarding_allowed = 0) { return 403; }'), 2)
-        self.assertNotIn('geo $ohara_immich_onboarding_allowed', proxy.render())
+        self.assertNotIn('geo $ohara_immich_onboarding_allowed', proxy.render(ROOT))
 
     def test_onboarding_can_be_prepared_before_owner_signup(self):
         with (
-            patch.object(sys, 'argv', ['immich-proxy', '--apply', '--onboarding-only']),
             patch.object(proxy.os, 'geteuid', return_value=1000),
             patch.object(proxy.runtime, 'run') as run,
         ):
             with self.assertRaisesRegex(ValueError, 'Administrator access'):
-                proxy.main()
+                proxy.apply(ROOT, onboarding_only=True)
             run.assert_not_called()

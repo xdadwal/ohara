@@ -151,6 +151,22 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
     return values
 
 
+def read_env(root, keys, *, minimum_lengths=None):
+    """Return only KEYS from the private ROOT/.env, validated as in `read`.
+
+    Every other known setting or credential in the file is skipped without
+    being returned, so a caller holds nothing beyond what it asked for.
+    """
+    import config
+
+    return read(
+        root / '.env',
+        keys,
+        ignored=config.KEYS | (ALL_KEYS - keys),
+        minimum_lengths=minimum_lengths,
+    )
+
+
 def require_new_account(values, keys, purpose):
     """Setup is about to create these logins: they must exist and be 16+ characters."""
     for key in sorted(keys):

@@ -5,22 +5,11 @@ TASK_TMP="$(mktemp -d)"
 trap 'rm -rf "$TASK_TMP"' EXIT
 cp -R "$ROOT_DIR/scripts" "$TASK_TMP/scripts"
 cp "$ROOT_DIR/.env.example" "$TASK_TMP/.env.example"
-for command in setup check up status tls media-setup tailscale adguard immich; do
-  (cd /; "$TASK_TMP/scripts/$command" --help >/dev/null)
+# Every entry point must answer --help from any working directory.
+for command in "$TASK_TMP"/scripts/*; do
+  [[ -f "$command" && -x "$command" ]] || continue
+  (cd /; "$command" --help >/dev/null)
 done
-(cd /; "$TASK_TMP/scripts/maintainerr" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/bambuddy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/orcaslicer" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/ntfy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/ntfy-proxy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/bambuddy-proxy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/lan-proxy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/jellyfin-theme" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/jellyfin-enhanced" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/jellyfin-letterboxd" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/media-pool" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/immich-proxy" --help >/dev/null)
-(cd /; "$TASK_TMP/scripts/migrate-credentials" --help >/dev/null)
 if "$TASK_TMP/scripts/tls" --configure-renewal >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/tls" --staging --dns-provider godaddy >"$TASK_TMP/out" 2>&1; then exit 1; fi
 if "$TASK_TMP/scripts/media-setup" --profile-only >"$TASK_TMP/out" 2>&1; then exit 1; fi

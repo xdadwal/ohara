@@ -1,15 +1,9 @@
-#!/usr/bin/env python3
 """Optional host client installation; never joins or reconfigures a tailnet."""
 
-import argparse
-import os
 from pathlib import Path
 import shutil
-import subprocess
-import sys
 import tempfile
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
 import host
 from runtime import run
 
@@ -87,30 +81,3 @@ def install(dry_run=False, system_root=Path('/')):
     host.ensure_packages(['tailscale'])
     run(['systemctl', 'enable', '--now', 'tailscaled'], timeout=60)
     print('Installed Tailscale. Not enrolled; follow docs/tailscale.md to sign in privately.')
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description='Optional Tailscale host client for remote OpenSSH'
-    )
-    action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument(
-        '--dry-run', action='store_true', help='inspect installation without changes'
-    )
-    action.add_argument(
-        '--install',
-        action='store_true',
-        help='install client; never authenticate or change routing',
-    )
-    args = parser.parse_args()
-    if not args.dry_run and os.geteuid() != 0:
-        raise ValueError('Run sudo scripts/tailscale --install')
-    install(args.dry_run)
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-        print(f'Ohara Tailscale: {error}', file=sys.stderr)
-        sys.exit(1)

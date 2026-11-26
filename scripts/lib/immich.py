@@ -71,17 +71,18 @@ def settings(c):
 
 
 def images(root):
-    values = config.parse(root / 'versions/immich.env', IMAGE_KEYS)
-    if any(not re.fullmatch(r'[a-z0-9./:_-]+@sha256:[a-f0-9]{64}', v) for v in values.values()):
-        raise ValueError('Immich images must have immutable digest pins')
-    return values
+    return config.pinned_images(
+        root / 'versions/immich.env',
+        IMAGE_KEYS,
+        r'[a-z0-9./:_-]+',
+        'Immich images must have immutable digest pins',
+    )
 
 
 def password(root, *, allow_short=False):
-    value = credentials.read(
-        root / '.env',
+    value = credentials.read_env(
+        root,
         credentials.IMMICH_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.IMMICH_KEYS),
         minimum_lengths={'IMMICH_DB_PASSWORD': 1} if allow_short else None,
     )['IMMICH_DB_PASSWORD']
     if not re.fullmatch(r'[A-Za-z0-9]+', value) or (len(value) < 16 and not allow_short):
@@ -98,45 +99,12 @@ def compose(c, root, args, *, static=False, capture=False, timeout=60, allow_sho
         | {
             'TZ': c['TZ'],
             'IMMICH_CONFIG_PATH': str(immich_oauth.configuration_path(root, static=static)),
-            'COMPOSE_DISABLE_ENV_FILE': '1',
             # Static/status/stop operations never need the real credential.
             'IMMICH_DB_PASSWORD': '' if static else password(root, allow_short=allow_short),
         }
     )
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k
-        in {
-            'PATH',
-            'HOME',
-            'USER',
-            'XDG_RUNTIME_DIR',
-            'DOCKER_CONFIG',
-            'DOCKER_HOST',
-            'DOCKER_CONTEXT',
-            'SSH_AUTH_SOCK',
-        }
-    }
-    env.update(values)
-    prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
-    if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
-    return runtime.run(
-        prefix
-        + [
-            'compose',
-            '--project-directory',
-            str(root),
-            '--env-file',
-            '/dev/null',
-            '-f',
-            str(root / 'compose/immich.yaml'),
-        ]
-        + args,
-        env=env,
-        capture=capture,
-        timeout=timeout,
+    return runtime.project_compose(
+        root, 'compose/immich.yaml', values, args, capture=capture, timeout=timeout
     )
 
 
@@ -296,7 +264,7 @@ def storage(c, *, require_directories=False):
         )['filesystems'][0]
         if Path(info['target']) != expected:
             raise ValueError(f'IMMICH_{kind}_ROOT is on a different mount than configured')
-        if kind == 'DATABASE' and info['fstype'] not in {'ext4', 'xfs', 'btrfs', 'zfs'}:
+        if kind == 'DATABASE' and info['fstype'] not in runtime.LOCAL_FILESYSTEMS:
             raise ValueError(
                 'Immich PostgreSQL requires supported local Linux storage, never a network share'
             )

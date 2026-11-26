@@ -7,19 +7,21 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
 import config
 import ntfy_proxy
 
-if __name__ == '__main__':
+
+def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--apply', action='store_true')
     a = p.parse_args()
-    try:
-        c = config.load(ROOT / '.env')
-        if a.apply:
-            ntfy_proxy.apply(c, ROOT)
-        else:
-            print(ntfy_proxy.render(c, ROOT))
-    except Exception as e:
-        print('Ohara ntfy proxy: ' + str(e), file=sys.stderr)
-        sys.exit(1)
+    c = config.load(ROOT / '.env')
+    if a.apply:
+        ntfy_proxy.apply(c, ROOT)
+    else:
+        print(ntfy_proxy.render(c, ROOT))
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara ntfy proxy', errors=Exception)

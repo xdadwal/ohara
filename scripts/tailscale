@@ -1,4 +1,33 @@
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "$SCRIPT_DIR/tailscale_setup.py" "$@"
+#!/usr/bin/env python3
+"""Optional Tailscale host client for remote OpenSSH"""
+
+import argparse
+import os
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
+import tailscale
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument(
+        '--dry-run', action='store_true', help='inspect installation without changes'
+    )
+    action.add_argument(
+        '--install',
+        action='store_true',
+        help='install client; never authenticate or change routing',
+    )
+    args = parser.parse_args()
+    if not args.dry_run and os.geteuid() != 0:
+        raise ValueError('Run sudo scripts/tailscale --install')
+    tailscale.install(args.dry_run)
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara Tailscale')

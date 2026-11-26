@@ -5,7 +5,6 @@ import datetime
 import json
 import os
 from pathlib import Path
-import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -85,10 +84,9 @@ def password(root):
     flag = options.get('NTFY_ALLOW_SHORT_PASSWORD', 'false')
     if flag not in {'true', 'false'}:
         raise ValueError('NTFY_ALLOW_SHORT_PASSWORD must be true or false')
-    value = credentials.read(
-        root / '.env',
+    value = credentials.read_env(
+        root,
         credentials.NTFY_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.NTFY_KEYS),
         minimum_lengths={'NTFY_PASSWORD': 1} if flag == 'true' else None,
     )['NTFY_PASSWORD']
     if len(value.encode()) > 72:
@@ -97,24 +95,21 @@ def password(root):
 
 
 def images(root):
-    d = config.parse(root / 'versions/ntfy.env', {'NTFY_IMAGE'})
-    if not re.fullmatch(r'binwiederhier/ntfy:v[0-9.]+@sha256:[a-f0-9]{64}', d['NTFY_IMAGE']):
-        raise ValueError('ntfy requires the official immutable release image')
-    return d
+    return config.pinned_images(
+        root / 'versions/ntfy.env',
+        {'NTFY_IMAGE'},
+        r'binwiederhier/ntfy:v[0-9.]+',
+        'ntfy requires the official immutable release image',
+    )
 
 
 def storage(c, directories=True):
     _, base, expected, _ = settings(c)
-    p = base
-    while not p.exists():
-        p = p.parent
-    rows = json.loads(
-        runtime.run(['findmnt', '--json', '--target', str(p), '-o', 'TARGET,FSTYPE'], capture=True)
-    )['filesystems']
+    rows = runtime.filesystems_holding(base)
     if (
         len(rows) != 1
         or rows[0]['target'] != str(expected)
-        or rows[0]['fstype'] not in {'ext4', 'xfs', 'btrfs', 'zfs'}
+        or rows[0]['fstype'] not in runtime.LOCAL_FILESYSTEMS
     ):
         raise ValueError('ntfy must use the verified independent local filesystem')
     if directories:
@@ -128,45 +123,13 @@ def storage(c, directories=True):
 
 
 def compose(c, root, args, capture=False, timeout=60):
-    if any(a in {'up', 'start', 'restart', 'create', 'run'} for a in args):
+    if runtime.starts_containers(args):
         storage(c)
     _, base, _, _ = settings(c)
     values = {k: c[k] for k in ['TZ', 'RUN_UID', 'RUN_GID']}
-    values.update(NTFY_ROOT=str(base), COMPOSE_DISABLE_ENV_FILE='1', **images(root))
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k
-        in {
-            'PATH',
-            'HOME',
-            'USER',
-            'XDG_RUNTIME_DIR',
-            'DOCKER_CONFIG',
-            'DOCKER_HOST',
-            'DOCKER_CONTEXT',
-            'SSH_AUTH_SOCK',
-        }
-    }
-    env.update(values)
-    prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
-    if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
-    return runtime.run(
-        prefix
-        + [
-            'compose',
-            '--project-directory',
-            str(root),
-            '--env-file',
-            '/dev/null',
-            '-f',
-            str(root / 'compose/ntfy.yaml'),
-            *args,
-        ],
-        env=env,
-        capture=capture,
-        timeout=timeout,
+    values.update(NTFY_ROOT=str(base), **images(root))
+    return runtime.project_compose(
+        root, 'compose/ntfy.yaml', values, args, capture=capture, timeout=timeout
     )
 
 
@@ -318,21 +281,13 @@ def test(c, root):
 
 
 def homepage(c, root):
-    import yaml
+    import homepage_services
 
-    import jellyfin_theme
-
-    path = jellyfin_theme.safe(Path(c['DATA_ROOT']) / 'homepage/services.yaml')
-    before = path.read_text()
-    d = yaml.safe_load(before)
-    if any('ntfy' in row for group in d for rows in group.values() for row in rows):
+    path, before, d = homepage_services.read(c)
+    if homepage_services.cards(d, 'ntfy'):
         print('Existing ntfy Homepage card preserved')
         return
-    group = next((g['Utility'] for g in d if 'Utility' in g), None)
-    if group is None:
-        group = []
-        d.append({'Utility': group})
-    group.append(
+    homepage_services.group(d, 'Utility').append(
         {
             'ntfy': {
                 'icon': 'ntfy.png',
@@ -341,28 +296,19 @@ def homepage(c, root):
             }
         }
     )
-    backup = root / 'local/ntfy-backups' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    backup.mkdir(parents=True, mode=0o700)
-    config.create_file(backup / 'services.yaml', before)
-    path.write_text(yaml.safe_dump(d, sort_keys=False, allow_unicode=True))
+    homepage_services.backup(
+        root / 'local/ntfy-backups' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'), before
+    )
+    path.write_text(homepage_services.dump(d))
     print('ntfy Homepage card merged; prior cards/widgets preserved')
 
 
 def dns(c, root):
     import adguard
-    import media
 
-    name = settings(c)[0]
-    address, _ = adguard.settings(c)
-    api = media.Client(adguard.api_base(c))
-    api.headers['Authorization'] = (
-        'Basic ' + base64.b64encode(('admin:' + adguard.password(root)).encode()).decode()
+    adguard.ensure_rewrite(
+        c, root, settings(c)[0], 'Conflicting ntfy DNS rewrite; preserve and inspect'
     )
-    matches = [r for r in api.call('/control/rewrite/list') if r['domain'] == name]
-    if matches and not all(r['answer'] == address and r.get('enabled', True) for r in matches):
-        raise ValueError('Conflicting ntfy DNS rewrite; preserve and inspect')
-    if not matches:
-        api.call('/control/rewrite/add', {'domain': name, 'answer': address})
     print('Exact ntfy LAN DNS rewrite verified; other records preserved')
 
 
@@ -508,11 +454,7 @@ READER = 'homepage-reader'
 
 
 def reader_password(root):
-    value = credentials.read(
-        root / '.env',
-        credentials.NTFY_WIDGET_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.NTFY_WIDGET_KEYS),
-    )['NTFY_HOMEPAGE_PASSWORD']
+    value = credentials.read_env(root, credentials.NTFY_WIDGET_KEYS)['NTFY_HOMEPAGE_PASSWORD']
     if len(value.encode()) > 72:
         raise ValueError('NTFY_HOMEPAGE_PASSWORD must be at most 72 UTF-8 bytes')
     if value == password(root):
@@ -577,9 +519,7 @@ def widget(c, root):
     import sqlite3
     import tempfile
 
-    import yaml
-
-    import jellyfin_theme
+    import homepage_services
 
     if os.geteuid() != 0:
         raise ValueError('Use sudo scripts/ntfy widget')
@@ -599,16 +539,8 @@ def widget(c, root):
             if db.execute('SELECT id FROM user WHERE user=?', (READER,)).fetchone():
                 raise ValueError('Unmanaged existing reader account; preserve and review')
     desired = reader_config(existing, secret)
-    path = jellyfin_theme.safe(Path(c['DATA_ROOT']) / 'homepage/services.yaml')
-    original = path.read_text()
-    data = yaml.safe_load(original)
-    cards = [
-        entry['ntfy']
-        for group in data
-        for rows in group.values()
-        for entry in rows
-        if 'ntfy' in entry
-    ]
+    path, original, data = homepage_services.read(c)
+    cards = homepage_services.cards(data, 'ntfy')
     if len(cards) != 1:
         raise ValueError('Run scripts/ntfy homepage first; exactly one ntfy card is required')
     if cards[0].get('widgets') or (
@@ -649,7 +581,7 @@ def widget(c, root):
             compose(c, root, ['up', '-d', '--wait', '--wait-timeout', '90'], timeout=180)
         verify_reader(secret)
         status(c, root)
-        path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+        path.write_text(homepage_services.dump(data))
         runtime.compose(
             c,
             root,

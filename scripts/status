@@ -1,4 +1,21 @@
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "$SCRIPT_DIR/ohara.py" status "$@"
+#!/usr/bin/env python3
+"""Report container state, local HTTP reachability and health for the main stack."""
+
+import argparse
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
+import config
+import runtime
+
+
+def main():
+    argparse.ArgumentParser(description=__doc__).parse_args()
+    return runtime.status(config.load(ROOT / '.env'), ROOT)
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara')

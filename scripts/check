@@ -1,4 +1,23 @@
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "$SCRIPT_DIR/ohara.py" check "$@"
+#!/usr/bin/env python3
+"""Validate the main stack: configuration, Compose model, private files and storage."""
+
+import argparse
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import cli
+import config
+import runtime
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--static', action='store_true', help='skip private files/storage')
+    args = parser.parse_args()
+    runtime.check(config.load(ROOT / '.env'), ROOT, static=args.static)
+
+
+if __name__ == '__main__':
+    cli.run(main, 'Ohara')

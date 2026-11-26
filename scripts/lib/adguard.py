@@ -5,13 +5,13 @@ import ipaddress
 import json
 import os
 from pathlib import Path
-import re
 import urllib.error
 import urllib.request
 
 import config
 import credentials
 import host
+import media
 import runtime
 
 # Encrypted default upstream; its plain addresses only resolve that hostname.
@@ -66,17 +66,7 @@ def require_bundled(c, action):
 def initial_config(c, password_hash):
     address, network = settings(c)
     names = sorted(
-        {
-            c[k]
-            for k in (
-                'DOMAIN',
-                'HOMEPAGE_HOST',
-                'REQUESTS_HOST',
-                'SPEED_HOST',
-                'JELLYFIN_HOST',
-                'NAVIDROME_HOST',
-            )
-        }
+        config.hostnames(c)
         | {
             service + '.' + c['DOMAIN']
             for service in (
@@ -126,20 +116,16 @@ def initial_config(c, password_hash):
 
 
 def password(root):
-    return credentials.read(
-        root / '.env',
-        credentials.DNS_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.DNS_KEYS),
-    )['ADGUARD_PASSWORD']
+    return credentials.read_env(root, credentials.DNS_KEYS)['ADGUARD_PASSWORD']
 
 
 def images(root):
-    values = config.parse(root / 'versions/adguard.env', {'ADGUARD_IMAGE'})
-    if not re.fullmatch(
-        r'adguard/adguardhome:v[0-9.]+@sha256:[a-f0-9]{64}', values['ADGUARD_IMAGE']
-    ):
-        raise ValueError('AdGuard requires an official immutable release image')
-    return values
+    return config.pinned_images(
+        root / 'versions/adguard.env',
+        {'ADGUARD_IMAGE'},
+        r'adguard/adguardhome:v[0-9.]+',
+        'AdGuard requires an official immutable release image',
+    )
 
 
 def compose(c, root, args, *, capture=False, timeout=60):
@@ -270,9 +256,31 @@ def prepare(c, root):
         os.chown(target, uid, gid)
 
 
+def basic_auth(root):
+    """Authorization header value for the resolver's admin account."""
+    return 'Basic ' + base64.b64encode(('admin:' + password(root)).encode()).decode()
+
+
+def ensure_rewrite(c, root, name, conflict):
+    """Make NAME resolve to the server's LAN address in the resolver in use.
+
+    Adds one exact rewrite unless matching records already exist. A record for
+    NAME that is disabled or answers with another address raises
+    ValueError(conflict) before anything is written. Other records are untouched.
+    """
+    address, _ = settings(c)
+    api = media.Client(api_base(c))
+    api.headers['Authorization'] = basic_auth(root)
+    matches = [r for r in api.call('/control/rewrite/list') if r['domain'] == name]
+    if matches:
+        if not all(r['answer'] == address and r.get('enabled', True) for r in matches):
+            raise ValueError(conflict)
+    else:
+        api.call('/control/rewrite/add', {'domain': name, 'answer': address})
+
+
 def api(root, path, body=None, base='http://127.0.0.1:3003'):
-    token = base64.b64encode(('admin:' + password(root)).encode()).decode()
-    headers = {'Authorization': 'Basic ' + token}
+    headers = {'Authorization': basic_auth(root)}
     data = None
     if body is not None:
         data = json.dumps(body).encode()
@@ -329,10 +337,8 @@ def upstreams(c, root):
 
 
 def status(c, root):
-    secret = password(root)
-    token = base64.b64encode(('admin:' + secret).encode()).decode()
     request = urllib.request.Request(
-        api_base(c) + '/control/status', headers={'Authorization': 'Basic ' + token}
+        api_base(c) + '/control/status', headers={'Authorization': basic_auth(root)}
     )
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
