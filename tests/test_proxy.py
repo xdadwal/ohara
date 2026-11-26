@@ -50,6 +50,18 @@ class ProxyTests(unittest.TestCase):
                                                  'if ($ohara_lan_allowed = 0) { return 403; } '
                                                  'return 301 https://$host$request_uri; }').split())
                 deployed = deployed.replace(block, '')
+        # Host-specific: www redirects straight to the apex. The reusable
+        # templates have no such route (their HTTP-mode certificate does not
+        # list www), so check these two blocks here and leave them out below.
+        www = [block for block in blocks if 'server_name www.xdadwal.in;' in block]
+        self.assertEqual(len(www), 2)
+        for block in www:
+            self.assertEqual(block.count('return 301 https://xdadwal.in$request_uri;'), 1)
+            self.assertNotIn('proxy_pass', block)
+            self.assertNotIn('location', block)
+            if 'listen 443 ssl;' in block:
+                self.assertIn('/live/ohara-wildcard/fullchain.pem;', block)
+            deployed = deployed.replace(block, '')
         shared = 'server_name ohara.xdadwal.in xdadwal.in files.xdadwal.in speed.xdadwal.in tv.xdadwal.in;'
         self.assertEqual(deployed.count(shared), 1)
         deployed = deployed.replace(shared, shared[:-1]+' seerr.xdadwal.in;')
@@ -65,9 +77,9 @@ class ProxyTests(unittest.TestCase):
         self.assertEqual(normalize(rendered), normalize(deployed))
         self.assertEqual(deployed.count('server_name localhost 127.0.0.1;'), 2)
         self.assertIn('return 302 https://xdadwal.in$request_uri;', deployed)
-        probe = (ROOT/'configs/nginx/deployed/ohara-public-ip-test.conf').read_text()
-        self.assertIn('server_name 45.120.160.21;', probe)
-        self.assertNotIn('proxy_pass', probe)
+        # The temporary public-IP probe was removed on 2026-11-26.
+        self.assertFalse((ROOT/'configs/nginx/deployed/ohara-public-ip-test.conf').exists())
+        self.assertNotIn('45.120.160.21', deployed)
 
     def test_bootstrap_never_references_missing_certificates(self):
         text = proxy.render(config.load(ROOT / '.env.example'), ROOT, https=False)
