@@ -107,9 +107,12 @@ assistant that calls the OpenAI API: its keys and settings are in the portfolio
 checkout's own private `.env` (mode 0600, separate from Ohara's), and its
 `portfolio.service` unit gives it a writable state directory `/var/lib/portfolio`
 (mode 0700) holding `logpose.db` (chats and traces, including question/answer
-text) and `feedback.db`, both kept for 30 days by default. Ohara's Nginx route is
+text) and `feedback.db`, both kept for 30 days by default. Ohara's Nginx route proxies it
 unchanged: the assistant streams through it via the app's `X-Accel-Buffering: no`
-header and the default 60-second read timeout. Include `/var/lib/portfolio` and
+header and the default 60-second read timeout. Since 2026-11-26 the portfolio's
+Nginx block also sets browser caching for `/static/` and `/favicon.ico` and
+compresses its text responses (not the `text/event-stream` chat stream); see
+[the tracked baseline](../configs/nginx/deployed/README.md). Include `/var/lib/portfolio` and
 the portfolio `.env` in encrypted backups if those chats should survive. Nginx routes live in `/etc/nginx/conf.d/ohara.conf`;
 historical copies are archived under `~/ohara-backups`. For a fresh setup with the
 same routing, set `PORTFOLIO_PORT=8010` and use [replication.md](replication.md).
@@ -509,8 +512,8 @@ so Kutt's checks, containers and TLS route are dropped, and delete the `KUTT_*`
 lines from `.env` (they are ignored if left). Deleting `KUTT_ROOT` (default
 `DATA_ROOT/kutt`, which holds PostgreSQL and the DB/JWT secret files) and any
 `/var/backups/ohara/kutt-*` or `local/kutt-backups` archives is permanent; do it
-only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard is on
-the owner's OpenWrt device and is removed there by the owner, if at all.
+only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard, on the
+owner's OpenWrt device, was deleted through its API on 2026-11-26 by owner request.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).
 

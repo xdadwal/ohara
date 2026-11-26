@@ -21,7 +21,15 @@ other LAN routes retain their existing restrictions.
   redirects with 301 straight to `https://xdadwal.in` on HTTP and HTTPS, using
   the existing wildcard certificate (`*.xdadwal.in` covers it; nothing was
   issued). The reusable templates have no `www` redirect: their HTTP-mode
-  certificate lists only the configured hostnames.
+  certificate lists only the configured hostnames. Since 2026-11-26 the
+  portfolio block also sets browser caching for static files: one week for
+  `/static/img/` and `/favicon.ico`, one hour for everything else under
+  `/static/`. Nothing is `immutable` and lifetimes stay short because the
+  portfolio's file names are not versioned; errors are not cached. The same
+  block compresses CSS, JavaScript, JSON, XML, plain text and SVG (`gzip_types`
+  plus `gzip_vary on`); the global `nginx.conf` only compresses HTML and is
+  unchanged, so no other site is affected. `../portfolio.template` carries the
+  same settings.
 - `ohara-immich.conf`: separate public photo HTTPS route, promoted from LAN-only
   onboarding on 2026-10-22 after the operator confirmed owner setup and the API
   reported initialized/onboarded. Uses the existing wildcard certificate and

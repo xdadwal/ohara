@@ -100,6 +100,39 @@ class ProxyTests(unittest.TestCase):
         self.assertFalse((ROOT / 'configs/nginx/deployed/ohara-public-ip-test.conf').exists())
         self.assertNotIn('45.120.160.21', deployed)
 
+    def test_portfolio_static_files_are_cached_briefly_and_compressed(self):
+        c = config.load(ROOT / '.env.example')
+        c.update(PORTFOLIO_PORT='8010')
+        rendered = proxy.render(c, ROOT, https=True)
+        portfolio = rendered[rendered.index('# Optional portfolio process') :]
+        # Directives only: the template's comments mention the words checked below.
+        portfolio = re.sub(r'(?m)^\s*#.*\n', '', portfolio)
+        for location, age in [
+            ('location ^~ /static/img/ {', 604800),
+            ('location = /favicon.ico {', 604800),
+            ('location ^~ /static/ {', 3600),
+        ]:
+            block = portfolio[portfolio.index(location) :]
+            block = block[: block.index('\n    }\n')]
+            self.assertIn('proxy_pass http://127.0.0.1:8010;', block)
+            self.assertIn('proxy_set_header Host $host;', block)
+            self.assertIn(f'add_header Cache-Control "public, max-age={age}";', block)
+        # File names are not versioned, and errors must not be cached.
+        self.assertNotIn('immutable', portfolio)
+        self.assertNotIn('always', portfolio)
+        self.assertEqual(portfolio.count('add_header'), 3)
+        # Nothing but the three static locations sets a cache lifetime.
+        self.assertEqual(rendered.count('Cache-Control'), 3)
+        types = re.search(r'gzip_types ([^;]+);', portfolio)[1].split()
+        self.assertIn('text/css', types)
+        self.assertNotIn('text/html', types)  # always compressed; listing it warns
+        self.assertFalse([t for t in types if t.startswith('image/') and t != 'image/svg+xml'])
+        self.assertIn('gzip_vary on;', portfolio)
+        # Without a portfolio the settings are not rendered at all.
+        self.assertNotIn(
+            'gzip_types', proxy.render(config.load(ROOT / '.env.example'), ROOT, https=True)
+        )
+
     def test_bootstrap_never_references_missing_certificates(self):
         text = proxy.render(config.load(ROOT / '.env.example'), ROOT, https=False)
         self.assertNotIn('ssl_certificate', text)
