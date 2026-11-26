@@ -14,20 +14,17 @@ services:
       DB_PASSWORD: ${IMMICH_DB_PASSWORD}
       REDIS_HOSTNAME: redis
       IMMICH_CONFIG_FILE: /etc/immich/immich.json
-    ports:
-      - "127.0.0.1:2283:2283"
+    ports: ["127.0.0.1:2283:2283"]
     volumes:
       - type: bind
         source: ${IMMICH_LIBRARY_ROOT}
         target: /data
-        bind:
-          create_host_path: false
+        bind: {create_host_path: false}
       - type: bind
         source: ${IMMICH_CONFIG_PATH}
         target: /etc/immich/immich.json
         read_only: true
-        bind:
-          create_host_path: false
+        bind: {create_host_path: false}
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       redis:
@@ -38,9 +35,7 @@ services:
       disable: false
     logging: &logging
       driver: json-file
-      options:
-        max-size: 10m
-        max-file: "3"
+      options: {max-size: "10m", max-file: "3"}
   redis:
     image: ${IMMICH_CACHE_IMAGE}
     restart: unless-stopped
@@ -59,8 +54,7 @@ services:
       - type: bind
         source: ${IMMICH_DATABASE_ROOT}
         target: /var/lib/postgresql/data
-        bind:
-          create_host_path: false
+        bind: {create_host_path: false}
     shm_size: 128mb
     healthcheck:
       disable: false

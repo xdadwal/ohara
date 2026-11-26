@@ -6,7 +6,7 @@ ignored/private. The scripts resolve their repository root themselves.
 
 | Project | Compose definition | Public image pins | Lifecycle helper |
 |---|---|---|---|
-| Eleven-app main stack | `compose/stack.yaml` | `versions/stack.env` | `scripts/check`, `scripts/up`, `scripts/status` |
+| Eleven-app main stack | `compose/stack.yaml`, which includes the group files in `compose/stack/` | `versions/stack.env` | `scripts/check`, `scripts/up`, `scripts/status` |
 | LAN DNS | `compose/adguard.yaml` | `versions/adguard.env` | `scripts/adguard` |
 | Photos | `compose/immich.yaml` | `versions/immich.env` | `scripts/immich` |
 | Headless slicing | `compose/orcaslicer.yaml` | `versions/orcaslicer.env` | `scripts/orcaslicer` |
@@ -18,6 +18,16 @@ Reusable main-stack overrides live in `compose/overrides/media-pool.yaml` and
 `compose/overrides/jellyfin-theme.yaml`. Their helpers include them only when the
 existing media-pool/theme policy enables them. They do not define standalone
 projects or require separate pin manifests.
+
+Within the main stack, services that call each other share a group file
+(`compose/stack/media.yaml`); Navidrome, Homepage and OpenSpeedTest each have
+their own. [compose/README.md](../compose/README.md) has the rule and the full
+table. The group files are parts of the one `ohara` project, not projects: they
+share its network and pin file, and `compose/stack.yaml` joins them with
+`include`, which needs Docker Compose 2.20 or newer (`scripts/setup` installs the
+current plugin from Docker's repository). Splitting the file on
+2026-11-25 left every resolved service definition and Compose service hash
+unchanged, so pulling it recreates no container.
 
 Image tags/digests and all seven normalized project models were preserved by the
 move. AdGuard's existing pin was moved out of the main manifest into its own
@@ -88,10 +98,7 @@ certificates, exact Nginx baselines and private service configurations are untou
 ## Verification and rollback
 
 ```sh
-python3 -m unittest discover -s tests -v
-tests/test_setup.sh
-tests/test_cli.sh
-tests/static.sh
+tests/verify.sh
 tests/smoke.sh
 python3 tests/smoke_immich.py
 python3 tests/smoke_bambuddy.py

@@ -7,6 +7,26 @@ local application storage, outside the mergerfs media pool. Host Nginx provides
 registration, Firebase credentials, web-push keys or shared authentication.
 The main eleven-service setup/up commands do not start ntfy.
 
+## Setup summary
+
+This guide and `scripts/ntfy` cover the independently pinned server,
+local storage outside the media pool, native deny-by-default topic authentication,
+HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
+private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
+wake-up relay only with explicit approval. No notification text is forwarded to
+that relay. Verify the real supplied account before public proxy activation.
+Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
+readiness; it reads the actual configured storage UUIDs and preserves the existing
+storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
+delivery. Local publish success is not phone delivery or independent outage
+detection; same-host monitoring cannot report a complete host/network outage.
+Keep credentials out of Homepage, command arguments and logs.
+
+For optional ntfy event monitoring, Seerr new-request notifications and the
+read-only Homepage widget, follow
+[host and application alerts](alerts.md). Reinstall the host worker after alert
+changes and configure Seerr separately; preserve private inputs and alert state.
+
 ## Current host readiness
 
 On 2026-10-31, the owner explicitly authorized generation of the ntfy-only
@@ -22,8 +42,9 @@ actual Android background/mobile-data delivery remains owner verification.
 The native Homepage widget is now verified with a separate read-only
 `homepage-reader` account; its password was generated with explicit owner approval
 and saved only in private `.env`. The publisher password is not shared with Homepage.
-Independent public reachability and reboot persistence have not been established
-by the server-local checks. The exact live proxy is tracked under
+Independent public reachability has not been established by the server-local
+checks. After the 2026-11-18 host reboot the ntfy status check passed and the alert
+timer was scheduled ([verification record](verification.md)). The exact live proxy is tracked under
 `configs/nginx/deployed/ohara-ntfy.conf`.
 
 ## Inputs and preparation
@@ -220,16 +241,13 @@ are under root-only `/var/backups/ohara/ntfy-alerts-*` and proxy backups under
 
 Verification commands:
 
-The CI configuration job uses an isolated Python interpreter and explicitly
-installs `PyYAML==6.0.3` and `bcrypt==4.3.0` before unit tests. Local host setup
+The CI configuration job uses an isolated Python interpreter and installs the
+pinned `requirements-dev.txt` (PyYAML, bcrypt, ruff) before unit tests. Local host setup
 uses the distribution packages above. Container CI prepares ntfy's pinned image
 alongside the other smoke-test images, then runs the disposable ntfy/proxy checks.
 
 ```sh
-python3 -m unittest discover -s tests -v
-tests/test_setup.sh
-tests/test_cli.sh
-tests/static.sh
+tests/verify.sh
 python3 tests/smoke_ntfy.py
 ```
 

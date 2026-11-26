@@ -1,3 +1,4 @@
+# Optional private notification server. Operate it with scripts/ntfy; see docs/ntfy.md.
 name: ohara-ntfy
 services:
   ntfy:

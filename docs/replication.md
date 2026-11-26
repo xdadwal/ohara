@@ -1,9 +1,5 @@
 # Replicate the deployment
 
-Deployment file paths and migration/rollback are documented in
-[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
-private at the repository root.
-
 Use the merged PRs in **both** repositories, not a copy of private one-off setup
 scripts. Ohara provisions the media/dashboard stack and Nginx; the separate
 [portfolio repository](https://github.com/xdadwal/xdadwal.in) runs its FastAPI app.
@@ -24,7 +20,7 @@ scripts. Ohara provisions the media/dashboard stack and Nginx; the separate
    requires a separate dashboard hostname, and reserved application/admin ports
    are rejected. The portfolio process must listen on `127.0.0.1` at that port.
 
-2. Create private credential files following [credentials.md](credentials.md).
+2. Fill the credential entries in the private `.env` following [credentials.md](credentials.md).
    Supply your own values; never commit credentials or copy test fixtures.
    Follow [operations.md](operations.md) for `scripts/setup --dry-run`, actual
    setup, checks, startup and private account setup.
@@ -120,7 +116,8 @@ media stack is ready. Preserve its independent private state, use target-specifi
 LAN proxy/DNS settings, and connect existing application keys from private `.env`.
 No deletion/retention rules are seeded by this repository.
 
-For optional outgoing Letterboxd diary sync, follow
+For the optional LetterboxdSync plugin (outgoing Letterboxd diary sync, which its
+guide keeps disabled for now), follow
 [jellyfin-letterboxd.md](jellyfin-letterboxd.md) and the reviewed artifact profile.
 Install the exact plugin with the helper, restart only when playback is idle,
 and let each owner link their external account privately in the plugin UI. Do
@@ -129,7 +126,7 @@ not seed external tokens, bulk backfills, incoming diary imports or Seerr reques
 ## Optional Bambuddy
 
 Use [Bambuddy setup](bambuddy.md) for the independently pinned Compose project,
-dedicated storage, LAN proxy, exact DNS rewrite and Homepage Utility card. Confirm
+dedicated storage, LAN proxy, exact DNS rewrite and Homepage 3D Print card. Confirm
 storage on the new host and complete native owner/printer setup privately; do not
 copy example printer identities, disable authentication, or start test prints.
 
@@ -143,22 +140,8 @@ copy this host's disk UUIDs, credentials or certificate/IP assumptions blindly.
 
 ## Optional ntfy notifications
 
-Follow [ntfy.md](ntfy.md) and `scripts/ntfy` for the independently pinned server,
-local storage outside the media pool, native deny-by-default topic authentication,
-HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
-private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
-wake-up relay only with explicit approval. No notification text is forwarded to
-that relay. Verify the real supplied account before public proxy activation.
-Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
-readiness; it reads the actual configured storage UUIDs and preserves the existing
-storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
-delivery. Local publish success is not phone delivery or independent outage
-detection; same-host monitoring cannot report a complete host/network outage.
-Keep credentials out of Homepage, command arguments and logs.
-
-For optional ntfy event monitoring, Seerr new-request notifications and the
-read-only Homepage widget, follow
-[host and application alerts](alerts.md). Reinstall the host worker after alert
-changes and configure Seerr separately; preserve private inputs and alert state.
+Follow the [ntfy setup summary](ntfy.md#setup-summary) and its guide for the server,
+phone delivery and the host alert timer, and [host and application alerts](alerts.md)
+for event monitoring, Seerr notifications and the Homepage widget.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).
