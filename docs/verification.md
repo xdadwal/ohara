@@ -1329,3 +1329,30 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
 - The reusable templates were left alone: they reference the HTTP-mode
   certificate, which lists only the configured hostnames, so a `www` HTTPS block
   there would present a certificate that does not cover `www`.
+
+### Kutt DNS rewrite deleted; unused Docker objects removed (2026-11-26)
+
+- By owner request. On the OpenWrt AdGuard (the resolver at `DNS_IP`), the one
+  rewrite `kutt.xdadwal.in` to 192.168.1.101 was deleted through
+  `/control/rewrite/delete`, using the same client and login as the service
+  scripts. Rewrites went from 18 to 17; the other 17 are unchanged, and
+  `ohara.xdadwal.in` still answers 192.168.1.101. `kutt.xdadwal.in` now gets the
+  public answer (a wildcard CNAME to the apex), and Nginx refuses that name
+  because it has no route. Nothing else on the device was changed.
+- Docker, targeted removal only (no `docker system prune`, no container removed):
+  - 28 images that no container uses, running or stopped: previous versions of
+    current services and leftovers of retired ones (Kutt and its PostgreSQL,
+    Pi-hole, Copyparty, a test Nginx). Images went from 47 to 19 and 24.99 GB to
+    10.46 GB; the 19 left are the current pins, including the stopped bundled
+    AdGuard's. Removed without `--force`.
+  - 4 empty `ohara-bambuddy-smoke-*` networks left by smoke tests.
+  - 52 anonymous volumes attached to no container. All were checked empty as
+    root beforehand.
+- Kept: the stopped `ohara-dns-adguard-1` container, its image and its
+  `ohara-dns_default` network (bundled AdGuard is stopped, not removed, by owner
+  decision), and the one volume a container uses.
+- After: the same 18 containers are running with unchanged IDs; `scripts/status`
+  shows all eleven main services reachable and the Immich, Bambuddy, Maintainerr
+  and ntfy status commands pass.
+- Consequence: rolling an application back to a previous image now needs a pull
+  from its registry.

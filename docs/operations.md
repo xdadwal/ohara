@@ -509,8 +509,8 @@ so Kutt's checks, containers and TLS route are dropped, and delete the `KUTT_*`
 lines from `.env` (they are ignored if left). Deleting `KUTT_ROOT` (default
 `DATA_ROOT/kutt`, which holds PostgreSQL and the DB/JWT secret files) and any
 `/var/backups/ohara/kutt-*` or `local/kutt-backups` archives is permanent; do it
-only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard is on
-the owner's OpenWrt device and is removed there by the owner, if at all.
+only on an explicit owner decision. The `kutt` rewrite in the LAN AdGuard, on the
+owner's OpenWrt device, was deleted through its API on 2026-11-26 by owner request.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).
 

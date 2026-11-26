@@ -53,13 +53,13 @@ LAN device -> ISP router (192.168.1.1)
   `https://adguard.DOMAIN` ([lan-services.md](lan-services.md)). Its login is
   the owner's; the server holds it only as `ADGUARD_PASSWORD` for the Homepage
   widget, which reads that dashboard directly.
-- Eighteen exact rewrites to 192.168.1.101: the apex and `adguard`, `bambuddy`,
-  `bazarr`, `immich`, `kutt`, `lidarr`, `maintainerr`, `music`, `ntfy`, `ohara`,
+- Seventeen exact rewrites to 192.168.1.101: the apex and `adguard`, `bambuddy`,
+  `bazarr`, `immich`, `lidarr`, `maintainerr`, `music`, `ntfy`, `ohara`,
   `prowlarr`, `qbittorrent`, `radarr`, `seerr`, `sonarr`, `speed` and `tv` under
   the domain. They serve
   [LAN-only routes](lan-services.md) live in that AdGuard.
-  The `kutt` rewrite is stale since Kutt was retired on 2026-11-25; it answers
-  for a name with no route and can be deleted in that AdGuard by the owner.
+  The `kutt` rewrite was deleted on 2026-11-26 by owner request, after Kutt was
+  retired.
 - No third-party resolver answers lookups. Unbound has no forwarders and speaks
   plain DNS to the root, TLD and authoritative servers, so the ISP can read the
   names; `fallback_dns` (one plain resolver) is used only when Unbound fails, and
@@ -144,7 +144,7 @@ address outside the ISP router's DHCP range, reserved there.
    - AdGuard, Settings, DNS settings: upstream `127.0.0.1:5335`; fallback the
      owner's chosen plain resolver; allowed clients `192.168.1.0/24`; private
      reverse resolvers off. General settings: query log retention 24 hours.
-   - AdGuard, Filters, DNS rewrites: the eighteen names listed under "DNS path",
+   - AdGuard, Filters, DNS rewrites: the seventeen names listed under "DNS path",
      each answering 192.168.1.101. The server's service scripts add their own
      name when they run (`scripts/bambuddy`, `scripts/maintainerr`,
      `scripts/ntfy`), because `DNS_IP` points them at this dashboard.
