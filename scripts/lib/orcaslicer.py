@@ -1,9 +1,7 @@
 """Private optional OrcaSlicer backend; never dispatches printer commands."""
 
 import json
-import os
 import platform
-import re
 
 import bambuddy
 import config
@@ -12,13 +10,12 @@ import runtime
 
 
 def images(root):
-    values = config.parse(root / 'versions/orcaslicer.env', {'ORCASLICER_IMAGE'})
-    if not re.fullmatch(
-        r'ghcr.io/maziggy/orca-slicer-api:bambuddy-[0-9.]+@sha256:[a-f0-9]{64}',
-        values['ORCASLICER_IMAGE'],
-    ):
-        raise ValueError('OrcaSlicer requires a reviewed release-matched immutable image')
-    return values
+    return config.pinned_images(
+        root / 'versions/orcaslicer.env',
+        {'ORCASLICER_IMAGE'},
+        r'ghcr.io/maziggy/orca-slicer-api:bambuddy-[0-9.]+',
+        'OrcaSlicer requires a reviewed release-matched immutable image',
+    )
 
 
 def storage(c):
@@ -31,41 +28,9 @@ def storage(c):
 
 def compose(c, root, args, *, capture=False):
     values = images(root) | {k: c[k] for k in ('RUN_UID', 'RUN_GID')}
-    values.update(ORCASLICER_ROOT=str(storage(c)), COMPOSE_DISABLE_ENV_FILE='1')
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k
-        in {
-            'PATH',
-            'HOME',
-            'USER',
-            'XDG_RUNTIME_DIR',
-            'DOCKER_CONFIG',
-            'DOCKER_HOST',
-            'DOCKER_CONTEXT',
-            'SSH_AUTH_SOCK',
-        }
-    }
-    env.update(values)
-    prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
-    if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
-    return runtime.run(
-        prefix
-        + [
-            'compose',
-            '--project-directory',
-            str(root),
-            '--env-file',
-            '/dev/null',
-            '-f',
-            str(root / 'compose/orcaslicer.yaml'),
-            *args,
-        ],
-        env=env,
-        capture=capture,
-        timeout=600,
+    values['ORCASLICER_ROOT'] = str(storage(c))
+    return runtime.project_compose(
+        root, 'compose/orcaslicer.yaml', values, args, capture=capture, timeout=600
     )
 
 
@@ -128,10 +93,9 @@ def configure(c, root):
     import media
 
     check(c, root)
-    values = credentials.read(
-        root / '.env',
+    values = credentials.read_env(
+        root,
         credentials.BAMBUDDY_OWNER_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.BAMBUDDY_OWNER_KEYS),
         minimum_lengths={'BAMBUDDY_USERNAME': 1, 'BAMBUDDY_PASSWORD': 1},
     )
     api = media.Client('http://127.0.0.1:8008')

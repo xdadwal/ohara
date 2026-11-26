@@ -159,9 +159,7 @@ def setup(c, root):
     api = theme.client(root)
     profile = json.loads((root / 'configs/jellyfin/enhanced-qol.json').read_text())
     plugin = identify(api, profile)
-    values = credentials.read(
-        root / '.env', KEYS, ignored=config.KEYS | (credentials.ALL_KEYS - KEYS)
-    )
+    values = credentials.read_env(root, KEYS)
     validate_services(api, values)
     path = '/Plugins/' + plugin['Id'] + '/Configuration'
     before = api.call(path)
@@ -225,9 +223,7 @@ def check(root):
     api = theme.client(root)
     profile = json.loads((root / 'configs/jellyfin/enhanced-qol.json').read_text())
     plugin = identify(api, profile)
-    values = credentials.read(
-        root / '.env', KEYS, ignored=config.KEYS | (credentials.ALL_KEYS - KEYS)
-    )
+    values = credentials.read_env(root, KEYS)
     validate_services(api, values)
     data = api.call('/Plugins/' + plugin['Id'] + '/Configuration')
     public = api.call(PREFIX + 'public-config')

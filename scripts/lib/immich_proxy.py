@@ -4,11 +4,11 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import tempfile
 import urllib.request
 
 import config
+import nginx_site
 import runtime
 
 CERTIFICATE = '/etc/letsencrypt/live/ohara-wildcard/fullchain.pem'
@@ -93,13 +93,10 @@ def apply(root, *, onboarding_only=False, accounts_ready=False):
             raise ValueError(
                 'Another Nginx file already defines immich.xdadwal.in; review it first'
             )
-    nginx = '/usr/sbin/nginx'
-    runtime.run([nginx, '-t'])
-    previous = target.read_bytes() if target.exists() else None
+    runtime.run([nginx_site.NGINX, '-t'])
+    previous, mode, owner = nginx_site.existing(target)
     if previous is not None and not previous.startswith(b'# Managed by scripts/immich-proxy;'):
         raise ValueError('Existing Immich Nginx configuration is unmanaged; review it first')
-    mode = target.stat().st_mode & 0o777 if target.exists() else 0o644
-    owner = (target.stat().st_uid, target.stat().st_gid) if target.exists() else (0, 0)
     if previous is not None:
         backup_dir = Path('/var/backups/ohara')
         backup_dir.mkdir(mode=0o700, exist_ok=True)
@@ -107,35 +104,15 @@ def apply(root, *, onboarding_only=False, accounts_ready=False):
         with os.fdopen(descriptor, 'wb') as stream:
             stream.write(previous)
         print('Previous Immich route backed up to ' + backup)
-
-    def replace(data, permissions):
-        descriptor, temporary = tempfile.mkstemp(prefix='.ohara-immich-', dir=target.parent)
-        try:
-            with os.fdopen(descriptor, 'wb') as stream:
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.chmod(temporary, permissions)
-            os.chown(temporary, *owner)
-            os.replace(temporary, target)
-        finally:
-            if os.path.exists(temporary):
-                os.unlink(temporary)
-
-    try:
-        replace(render(root, onboarding_only=onboarding_only).encode(), 0o644)
-        runtime.run([nginx, '-t'])
-        runtime.run(['systemctl', 'reload', 'nginx'])
-    except (OSError, RuntimeError, subprocess.TimeoutExpired):
-        if previous is None:
-            target.unlink(missing_ok=True)
-        else:
-            replace(previous, mode)
-        runtime.run([nginx, '-t'])
-        runtime.run(['systemctl', 'reload', 'nginx'])
-        raise RuntimeError(
-            'Immich route activation failed; previous Nginx configuration restored'
-        ) from None
+    nginx_site.install(
+        target,
+        lambda: render(root, onboarding_only=onboarding_only).encode(),
+        previous,
+        mode,
+        owner,
+        prefix='.ohara-immich-',
+        failure='Immich route activation failed; previous Nginx configuration restored',
+    )
     print(
         ('LAN-only Immich onboarding' if onboarding_only else 'Public Immich')
         + ' HTTPS activated; other routes and certificates preserved.'

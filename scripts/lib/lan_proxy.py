@@ -4,9 +4,9 @@ import datetime
 import os
 from pathlib import Path
 import socket
-import subprocess
 import tempfile
 
+import nginx_site
 import runtime
 
 
@@ -31,11 +31,8 @@ def apply(root):
     target = Path('/etc/nginx/conf.d/ohara-lan.conf')
     if target.is_symlink():
         raise RuntimeError('Refusing to replace a symlink Nginx configuration')
-    nginx = '/usr/sbin/nginx'
-    runtime.run([nginx, '-t'])
-    previous = target.read_bytes() if target.exists() else None
-    mode = target.stat().st_mode & 0o777 if target.exists() else 0o644
-    owner = (target.stat().st_uid, target.stat().st_gid) if target.exists() else (0, 0)
+    runtime.run([nginx_site.NGINX, '-t'])
+    previous, mode, owner = nginx_site.existing(target)
     backup_dir = Path('/var/backups/ohara')
     backup_dir.mkdir(mode=0o700, exist_ok=True)
     if previous is not None:
@@ -46,33 +43,15 @@ def apply(root):
         with os.fdopen(descriptor, 'wb') as stream:
             stream.write(previous)
         print('Previous LAN configuration backed up to ' + backup)
-
-    def replace(data, permissions):
-        descriptor, temporary = tempfile.mkstemp(prefix='.ohara-lan-', dir=target.parent)
-        try:
-            with os.fdopen(descriptor, 'wb') as stream:
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.chmod(temporary, permissions)
-            os.chown(temporary, *owner)
-            os.replace(temporary, target)
-        finally:
-            if os.path.exists(temporary):
-                os.unlink(temporary)
-
-    try:
-        replace(candidate(root).read_bytes(), 0o644)
-        runtime.run([nginx, '-t'])
-        runtime.run(['systemctl', 'reload', 'nginx'])
-    except (OSError, RuntimeError, subprocess.TimeoutExpired):
-        if previous is None:
-            target.unlink(missing_ok=True)
-        else:
-            replace(previous, mode)
-        runtime.run([nginx, '-t'])
-        runtime.run(['systemctl', 'reload', 'nginx'])
-        raise RuntimeError('LAN route deployment failed; previous configuration restored') from None
+    nginx_site.install(
+        target,
+        lambda: candidate(root).read_bytes(),
+        previous,
+        mode,
+        owner,
+        prefix='.ohara-lan-',
+        failure='LAN route deployment failed; previous configuration restored',
+    )
     print(
         'LAN-only routes installed and Nginx reloaded; public routes and backend bindings preserved.'
     )

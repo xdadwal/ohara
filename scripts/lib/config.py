@@ -66,6 +66,21 @@ IMAGES = {
     'NAVIDROME_IMAGE',
 }
 
+# Settings that each name one hostname the main Nginx routes serve.
+HOST_KEYS = (
+    'DOMAIN',
+    'REQUESTS_HOST',
+    'SPEED_HOST',
+    'JELLYFIN_HOST',
+    'HOMEPAGE_HOST',
+    'NAVIDROME_HOST',
+)
+
+
+def hostnames(c):
+    """The distinct hostnames of the main routes for a loaded configuration."""
+    return {c[key] for key in HOST_KEYS}
+
 
 def parse(path, keys, optional=frozenset(), ignored=frozenset()):
     values = {}
@@ -211,6 +226,18 @@ def images(path):
     for key, value in values.items():
         if not re.fullmatch(r'[a-z0-9./:_-]+@sha256:[a-f0-9]{64}', value):
             raise ValueError(f'{key}: require an immutable image digest')
+    return values
+
+
+def pinned_images(path, keys, reference, message):
+    """Parse one project's pin manifest; every value must be REFERENCE@sha256:<digest>.
+
+    REFERENCE is a regular expression for the repository and tag the project
+    accepts. A mismatch raises ValueError(message).
+    """
+    values = parse(path, keys)
+    if any(not re.fullmatch(reference + '@sha256:[a-f0-9]{64}', v) for v in values.values()):
+        raise ValueError(message)
     return values
 
 

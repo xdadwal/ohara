@@ -179,9 +179,7 @@ def css(existing, *, remove=False):
 
 def client(root):
     key = 'HOMEPAGE_VAR_JELLYFIN_API_KEY'
-    values = credentials.read(
-        root / '.env', {key}, ignored=config.KEYS | (credentials.ALL_KEYS - {key})
-    )
+    values = credentials.read_env(root, {key})
     api = media.Client('http://127.0.0.1:8096')
     api.headers['Authorization'] = (
         'MediaBrowser Client="Ohara Theme", Device="Server", '

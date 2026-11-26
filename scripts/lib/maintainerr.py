@@ -1,15 +1,14 @@
 """Optional LAN-only Maintainerr lifecycle; never creates or executes cleanup rules."""
 
-import base64
 import datetime
 import json
 import os
 from pathlib import Path
-import re
 
 import adguard
 import config
 import credentials
+import homepage_services
 import host
 import jellyfin_theme
 import media
@@ -32,52 +31,19 @@ def storage(c):
 
 
 def images(root):
-    values = config.parse(root / 'versions/maintainerr.env', IMAGE_KEYS)
-    if not re.fullmatch(
-        r'ghcr.io/maintainerr/maintainerr:[0-9.]+@sha256:[a-f0-9]{64}', values['MAINTAINERR_IMAGE']
-    ):
-        raise ValueError('Maintainerr requires an official immutable release image')
-    return values
+    return config.pinned_images(
+        root / 'versions/maintainerr.env',
+        IMAGE_KEYS,
+        r'ghcr.io/maintainerr/maintainerr:[0-9.]+',
+        'Maintainerr requires an official immutable release image',
+    )
 
 
 def compose(c, root, args, *, capture=False, timeout=60):
     values = {k: c[k] for k in ('DATA_ROOT', 'RUN_UID', 'RUN_GID', 'TZ')}
     values.update(images(root))
-    values['COMPOSE_DISABLE_ENV_FILE'] = '1'
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k
-        in {
-            'PATH',
-            'HOME',
-            'USER',
-            'XDG_RUNTIME_DIR',
-            'DOCKER_CONFIG',
-            'DOCKER_HOST',
-            'DOCKER_CONTEXT',
-            'SSH_AUTH_SOCK',
-        }
-    }
-    env.update(values)
-    prefix = ['docker'] if args[0] == 'config' else runtime.docker_prefix()
-    if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
-    return runtime.run(
-        prefix
-        + [
-            'compose',
-            '--project-directory',
-            str(root),
-            '--env-file',
-            '/dev/null',
-            '-f',
-            str(root / 'compose/maintainerr.yaml'),
-        ]
-        + args,
-        env=env,
-        capture=capture,
-        timeout=timeout,
+    return runtime.project_compose(
+        root, 'compose/maintainerr.yaml', values, args, capture=capture, timeout=timeout
     )
 
 
@@ -157,9 +123,7 @@ def ok(result, label):
 def connect(c, root):
     """Test all connections before saving; preserve existing instances/rules."""
     api = client()
-    values = credentials.read(
-        root / '.env', SERVICE_KEYS, ignored=config.KEYS | (credentials.ALL_KEYS - SERVICE_KEYS)
-    )
+    values = credentials.read_env(root, SERVICE_KEYS)
     jf = jellyfin_theme.client(root)
     admins = [
         u
@@ -226,30 +190,13 @@ def connect(c, root):
 
 
 def homepage(c, root):
-    import yaml
-
-    path = Path(c['DATA_ROOT']) / 'homepage/services.yaml'
-    jellyfin_theme.safe(path)
-    before = path.read_text()
-    data = yaml.safe_load(before)
-    card = next(
-        (
-            entry['Maintainerr']
-            for group in data
-            for entries in group.values()
-            for entry in entries
-            if 'Maintainerr' in entry
-        ),
-        None,
-    )
+    path, before, data = homepage_services.read(c)
+    card = next(iter(homepage_services.cards(data, 'Maintainerr')), None)
     if card is not None and ('widget' in card or 'widgets' in card):
         print('Existing Maintainerr Homepage card/widget preserved.')
         return
     if card is None:
-        target = next((g['Arr'] for g in data if 'Arr' in g), None)
-        if target is None:
-            target = []
-            data.append({'Arr': target})
+        target = homepage_services.group(data, 'Arr')
         card = {
             'icon': 'maintainerr.png',
             'href': 'https://maintainerr.' + c['DOMAIN'],
@@ -262,30 +209,22 @@ def homepage(c, root):
         'url': 'http://maintainerr:6246',
         'fields': ['itemsHandled', 'reclaimable'],
     }
-    backup = (
+    homepage_services.backup(
         root
         / 'local/maintainerr-backups'
-        / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage')
+        / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-homepage'),
+        before,
     )
-    backup.mkdir(mode=0o700, parents=True)
-    config.create_file(backup / 'services.yaml', before)
     # Replace file contents without changing existing ownership/mode.
-    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+    path.write_text(homepage_services.dump(data))
     print('Homepage Maintainerr card merged; existing cards/widgets preserved.')
 
 
 def dns(c, root):
-    name = 'maintainerr.' + c['DOMAIN']
-    address, _ = adguard.settings(c)
-    api = media.Client(adguard.api_base(c))
-    api.headers['Authorization'] = (
-        'Basic ' + base64.b64encode(('admin:' + adguard.password(root)).encode()).decode()
+    adguard.ensure_rewrite(
+        c,
+        root,
+        'maintainerr.' + c['DOMAIN'],
+        'Conflicting or disabled Maintainerr DNS rewrite; preserve and review',
     )
-    rows = api.call('/control/rewrite/list')
-    matching = [r for r in rows if r['domain'] == name]
-    if matching:
-        if not all(r['answer'] == address and r.get('enabled', True) for r in matching):
-            raise ValueError('Conflicting or disabled Maintainerr DNS rewrite; preserve and review')
-    else:
-        api.call('/control/rewrite/add', {'domain': name, 'answer': address})
     print('Exact Maintainerr LAN DNS rewrite present; other records preserved.')

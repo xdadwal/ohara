@@ -6,7 +6,6 @@ import re
 import stat
 import tempfile
 
-import config
 import credentials
 
 
@@ -44,11 +43,7 @@ def configuration_path(root, *, static=False):
 
 
 def render(root, c):
-    inputs = credentials.read(
-        root / '.env',
-        credentials.IMMICH_OAUTH_KEYS,
-        ignored=config.KEYS | (credentials.ALL_KEYS - credentials.IMMICH_OAUTH_KEYS),
-    )
+    inputs = credentials.read_env(root, credentials.IMMICH_OAUTH_KEYS)
     client_id = inputs['IMMICH_GOOGLE_CLIENT_ID']
     if not re.fullmatch(r'[A-Za-z0-9_-]+\.apps\.googleusercontent\.com', client_id):
         raise ValueError(

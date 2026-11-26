@@ -57,7 +57,7 @@ reachable. Its description is `HOMEPAGE_VAR_SEERR_DESCRIPTION`, which ends with
 the Seerr site is LAN-only (2026-11-18). The flag only labels the card; the
 access rule itself is in the host's Nginx configuration.
 
-Both variables are non-secret and derived in `compose/stack.yaml`. An existing
+Both variables are non-secret and derived in `compose/stack/homepage.yaml`. An existing
 dashboard needs the two template lines merged once into
 `DATA_ROOT/homepage/services.yaml` (`url: '{{HOMEPAGE_VAR_ADGUARD_URL}}'` and
 `description: '{{HOMEPAGE_VAR_SEERR_DESCRIPTION}}'`), then `scripts/up`. Everyone with access
@@ -149,7 +149,8 @@ Immich instance and HTTPS route are verified. Preserve the rest of services.yaml
 including embedded widget credentials; do not print or replace the entire file.
 The current host has this live link, added selectively with a private backup;
 Homepage password login and the authenticated service-card response were verified.
-Immich currently serves LAN-only owner onboarding.
+Owner onboarding is complete and the public HTTPS route is active; see
+[Immich operations](immich.md).
 
 ### Immich statistics widget
 
@@ -178,11 +179,11 @@ The dashboard uses six groups selected by the owner:
 - **Media** (first section): Jellyfin and Navidrome.
 - **Arr:** Seerr, Radarr, Sonarr, Lidarr, Maintainerr, Prowlarr and Bazarr.
 - **3D Print:** optional Bambuddy (A1 mini management).
-- **Utility:** qBittorrent.
+- **Utility:** ntfy and qBittorrent.
 - **Networking:** AdGuard Home and OpenSpeedTest.
 - **Images & Videos:** Immich.
 
-Maintainerr stays with Arr; qBittorrent has its own Utility section. Media stays
+Maintainerr stays with Arr; qBittorrent sits in Utility with ntfy. Media stays
 first, followed by 3D Print, Utility, Networking and Images & Videos as columns.
 Arr is a wide four-card row below those columns. Smaller displays wrap
 responsively; native CPU temperature remains enabled. Full service

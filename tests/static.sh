@@ -3,7 +3,8 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 # scripts/setup is the only bash entry point; Python is linted by tests/lint.sh.
-SHELL_FILES=(scripts/setup tests/*.sh)
+# configs/openwrt/setup.sh is POSIX sh for BusyBox; its shebang selects that dialect.
+SHELL_FILES=(scripts/setup tests/*.sh configs/openwrt/setup.sh)
 for file in "${SHELL_FILES[@]}"; do
   bash -n "$file"
 done
