@@ -22,7 +22,8 @@ pulls the pinned images before the container jobs.
 - Tests never read the real `.env` and never touch the host: they build a
   temporary root, write fixture credentials with `credential_fixtures.write(root)`
   and copy only the deployment files they need with
-  `deployment_fixtures.copy_deployment(root, name)`.
+  `deployment_fixtures.copy_deployment(root, name)`, which also copies the group
+  files a project file includes (`compose/stack/` with `compose/stack.yaml`).
 - Replace network and process calls by patching the module attribute the code
   looks up at call time (`patch.object(runtime, 'run')`,
   `patch.object(media, 'Client', ...)`). Keep those names importable when

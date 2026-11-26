@@ -4,6 +4,8 @@ import sys
 import tempfile
 import unittest
 
+import yaml
+
 from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +27,41 @@ class StackTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'private config'):
                 runtime.check(c, root)
             self.assertFalse((root / 'local').exists())
+
+    def test_every_application_is_in_exactly_one_group_file(self):
+        entry = yaml.safe_load((ROOT / 'compose/stack.yaml').read_text())
+        self.assertEqual(set(entry), {'name', 'include'})
+        included = [item['path'] for item in entry['include']]
+        files = sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'compose/stack').glob('*.yaml'))
+        self.assertEqual(sorted(included), files)
+        services = []
+        for name in files:
+            group = yaml.safe_load((ROOT / name).read_text())
+            self.assertNotIn('name', group, name)
+            self.assertNotIn('include', group, name)
+            services += group['services']
+        self.assertEqual(sorted(services), sorted(runtime.STACK_SERVICES))
+
+    def test_included_files_cannot_read_a_dotenv(self):
+        # Compose loads PROJECT_DIRECTORY/.env for an included file unless env_file is
+        # set; project_directory would point that at the private repository .env.
+        entry = yaml.safe_load((ROOT / 'compose/stack.yaml').read_text())
+        for item in entry['include']:
+            self.assertEqual(set(item), {'path', 'env_file'}, item)
+            self.assertEqual(item['env_file'], '/dev/null', item)
+        c = config.load(ROOT / '.env.example')
+        arguments = ['config', '--format', 'json']
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            c['DATA_ROOT'] = str(root / 'data')
+            c['MEDIA_ROOT'] = str(root / 'media')
+            expected = json.loads(runtime.compose(c, ROOT, arguments, capture=True))
+            copy_deployment(root, 'compose/stack.yaml', 'versions/stack.env')
+            for folder in ('', 'compose', 'compose/stack'):
+                (root / folder / '.env').write_text('TZ=Leaked/Zone\nSEERR_LAN_ONLY=true\n')
+            rendered = runtime.compose(c, root, arguments, capture=True)
+        self.assertNotIn('Leaked/Zone', rendered)
+        self.assertEqual(json.loads(rendered), expected)
 
     def test_normalized_ports(self):
         c = config.load(ROOT / '.env.example')

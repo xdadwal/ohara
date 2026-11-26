@@ -1218,3 +1218,29 @@ OpenWrt device (192.168.1.105) and asked for the bundled one to be disabled.
 - Not compared: root-only `/etc/ohara/alerts.json` and `/etc/ohara/tls`,
   `nginx -t`, certificate expiry, and the OpenWrt device's live state.
 
+### Main stack split into dependency group files (2026-11-25)
+
+- Repository change only; nothing was deployed, restarted or pulled on the host.
+  `compose/stack.yaml` now names the `ohara` project and includes
+  `compose/stack/media.yaml`, `navidrome.yaml`, `homepage.yaml` and
+  `speedtest.yaml`.
+- Static, Compose plugin 5.6.0: before and after, the resolved service
+  definitions and `config --hash` values of all eleven services are identical in
+  eight combinations (media-pool override on/off, theme override on/off, optional
+  inputs set/unset), with and without `--no-env-resolution`. The only difference
+  in the resolved model is that the unused top-level `x-*` anchor blocks are gone.
+- Read-only on the xdadwal.in host with its real configuration and both overrides
+  active: the new files give the same eleven hashes as the old file, and ten equal
+  the running containers' `com.docker.compose.config-hash` labels. Homepage's
+  label cannot be reproduced by a static render, which leaves its credentials
+  empty by design; its old and new hashes are equal.
+- Found while testing: an included file makes Compose read a `.env` beside it even
+  with `--env-file /dev/null` and `COMPOSE_DISABLE_ENV_FILE=1`, and
+  `project_directory: .` makes it read the repository's private `.env`. Every
+  include entry therefore sets `env_file: /dev/null`; with that, planted `.env`
+  files in the root, `compose/` and `compose/stack/` change nothing.
+  `tests/test_stack.py` checks the form and the behaviour.
+- Not run: `scripts/up` or any container start with the new files on this host.
+  The CI container job starts the main stack from them.
+- Rollback: revert the commit. No container, volume, network or host file changes
+  either way.

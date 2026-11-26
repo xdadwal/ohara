@@ -57,7 +57,7 @@ reachable. Its description is `HOMEPAGE_VAR_SEERR_DESCRIPTION`, which ends with
 the Seerr site is LAN-only (2026-11-18). The flag only labels the card; the
 access rule itself is in the host's Nginx configuration.
 
-Both variables are non-secret and derived in `compose/stack.yaml`. An existing
+Both variables are non-secret and derived in `compose/stack/homepage.yaml`. An existing
 dashboard needs the two template lines merged once into
 `DATA_ROOT/homepage/services.yaml` (`url: '{{HOMEPAGE_VAR_ADGUARD_URL}}'` and
 `description: '{{HOMEPAGE_VAR_SEERR_DESCRIPTION}}'`), then `scripts/up`. Everyone with access

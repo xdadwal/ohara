@@ -1,0 +1,50 @@
+# Main stack: the dashboard. Its widgets read the other applications, but it starts
+# and runs without them. Included by ../stack.yaml; see docs/homepage-widgets.md.
+services:
+  homepage:
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    image: ${HOMEPAGE_IMAGE:?Run scripts/check}
+    user: "${RUN_UID}:${RUN_GID}"
+    environment:
+      TZ: ${TZ}
+      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_HOST:-${DOMAIN}}
+      HOMEPAGE_AUTH_ENABLED: "true"
+      HOMEPAGE_EXTERNAL_URL: https://${HOMEPAGE_HOST:-${DOMAIN}}
+      HOMEPAGE_VAR_REQUESTS_HOST: ${REQUESTS_HOST}
+      HOMEPAGE_VAR_JELLYFIN_HOST: ${JELLYFIN_HOST}
+      HOMEPAGE_VAR_DOMAIN: ${DOMAIN}
+      HOMEPAGE_VAR_SPEED_HOST: ${SPEED_HOST}
+      HOMEPAGE_VAR_NAVIDROME_HOST: ${NAVIDROME_HOST}
+      HOMEPAGE_AUTH_SECRET: ${HOMEPAGE_AUTH_SECRET:-}
+      HOMEPAGE_AUTH_PASSWORD: ${HOMEPAGE_AUTH_PASSWORD:-}
+      HOMEPAGE_VAR_JELLYFIN_API_KEY: ${HOMEPAGE_VAR_JELLYFIN_API_KEY:-}
+      HOMEPAGE_VAR_SEERR_API_KEY: ${HOMEPAGE_VAR_SEERR_API_KEY:-}
+      HOMEPAGE_VAR_IMMICH_API_KEY: ${HOMEPAGE_VAR_IMMICH_API_KEY:-}
+      HOMEPAGE_VAR_BAMBUDDY_API_KEY: ${HOMEPAGE_VAR_BAMBUDDY_API_KEY:-}
+      HOMEPAGE_VAR_NAVIDROME_TOKEN: ${HOMEPAGE_VAR_NAVIDROME_TOKEN:-}
+      HOMEPAGE_VAR_RADARR_API_KEY: ${HOMEPAGE_VAR_RADARR_API_KEY:-}
+      HOMEPAGE_VAR_SONARR_API_KEY: ${HOMEPAGE_VAR_SONARR_API_KEY:-}
+      HOMEPAGE_VAR_LIDARR_API_KEY: ${HOMEPAGE_VAR_LIDARR_API_KEY:-}
+      HOMEPAGE_VAR_QBITTORRENT_PASSWORD: ${HOMEPAGE_VAR_QBITTORRENT_PASSWORD:-}
+      HOMEPAGE_VAR_ADGUARD_PASSWORD: ${HOMEPAGE_VAR_ADGUARD_PASSWORD:-}
+      # Bundled AdGuard on the shared network, or the owner's device when DNS_IP is set.
+      HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000
+      HOMEPAGE_VAR_SEERR_DESCRIPTION: Discover and request movies and shows${SEERR_LAN_ONLY:+ (local network)}
+      HOMEPAGE_VAR_NTFY_PASSWORD: ${HOMEPAGE_VAR_NTFY_PASSWORD:-}
+    ports: ["127.0.0.1:3002:3000"]
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/homepage
+        target: /app/config
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${MEDIA_ROOT}
+        target: /media-storage
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs: ["/app/.next/cache:uid=${RUN_UID},gid=${RUN_GID}"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
