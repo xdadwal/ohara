@@ -1,9 +1,5 @@
 # Agent-led initial setup
 
-Deployment file paths and migration/rollback are documented in
-[deployment layout](deployment-layout.md). Use the stable scripts; `.env` remains
-private at the repository root.
-
 Use this workflow when the user asks you to prepare or deploy Ohara on the target
 machine. Repository editing alone does not authorize live deployment. A shared
 authentication service is deferred; keep independent service credentials.
@@ -230,7 +226,9 @@ independent backups/restore testing remain explicitly deferred.
 
 For Bambuddy, follow [bambuddy.md](bambuddy.md) and `scripts/bambuddy`. Complete
 LAN-only first-owner onboarding before using `scripts/bambuddy-proxy` to activate
-the owner-approved public route with native password login and no added MFA.
+the owner-approved public route with native password login; the approval did not
+require MFA. On this host the owner later enabled TOTP on the admin account: keep
+it and never bypass or reset it.
 Keep its backend loopback-only and use bridge networking with the real manual
 printer IP. Printer codes and owner signup stay in its UI; never start a print
 or enable virtual-printer/slicer sidecars as part of setup.
@@ -356,22 +354,8 @@ Record explicit owner deferrals and the exact remaining actions.
 
 ## Optional ntfy notifications
 
-Follow [ntfy.md](ntfy.md) and `scripts/ntfy` for the independently pinned server,
-local storage outside the media pool, native deny-by-default topic authentication,
-HTTPS, Homepage and exact AdGuard rewrite. The owner supplies NTFY_PASSWORD in
-private .env. Ask whether the phone is Android or iPhone; enable the ntfy.sh iOS
-wake-up relay only with explicit approval. No notification text is forwarded to
-that relay. Verify the real supplied account before public proxy activation.
-Install the host alert timer with `sudo scripts/ntfy install-alerts` after server
-readiness; it reads the actual configured storage UUIDs and preserves the existing
-storage watchdog. Run `scripts/ntfy test` and obtain owner confirmation of phone
-delivery. Local publish success is not phone delivery or independent outage
-detection; same-host monitoring cannot report a complete host/network outage.
-Keep credentials out of Homepage, command arguments and logs.
-
-For optional ntfy event monitoring, Seerr new-request notifications and the
-read-only Homepage widget, follow
-[host and application alerts](alerts.md). Reinstall the host worker after alert
-changes and configure Seerr separately; preserve private inputs and alert state.
+Follow the [ntfy setup summary](ntfy.md#setup-summary) and its guide for the server,
+phone delivery and the host alert timer, and [host and application alerts](alerts.md)
+for event monitoring, Seerr notifications and the Homepage widget.
 
 Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](orcaslicer.md).

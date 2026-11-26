@@ -11,3 +11,7 @@ def copy_deployment(root, *names):
         target = Path(root) / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / name, target)
+        # compose/PROJECT.yaml may include group files from compose/PROJECT/.
+        groups = (ROOT / name).with_suffix('')
+        if name.startswith('compose/') and groups.is_dir():
+            shutil.copytree(groups, target.with_suffix(''))
