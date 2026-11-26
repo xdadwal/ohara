@@ -8,6 +8,7 @@ spec = importlib.util.spec_from_file_location('config', ROOT / 'scripts/lib/conf
 config = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(config)
 
+
 class ConfigurationTests(unittest.TestCase):
     def load(self, text):
         with tempfile.TemporaryDirectory() as directory:
@@ -27,7 +28,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(self.load(base + 'SEERR_LAN_ONLY=true\n')['SEERR_LAN_ONLY'], 'true')
         with self.assertRaises(ValueError):
             self.load(base + 'SEERR_LAN_ONLY=false\n')
-        stack = (ROOT / 'compose/stack.yaml').read_text()
+        stack = (ROOT / 'compose/stack/homepage.yaml').read_text()
         self.assertIn('HOMEPAGE_VAR_ADGUARD_URL: http://${DNS_IP:-adguard}:3000', stack)
         self.assertIn('${SEERR_LAN_ONLY:+ (local network)}', stack)
         template = (ROOT / 'configs/homepage/services.yaml').read_text()
@@ -75,6 +76,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(len(images), 11)
         self.assertNotIn('ADGUARD_IMAGE', images)
         import adguard
+
         self.assertEqual(set(adguard.images(ROOT)), {'ADGUARD_IMAGE'})
         self.assertIn('LIDARR_IMAGE', images)
         self.assertIn('BAZARR_IMAGE', images)
@@ -87,12 +89,15 @@ class ConfigurationTests(unittest.TestCase):
             self.assertEqual(path.read_text(), 'first')
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
+
 if __name__ == '__main__':
     unittest.main()
+
 
 class PermissionTests(unittest.TestCase):
     def test_access_is_checked_as_container_user(self):
         import os
+
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             path.chmod(0o700)

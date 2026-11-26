@@ -3,8 +3,8 @@
 Immich is implemented as the independent `ohara-immich` Compose project in
 `compose/immich.yaml`. It is optional: the main setup/up/status commands never
 start it. The repository's reviewed target is v3.4.1 with immutable images in
-`versions/immich.env`; production had not yet been recreated onto that prepared
-pin at the time this paragraph was updated. The server/database pins match the
+`versions/immich.env`; production has run that pin since the 2026-11-18 rollout
+([verification record](verification.md)). The server/database pins match the
 official release files, while Valkey is deliberately advanced to the 9.1.3
 security release. PostgreSQL and Valkey run in containers with no published
 ports. Only Immich publishes `127.0.0.1:2283`.

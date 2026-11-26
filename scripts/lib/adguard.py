@@ -1,9 +1,9 @@
 """Private initial configuration and isolated Compose operations for AdGuard."""
+
 import base64
 import ipaddress
 import json
 import os
-import re
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -11,8 +11,8 @@ import urllib.request
 import config
 import credentials
 import host
+import media
 import runtime
-
 
 # Encrypted default upstream; its plain addresses only resolve that hostname.
 ENCRYPTED = 'https://dns.cloudflare.com/dns-query'
@@ -29,10 +29,18 @@ def settings(c):
         address = ipaddress.IPv4Address(c['ADGUARD_BIND_IP'])
         network = ipaddress.IPv4Network(c['ADGUARD_NETWORK'])
     except (KeyError, ValueError):
-        raise ValueError('Set ADGUARD_BIND_IP and ADGUARD_NETWORK to the reserved LAN IPv4 address and subnet') from None
-    private = any(network.subnet_of(ipaddress.IPv4Network(n)) for n in
-                  ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
-    if not private or address not in network or address in (network.network_address, network.broadcast_address):
+        raise ValueError(
+            'Set ADGUARD_BIND_IP and ADGUARD_NETWORK to the reserved LAN IPv4 address and subnet'
+        ) from None
+    private = any(
+        network.subnet_of(ipaddress.IPv4Network(n))
+        for n in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
+    )
+    if (
+        not private
+        or address not in network
+        or address in (network.network_address, network.broadcast_address)
+    ):
         raise ValueError('AdGuard requires a usable address inside an RFC1918 LAN subnet')
     return str(address), str(network)
 
@@ -43,38 +51,64 @@ def api_base(c):
     The bundled project's loopback dashboard, or, when the owner runs AdGuard on
     another device (DNS_IP), that device's dashboard on its default port.
     """
-    return f"http://{c['DNS_IP']}:3000" if c.get('DNS_IP') else 'http://127.0.0.1:3003'
+    return f'http://{c["DNS_IP"]}:3000' if c.get('DNS_IP') else 'http://127.0.0.1:3003'
 
 
 def require_bundled(c, action):
     if c.get('DNS_IP'):
-        raise ValueError(f'DNS_IP is set: LAN DNS runs on the owner\'s device, so "{action}" would change or '
-                         'restart the retired bundled AdGuard. Manage that device in its dashboard, or remove '
-                         'DNS_IP first for a deliberate rollback')
+        raise ValueError(
+            f'DNS_IP is set: LAN DNS runs on the owner\'s device, so "{action}" would change or '
+            'restart the retired bundled AdGuard. Manage that device in its dashboard, or remove '
+            'DNS_IP first for a deliberate rollback'
+        )
 
 
 def initial_config(c, password_hash):
     address, network = settings(c)
-    names = sorted({c[k] for k in ('DOMAIN', 'HOMEPAGE_HOST', 'REQUESTS_HOST',
-                                  'SPEED_HOST', 'JELLYFIN_HOST', 'NAVIDROME_HOST')} |
-                   {service+'.'+c['DOMAIN'] for service in
-                    ('adguard', 'radarr', 'sonarr', 'prowlarr', 'qbittorrent', 'lidarr', 'bazarr', 'immich', 'maintainerr', 'bambuddy', 'ntfy')})
+    names = sorted(
+        config.hostnames(c)
+        | {
+            service + '.' + c['DOMAIN']
+            for service in (
+                'adguard',
+                'radarr',
+                'sonarr',
+                'prowlarr',
+                'qbittorrent',
+                'lidarr',
+                'bazarr',
+                'immich',
+                'maintainerr',
+                'bambuddy',
+                'ntfy',
+            )
+        }
+    )
     return {
         'schema_version': 34,  # Unchanged in pinned AdGuard v0.107.80.
         'http': {'address': '0.0.0.0:3000'},
         'users': [{'name': 'admin', 'password': password_hash}],
         'dns': {
-            'bind_hosts': ['0.0.0.0'], 'port': 1053,
+            'bind_hosts': ['0.0.0.0'],
+            'port': 1053,
             'allowed_clients': [network],
-            **policy(c), 'use_private_ptr_resolvers': False,
+            **policy(c),
+            'use_private_ptr_resolvers': False,
             'hostsfile_enabled': False,
         },
         'filtering': {
-            'protection_enabled': True, 'filtering_enabled': True,
+            'protection_enabled': True,
+            'filtering_enabled': True,
             'rewrites': [{'domain': name, 'answer': address, 'enabled': True} for name in names],
         },
-        'filters': [{'enabled': True, 'url': 'https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt',
-                     'name': 'AdGuard DNS filter', 'id': 1}],
+        'filters': [
+            {
+                'enabled': True,
+                'url': 'https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt',
+                'name': 'AdGuard DNS filter',
+                'id': 1,
+            }
+        ],
         'dhcp': {'enabled': False},
         'querylog': {'enabled': True, 'file_enabled': True, 'interval': '24h'},
         'statistics': {'enabled': True, 'interval': '24h'},
@@ -82,40 +116,62 @@ def initial_config(c, password_hash):
 
 
 def password(root):
-    return credentials.read(root/'.env', credentials.DNS_KEYS,
-                            ignored=config.KEYS | (credentials.ALL_KEYS - credentials.DNS_KEYS))['ADGUARD_PASSWORD']
+    return credentials.read_env(root, credentials.DNS_KEYS)['ADGUARD_PASSWORD']
 
 
 def images(root):
-    values=config.parse(root/'versions/adguard.env',{'ADGUARD_IMAGE'})
-    if not re.fullmatch(r'adguard/adguardhome:v[0-9.]+@sha256:[a-f0-9]{64}',values['ADGUARD_IMAGE']):
-        raise ValueError('AdGuard requires an official immutable release image')
-    return values
+    return config.pinned_images(
+        root / 'versions/adguard.env',
+        {'ADGUARD_IMAGE'},
+        r'adguard/adguardhome:v[0-9.]+',
+        'AdGuard requires an official immutable release image',
+    )
 
 
 def compose(c, root, args, *, capture=False, timeout=60):
     # DNS never needs or receives media/Homepage credentials, even in its environment.
-    env = {k:v for k,v in os.environ.items() if not k.startswith('COMPOSE_') and
-           k not in config.KEYS | config.IMAGES | credentials.ALL_KEYS | credentials.DERIVED_WIDGET_KEYS}
-    values = {k:c[k] for k in ('DATA_ROOT', 'RUN_UID', 'RUN_GID', 'ADGUARD_BIND_IP')}
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith('COMPOSE_')
+        and k
+        not in config.KEYS | config.IMAGES | credentials.ALL_KEYS | credentials.DERIVED_WIDGET_KEYS
+    }
+    values = {k: c[k] for k in ('DATA_ROOT', 'RUN_UID', 'RUN_GID', 'ADGUARD_BIND_IP')}
     values['ADGUARD_IMAGE'] = images(root)['ADGUARD_IMAGE']
     values['COMPOSE_DISABLE_ENV_FILE'] = '1'
     env.update(values)
     prefix = runtime.docker_prefix()
     if prefix[:2] == ['sudo', '-n']:
-        prefix = prefix[:2]+['--preserve-env='+','.join(sorted(values))]+prefix[2:]
-    return runtime.run(prefix+['compose', '--project-directory', str(root), '--env-file', '/dev/null',
-                              '-f', str(root/'compose/adguard.yaml')]+args,
-                       capture=capture, timeout=timeout, env=env)
+        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
+    return runtime.run(
+        prefix
+        + [
+            'compose',
+            '--project-directory',
+            str(root),
+            '--env-file',
+            '/dev/null',
+            '-f',
+            str(root / 'compose/adguard.yaml'),
+        ]
+        + args,
+        capture=capture,
+        timeout=timeout,
+        env=env,
+    )
 
 
 def stop(c, root, *, allow_dns_outage=False):
     if not allow_dns_outage:
         raise ValueError(
             'Refusing to stop active LAN DNS; deploy/verify a fallback resolver '
-            'and rerun scripts/adguard stop --allow-dns-outage for an approved window')
+            'and rerun scripts/adguard stop --allow-dns-outage for an approved window'
+        )
     compose(c, root, ['stop'])
-    print('DNS stopped for the explicitly approved outage window; restore with scripts/adguard up and verify from a LAN client.')
+    print(
+        'DNS stopped for the explicitly approved outage window; restore with scripts/adguard up and verify from a LAN client.'
+    )
 
 
 def check(c, root):
@@ -124,21 +180,39 @@ def check(c, root):
     if set(model['services']) != {'adguard'}:
         raise ValueError('Unexpected service in optional DNS project')
     service = model['services']['adguard']
-    if set(service.get('networks',{})) != {'default','media'} or model['networks']['media'].get('name') != 'ohara_default' or model['networks']['media'].get('external') is not True:
-        raise ValueError('AdGuard widget requires only its private network and the existing media network')
-    ports = {(p['host_ip'], int(p['published']), int(p['target']), p.get('protocol', 'tcp')) for p in service['ports']}
-    if ports != {(c['ADGUARD_BIND_IP'], 53, 1053, 'tcp'), (c['ADGUARD_BIND_IP'], 53, 1053, 'udp'),
-                 ('127.0.0.1', 3003, 3000, 'tcp')}:
+    if (
+        set(service.get('networks', {})) != {'default', 'media'}
+        or model['networks']['media'].get('name') != 'ohara_default'
+        or model['networks']['media'].get('external') is not True
+    ):
+        raise ValueError(
+            'AdGuard widget requires only its private network and the existing media network'
+        )
+    ports = {
+        (p['host_ip'], int(p['published']), int(p['target']), p.get('protocol', 'tcp'))
+        for p in service['ports']
+    }
+    if ports != {
+        (c['ADGUARD_BIND_IP'], 53, 1053, 'tcp'),
+        (c['ADGUARD_BIND_IP'], 53, 1053, 'udp'),
+        ('127.0.0.1', 3003, 3000, 'tcp'),
+    }:
         raise ValueError('Unexpected AdGuard port exposure')
     if service.get('privileged') or service.get('network_mode') == 'host':
         raise ValueError('Privileged/host networking is prohibited')
-    if (service.get('user') != c['RUN_UID']+':'+c['RUN_GID'] or
-            set(service.get('cap_add', [])) != {'NET_BIND_SERVICE', 'NET_RAW'} or
-            set(service.get('cap_drop', [])) != {'ALL'} or
-            service.get('environment')):
-        raise ValueError('AdGuard must use the configured non-root user, bounded capabilities and no credential environment')
-    expected_mounts = {(str(Path(c['DATA_ROOT'])/'adguard'/name), '/opt/adguardhome/'+name)
-                       for name in ('conf', 'work')}
+    if (
+        service.get('user') != c['RUN_UID'] + ':' + c['RUN_GID']
+        or set(service.get('cap_add', [])) != {'NET_BIND_SERVICE', 'NET_RAW'}
+        or set(service.get('cap_drop', [])) != {'ALL'}
+        or service.get('environment')
+    ):
+        raise ValueError(
+            'AdGuard must use the configured non-root user, bounded capabilities and no credential environment'
+        )
+    expected_mounts = {
+        (str(Path(c['DATA_ROOT']) / 'adguard' / name), '/opt/adguardhome/' + name)
+        for name in ('conf', 'work')
+    }
     if {(v['source'], v['target']) for v in service.get('volumes', [])} != expected_mounts:
         raise ValueError('Unexpected AdGuard storage mounts')
     print('AdGuard Compose and LAN address configuration valid; router/client DNS unchanged.')
@@ -148,18 +222,22 @@ def prepare(c, root):
     check(c, root)
     secret = password(root)  # Validate before creating anything; never rotate an existing account.
     uid, gid = int(c['RUN_UID']), int(c['RUN_GID'])
-    base = Path(c['DATA_ROOT'])/'adguard'
-    for directory in (base, base/'conf', base/'work'):
+    base = Path(c['DATA_ROOT']) / 'adguard'
+    for directory in (base, base / 'conf', base / 'work'):
         host.ensure_directory(directory, uid, gid)
         if not config.directory_writable(directory, uid, gid):
-            raise ValueError('AdGuard storage is not writable by RUN_UID/RUN_GID; review ownership manually')
-    target = base/'conf/AdGuardHome.yaml'
+            raise ValueError(
+                'AdGuard storage is not writable by RUN_UID/RUN_GID; review ownership manually'
+            )
+    target = base / 'conf/AdGuardHome.yaml'
     if target.is_symlink():
         raise ValueError('Symlink AdGuard configuration is unsupported')
     if target.exists():
         state = target.stat()
         if not target.is_file() or state.st_mode & 0o077 or state.st_uid != uid:
-            raise ValueError('Existing AdGuard config must be a private regular file owned by RUN_UID; review it manually')
+            raise ValueError(
+                'Existing AdGuard config must be a private regular file owned by RUN_UID; review it manually'
+            )
         print('Preserving existing AdGuard configuration, accounts, rewrites and filters.')
         return
     try:
@@ -169,21 +247,45 @@ def prepare(c, root):
     if len(secret.encode()) > 72:
         raise ValueError('ADGUARD_PASSWORD must be at most 72 UTF-8 bytes for bcrypt')
     if os.geteuid() not in (0, uid):
-        raise ValueError('Initial AdGuard setup must run as RUN_UID or root to preserve private configuration ownership')
+        raise ValueError(
+            'Initial AdGuard setup must run as RUN_UID or root to preserve private configuration ownership'
+        )
     hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt(rounds=10)).decode()
-    created = config.create_file(target, json.dumps(initial_config(c, hashed), indent=2)+'\n')
+    created = config.create_file(target, json.dumps(initial_config(c, hashed), indent=2) + '\n')
     if created and os.geteuid() == 0:
         os.chown(target, uid, gid)
 
 
+def basic_auth(root):
+    """Authorization header value for the resolver's admin account."""
+    return 'Basic ' + base64.b64encode(('admin:' + password(root)).encode()).decode()
+
+
+def ensure_rewrite(c, root, name, conflict):
+    """Make NAME resolve to the server's LAN address in the resolver in use.
+
+    Adds one exact rewrite unless matching records already exist. A record for
+    NAME that is disabled or answers with another address raises
+    ValueError(conflict) before anything is written. Other records are untouched.
+    """
+    address, _ = settings(c)
+    api = media.Client(api_base(c))
+    api.headers['Authorization'] = basic_auth(root)
+    matches = [r for r in api.call('/control/rewrite/list') if r['domain'] == name]
+    if matches:
+        if not all(r['answer'] == address and r.get('enabled', True) for r in matches):
+            raise ValueError(conflict)
+    else:
+        api.call('/control/rewrite/add', {'domain': name, 'answer': address})
+
+
 def api(root, path, body=None, base='http://127.0.0.1:3003'):
-    token = base64.b64encode(('admin:'+password(root)).encode()).decode()
-    headers = {'Authorization': 'Basic '+token}
+    headers = {'Authorization': basic_auth(root)}
     data = None
     if body is not None:
         data = json.dumps(body).encode()
         headers['Content-Type'] = 'application/json'
-    request = urllib.request.Request(base+'/control/'+path, data=data, headers=headers)
+    request = urllib.request.Request(base + '/control/' + path, data=data, headers=headers)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open(request, timeout=30) as response:
         raw = response.read()
@@ -204,10 +306,16 @@ def upstreams(c, root):
         if all((info.get(key) or []) == value for key, value in wanted.items()):
             print('AdGuard upstreams already match the configured policy; nothing changed.')
             return 0
-        tested = api(root, 'test_upstream_dns', dict(wanted, private_upstream=info.get('local_ptr_upstreams') or []))
+        tested = api(
+            root,
+            'test_upstream_dns',
+            dict(wanted, private_upstream=info.get('local_ptr_upstreams') or []),
+        )
         failed = sorted(name for name, result in tested.items() if result != 'OK')
         if failed:
-            raise ValueError('AdGuard upstream test failed for '+', '.join(failed)+'; nothing changed')
+            raise ValueError(
+                'AdGuard upstream test failed for ' + ', '.join(failed) + '; nothing changed'
+            )
         api(root, 'dns_config', wanted)
         applied = api(root, 'dns_info')
     except (OSError, urllib.error.URLError):
@@ -217,18 +325,21 @@ def upstreams(c, root):
         raise ValueError('AdGuard did not report the requested upstreams; review the dashboard')
     for key in wanted:
         if (info.get(key) or []) != wanted[key]:
-            print(f'{key}: replaced '+(', '.join(info.get(key) or []) or '(empty)'))
-    print('AdGuard upstreams: '+', '.join(applied['upstream_dns'])+
-          '; fallback: '+(', '.join(applied.get('fallback_dns') or []) or 'none'))
+            print(f'{key}: replaced ' + (', '.join(info.get(key) or []) or '(empty)'))
+    print(
+        'AdGuard upstreams: '
+        + ', '.join(applied['upstream_dns'])
+        + '; fallback: '
+        + (', '.join(applied.get('fallback_dns') or []) or 'none')
+    )
     print('Verify UDP/TCP queries from a LAN device.')
     return 0
 
 
 def status(c, root):
-    secret = password(root)
-    token = base64.b64encode(('admin:'+secret).encode()).decode()
-    request = urllib.request.Request(api_base(c)+'/control/status',
-                                     headers={'Authorization': 'Basic '+token})
+    request = urllib.request.Request(
+        api_base(c) + '/control/status', headers={'Authorization': basic_auth(root)}
+    )
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         with opener.open(request, timeout=10) as response:
@@ -237,6 +348,6 @@ def status(c, root):
         print('AdGuard authenticated API unavailable; inspect the service locally.')
         return 1
     good = data.get('running') is True and data.get('dns_port') == (53 if c.get('DNS_IP') else 1053)
-    print('AdGuard: authenticated API reachable; DNS '+('running' if good else 'not ready'))
+    print('AdGuard: authenticated API reachable; DNS ' + ('running' if good else 'not ready'))
     print('Verify UDP/TCP queries from a LAN device before changing router DHCP DNS.')
     return 0 if good else 1

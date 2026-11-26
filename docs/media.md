@@ -20,7 +20,8 @@ Ohara includes the complete local stack:
 | qBittorrent | `http://qbittorrent:8081` | 8081 | Downloads |
 
 Jellyfin (`tv.xdadwal.in`), Seerr (`seerr.xdadwal.in`) and Navidrome
-(`NAVIDROME_HOST`) have public Nginx routes after explicit activation.
+(`NAVIDROME_HOST`) have public Nginx routes after explicit activation. On this host
+the owner restricted the Seerr site to the LAN ([LAN services](lan-services.md#seerr-lan-only-since-2026-11-18)).
 `music.xdadwal.in` is the default Navidrome hostname; change NAVIDROME_HOST if needed. Every backend host port binds to loopback. No peer, discovery, UPnP,
 or DLNA ports are published. Normal outbound torrent connections work; inbound
 peer connectivity is not configured. No VPN service or routing policy is assumed.
@@ -37,7 +38,8 @@ Create and fill the private root `.env` described in [credentials.md](credential
 then run host setup and `scripts/up`. Your supplied media passwords and API keys
 are read from `.env` (0600). The initial username is `admin`.
 Jellyfin's password is also used for its Seerr media-server login, as required by
-that integration; other services have separate passwords. Neither passwords nor
+that integration; each other service has its own password entry
+([credentials](credentials.md) records this host's shared-password decision). Neither passwords nor
 API keys are printed. Keep this recovery file in encrypted backups.
 
 After all local services are ready, run as the checkout owner:
@@ -59,7 +61,8 @@ quality and metadata profiles; review those profiles before adding artists.
 No source/indexer is chosen for you.
 
 It initializes Navidrome's `admin` account through the supported application API
-using supplied `NAVIDROME_PASSWORD` (at least 16 characters); no additional API key
+using supplied `NAVIDROME_PASSWORD` (at least 16 characters when setup creates the
+account); no additional API key
 is needed. Existing accounts must pass login verification; setup does not reset
 them. An authentication mismatch stops setup for manual review. Music flows from
 Lidarr → `/data/library/music` → Navidrome scan/playback.
@@ -378,7 +381,8 @@ Storage API references: [qBittorrent Web API](https://github.com/qbittorrent/qBi
 [Radarr manual import controller](https://github.com/Radarr/Radarr/blob/develop/src/Radarr.Api.V3/ManualImport/ManualImportController.cs),
 [Seerr settings and scan jobs](https://github.com/seerr-team/seerr/blob/develop/server/routes/settings/index.ts).
 
-For optional outgoing Letterboxd diary sync, use
+For the optional LetterboxdSync plugin (outgoing Letterboxd diary sync, which its
+guide keeps disabled for now), use
 [scripts/jellyfin-letterboxd and its guide](jellyfin-letterboxd.md). Account linking
 is private in the plugin UI; installation does not enable backfills or Seerr
 automation. Restart only when playback permits.

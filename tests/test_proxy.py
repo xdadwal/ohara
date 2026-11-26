@@ -5,32 +5,36 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
+import re
+
 import config
 import proxy
-import re
+
 
 class ProxyTests(unittest.TestCase):
     def test_reusable_routes_match_stable_host_policy(self):
-        c = config.load(ROOT/'.env.example')
+        c = config.load(ROOT / '.env.example')
         c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
         rendered = proxy.render(c, ROOT, https=True, acme_names={'files.xdadwal.in'})
-        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        deployed = (ROOT / 'configs/nginx/deployed/ohara.conf').read_text()
         # DNS-mode migration appends protected music routes while preserving the
         # existing shared HTTP block and other server ordering.
         self.assertIn('listen [::]:443 ssl;', proxy.navidrome_config(c, ROOT))
         self.assertIn('access_log off;\n    error_log /dev/null;', rendered)
-        rendered = rendered.replace('\n'+proxy.navidrome_config(c, ROOT), '')
-        rendered = rendered.replace(c['NAVIDROME_HOST']+' ', '')
+        rendered = rendered.replace('\n' + proxy.navidrome_config(c, ROOT), '')
+        rendered = rendered.replace(c['NAVIDROME_HOST'] + ' ', '')
         rendered = rendered.replace('    access_log off;\n    error_log /dev/null;\n', '')
         blocks = re.findall(r'(?ms)^server \{\n.*?^\}\n?', deployed)
-        music = [block for block in blocks if 'server_name '+c['NAVIDROME_HOST']+';' in block]
+        music = [block for block in blocks if 'server_name ' + c['NAVIDROME_HOST'] + ';' in block]
         self.assertEqual(len(music), 2)
         for block in music:
             self.assertIn('access_log off;', block)
             self.assertIn('error_log /dev/null;', block)
             if 'listen 443 ssl;' in block:
                 expected = proxy.navidrome_config(c, ROOT)
-                self.assertEqual(block.replace('/live/ohara-wildcard/', '/live/ohara/').split(), expected.split())
+                self.assertEqual(
+                    block.replace('/live/ohara-wildcard/', '/live/ohara/').split(), expected.split()
+                )
             else:
                 self.assertIn('return 301 https://$host$request_uri;', block)
             deployed = deployed.replace(block, '')
@@ -45,10 +49,15 @@ class ProxyTests(unittest.TestCase):
             if 'listen 443 ssl;' in block:
                 deployed = deployed.replace(block, block.replace(guard, ''))
             else:
-                self.assertEqual(block.split(), ('server { listen 80; listen [::]:80; server_name seerr.xdadwal.in; '
-                                                 '# Reject before redirects, including callers supplying forged forwarding headers. '
-                                                 'if ($ohara_lan_allowed = 0) { return 403; } '
-                                                 'return 301 https://$host$request_uri; }').split())
+                self.assertEqual(
+                    block.split(),
+                    (
+                        'server { listen 80; listen [::]:80; server_name seerr.xdadwal.in; '
+                        '# Reject before redirects, including callers supplying forged forwarding headers. '
+                        'if ($ohara_lan_allowed = 0) { return 403; } '
+                        'return 301 https://$host$request_uri; }'
+                    ).split(),
+                )
                 deployed = deployed.replace(block, '')
         # Host-specific: www redirects straight to the apex. The reusable
         # templates have no such route (their HTTP-mode certificate does not
@@ -64,21 +73,31 @@ class ProxyTests(unittest.TestCase):
             deployed = deployed.replace(block, '')
         shared = 'server_name ohara.xdadwal.in xdadwal.in files.xdadwal.in speed.xdadwal.in tv.xdadwal.in;'
         self.assertEqual(deployed.count(shared), 1)
-        deployed = deployed.replace(shared, shared[:-1]+' seerr.xdadwal.in;')
+        deployed = deployed.replace(shared, shared[:-1] + ' seerr.xdadwal.in;')
+
         def normalize(text):
             # Localhost uses certificates that fresh hosts do not yet have.
             # Ignore only these two explicit host-specific blocks and harmless
             # whitespace/comments/certificate-lineage/host-order differences.
-            text = re.sub(r'(?ms)^server \{\n(?:(?!^\}).)*server_name localhost 127\.0\.0\.1;(?:(?!^\}).)*^\}\n?', '', text)
+            text = re.sub(
+                r'(?ms)^server \{\n(?:(?!^\}).)*server_name localhost 127\.0\.0\.1;(?:(?!^\}).)*^\}\n?',
+                '',
+                text,
+            )
             text = text.replace('/live/ohara-wildcard/', '/live/ohara/')
-            text = re.sub(r'server_name ([^;]+);', lambda m:'server_name '+' '.join(sorted(m[1].split()))+';',text)
+            text = re.sub(
+                r'server_name ([^;]+);',
+                lambda m: 'server_name ' + ' '.join(sorted(m[1].split())) + ';',
+                text,
+            )
             text = re.sub(r'(?m)^\s*#.*$', '', text)
             return re.sub(r'\s+', ' ', text).strip()
+
         self.assertEqual(normalize(rendered), normalize(deployed))
         self.assertEqual(deployed.count('server_name localhost 127.0.0.1;'), 2)
         self.assertIn('return 302 https://xdadwal.in$request_uri;', deployed)
         # The temporary public-IP probe was removed on 2026-11-26.
-        self.assertFalse((ROOT/'configs/nginx/deployed/ohara-public-ip-test.conf').exists())
+        self.assertFalse((ROOT / 'configs/nginx/deployed/ohara-public-ip-test.conf').exists())
         self.assertNotIn('45.120.160.21', deployed)
 
     def test_bootstrap_never_references_missing_certificates(self):
@@ -99,9 +118,9 @@ class ProxyTests(unittest.TestCase):
 
     def test_seerr_imageproxy_is_denied_in_generic_and_deployed_routes(self):
         generic = proxy.render(config.load(ROOT / '.env.example'), ROOT, https=True)
-        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
+        deployed = (ROOT / 'configs/nginx/deployed/ohara.conf').read_text()
         raw_guard = 'if ($request_uri ~* "^/imageproxy(?:/|$|\\?)") {\n        return 404;\n    }'
-        denial = "location ~* ^/imageproxy(?:/|$) {\n        return 404;\n    }"
+        denial = 'location ~* ^/imageproxy(?:/|$) {\n        return 404;\n    }'
         for text in (generic, deployed):
             self.assertIn(raw_guard, text)
             self.assertIn(denial, text)
@@ -109,11 +128,15 @@ class ProxyTests(unittest.TestCase):
             self.assertLess(text.index(denial), text.index('proxy_pass http://127.0.0.1:5055;'))
 
     def test_deployed_seerr_route_is_lan_only(self):
-        deployed = (ROOT/'configs/nginx/deployed/ohara.conf').read_text()
-        lan = (ROOT/'configs/nginx/deployed/ohara-lan.conf').read_text()
+        deployed = (ROOT / 'configs/nginx/deployed/ohara.conf').read_text()
+        lan = (ROOT / 'configs/nginx/deployed/ohara-lan.conf').read_text()
         guard = 'if ($ohara_lan_allowed = 0) { return 403; }'
         self.assertIn('geo $ohara_lan_allowed {', lan)
-        servers = [block for block in deployed.split('\nserver {') if 'server_name seerr.xdadwal.in;' in block]
+        servers = [
+            block
+            for block in deployed.split('\nserver {')
+            if 'server_name seerr.xdadwal.in;' in block
+        ]
         self.assertEqual(len(servers), 2)
         for block in servers:
             self.assertIn(guard, block)
@@ -130,9 +153,11 @@ class ProxyTests(unittest.TestCase):
             target = Path(directory) / 'ohara.conf'
             target.write_text('# Managed by Ohara\nold')
             calls = []
+
             def failing(args, **kwargs):
                 calls.append(args)
                 raise RuntimeError('nginx test failed')
+
             with self.assertRaises(RuntimeError):
                 proxy.apply_config('# Managed by Ohara\nnew', target=target, runner=failing)
             self.assertEqual(target.read_text(), '# Managed by Ohara\nold')
@@ -143,12 +168,14 @@ class ProxyTests(unittest.TestCase):
             target = Path(directory) / 'ohara.conf'
             target.write_text('# Managed by Ohara\nold')
             count = 0
+
             def failing(args, **kwargs):
                 nonlocal count
                 if 'reload' in args:
                     count += 1
                     if count == 1:
                         raise RuntimeError('reload failed')
+
             with self.assertRaises(RuntimeError):
                 proxy.apply_config('# Managed by Ohara\nnew', target=target, runner=failing)
             self.assertEqual(target.read_text(), '# Managed by Ohara\nold')
@@ -167,8 +194,10 @@ class ProxyTests(unittest.TestCase):
         self.assertIn('&& /usr/bin/systemctl reload nginx', proxy.RENEW_HOOK)
         self.assertNotIn(str(ROOT), proxy.RENEW_HOOK)
 
+
 if __name__ == '__main__':
     unittest.main()
+
 
 class AcmeMigrationTests(unittest.TestCase):
     def test_new_names_get_challenge_handler_without_removing_https(self):
@@ -177,7 +206,7 @@ class AcmeMigrationTests(unittest.TestCase):
         c['SPEED_HOST'] = 'share.xdadwal.in'
         candidate = proxy.challenge_config(old, c)
         self.assertTrue(candidate.startswith(old))
-        addition = candidate[len(old):]
+        addition = candidate[len(old) :]
         self.assertIn('server_name share.xdadwal.in;', addition)
         self.assertIn('/.well-known/acme-challenge/', addition)
         self.assertNotIn('proxy_pass', addition)
@@ -185,18 +214,26 @@ class AcmeMigrationTests(unittest.TestCase):
 
     def test_failed_acme_restores_working_routes(self):
         from unittest.mock import patch
+
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / 'ohara.conf'
             c = config.load(ROOT / '.env.example')
             old = proxy.render(c, ROOT, https=True)
             target.write_text(old)
             c['SPEED_HOST'] = 'share.xdadwal.in'
+
             def apply(text):
                 target.write_text(text)
+
             def failed_issuance(args, **kwargs):
                 self.assertIn('server_name share.xdadwal.in;', target.read_text())
                 raise RuntimeError('ACME failed')
-            with patch.object(proxy, 'TARGET', target), patch.object(proxy, 'apply_config', side_effect=apply), patch.object(proxy, 'run', side_effect=failed_issuance):
+
+            with (
+                patch.object(proxy, 'TARGET', target),
+                patch.object(proxy, 'apply_config', side_effect=apply),
+                patch.object(proxy, 'run', side_effect=failed_issuance),
+            ):
                 with self.assertRaisesRegex(RuntimeError, 'ACME failed'):
                     proxy.activate(c, ROOT, accounts_ready=True, agree=True)
             self.assertEqual(target.read_text(), old)

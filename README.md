@@ -23,7 +23,7 @@ media settings on another machine, or to migrate private state safely.
 | Bazarr | Movie and series subtitles | Private administration (6767) |
 | Prowlarr | Indexer management and sync | Private administration |
 | qBittorrent | Downloads | Private administration |
-| Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation |
+| Seerr | Media discovery and requests; successor to Jellyseerr | `seerr.xdadwal.in` after activation; LAN-only on this host |
 | OpenSpeedTest | Browser-based speed test to this server | `speed.xdadwal.in` after activation |
 | Nginx + Certbot | Reverse proxy, certificates, and renewal | Public TCP 80/443 |
 | Immich (optional separate project) | Personal photos/videos; machine learning disabled | immich.xdadwal.in; owner setup complete |
@@ -173,20 +173,32 @@ traffic keep their existing routes. Run `scripts/tailscale --dry-run`, then
 Follow [Tailscale setup](docs/tailscale.md) for routing flags, SSH access policy
 and verification. No additional .env credentials or Compose service are needed.
 
+## Optional notifications
+
+Use [ntfy setup](docs/ntfy.md) for the independent server, authenticated phone
+subscription and systemd alerts for service outages, disk disconnects and recovery.
+
+Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](docs/orcaslicer.md).
+
 ## For agents and contributors
 
-Start with [AGENTS.md](AGENTS.md), [decisions](docs/decisions.md), and
+Start with [AGENTS.md](AGENTS.md) for the rules and the [guide index](docs/README.md)
+for everything else. Commands are listed in [scripts/README.md](scripts/README.md),
+config files in [configs/README.md](configs/README.md) and tests in
+[tests/README.md](tests/README.md). Background: [decisions](docs/decisions.md) and
 [the approved implementation plan](docs/superpowers/plans/2026-10-15-ohara-setup.md).
 The current approved one-by-one security maintenance checklist is
 [security update remediation](docs/superpowers/plans/2026-11-17-security-update-remediation.md).
 
 ```sh
-python3 -m unittest discover -s tests -v
-./tests/test_setup.sh
-./tests/test_cli.sh
-./tests/static.sh       # requires ShellCheck
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # once
+./tests/verify.sh       # lint, unit tests, CLI and static checks; requires ShellCheck
+./tests/lint.sh --fix   # apply the formatter and safe lint fixes (ruff.toml)
 ./tests/smoke.sh        # Docker; isolated disposable project and dummy data
 ```
+
+`tests/verify.sh` runs `tests/lint.sh`, `python3 -m unittest discover -s tests`,
+`tests/test_setup.sh`, `tests/test_cli.sh` and `tests/static.sh`; each also runs alone.
 
 `./scripts/check --static` checks configuration/Compose without requiring local
 storage or private files. It requires Docker CLI/Compose but no running daemon.
@@ -194,10 +206,3 @@ Host provisioning, real DNS/port forwarding, and public HTTPS need their own
 verification; local tests cannot establish those outcomes.
 
 MIT licensed. Individual services retain their own licenses.
-
-## Optional notifications
-
-Use [ntfy setup](docs/ntfy.md) for the independent server, authenticated phone
-subscription and systemd alerts for service outages, disk disconnects and recovery.
-
-Optional owner-approved headless OrcaSlicer backend: see [setup and recovery](docs/orcaslicer.md).

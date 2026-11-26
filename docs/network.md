@@ -116,7 +116,7 @@ address outside the ISP router's DHCP range, reserved there.
    clash with the ISP router. Connect a computer to the device alone, with no
    cable to the ISP router, and run:
 
-   ```bash
+   ```sh
    ssh root@192.168.1.1 'LAN_IP=192.168.1.105 GATEWAY=192.168.1.1 sh -s network' < configs/openwrt/setup.sh
    ```
 
@@ -126,7 +126,7 @@ address outside the ISP router's DHCP range, reserved there.
    another LAN port.
 2. **DNS services.** From the server:
 
-   ```bash
+   ```sh
    ssh root@192.168.1.105 'sh -s dns' < configs/openwrt/setup.sh
    ```
 
@@ -153,7 +153,7 @@ address outside the ISP router's DHCP range, reserved there.
      and 40 here against the ISP router's 3 and 157). Then set the radio
      standards and country (2.4 GHz `HE20`, both radios `IN`):
 
-     ```bash
+     ```sh
      ssh root@192.168.1.105 'COUNTRY=IN sh -s wifi' < configs/openwrt/setup.sh
      ```
 
@@ -164,7 +164,7 @@ address outside the ISP router's DHCP range, reserved there.
    - ISP router UI: forward DNS to 192.168.1.105 and reserve that address.
 4. **Hardening**, only after a key login works:
 
-   ```bash
+   ```sh
    ssh root@192.168.1.105 'ZONENAME=Asia/Kolkata TIMEZONE=IST-5:30 sh -s harden' < configs/openwrt/setup.sh
    ```
 
@@ -188,7 +188,7 @@ hashes, so never commit, print or upload it.
 
 From the server:
 
-```bash
+```sh
 ping -c 3 192.168.1.1                                   # gateway through the OpenWrt bridge
 dig +short example.org @192.168.1.1                      # resolves through AdGuard and Unbound
 dig +short doubleclick.net @192.168.1.1                  # 0.0.0.0 (filtered)
@@ -236,8 +236,12 @@ between the two access points, and reachability from outside the LAN.
 
 ## Rollback
 
-- DNS: on the server run `scripts/adguard up`, verify with `scripts/adguard
+- DNS: on the server first remove `DNS_IP` from private `.env` and restore the
+  bundled account's `ADGUARD_PASSWORD` (`scripts/adguard up` refuses to run while
+  `DNS_IP` is set). Then run `scripts/adguard up`, verify with `scripts/adguard
   status`, set the ISP router's DNS back to 192.168.1.101, then reinstall alerts.
+  [adguard.md](adguard.md#this-host-bundled-adguard-retired-for-an-external-one-2026-11-24)
+  has the full rollback, including the LAN route and Homepage.
 - OpenWrt as a router again: `apk add dnsmasq odhcpd-ipv6only`, restore the
   original `network` and `dhcp` files (`/root/backup-pre-ap/` on this device,
   `/root/ohara-backup/` after a scripted setup) into `/etc/config/`, and restart the

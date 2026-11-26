@@ -1,53 +1,89 @@
 """Read user-managed literal credential files. Never create or rotate secrets."""
+
 import os
 from pathlib import Path
 import re
 import stat
 
 HOMEPAGE_KEYS = {'HOMEPAGE_AUTH_ENABLED', 'HOMEPAGE_AUTH_SECRET', 'HOMEPAGE_AUTH_PASSWORD'}
-WIDGET_KEYS = {'HOMEPAGE_VAR_JELLYFIN_API_KEY', 'HOMEPAGE_VAR_SEERR_API_KEY', 'HOMEPAGE_VAR_IMMICH_API_KEY', 'HOMEPAGE_VAR_BAMBUDDY_API_KEY'}
+WIDGET_KEYS = {
+    'HOMEPAGE_VAR_JELLYFIN_API_KEY',
+    'HOMEPAGE_VAR_SEERR_API_KEY',
+    'HOMEPAGE_VAR_IMMICH_API_KEY',
+    'HOMEPAGE_VAR_BAMBUDDY_API_KEY',
+}
 MEDIA_KEYS = {'JELLYFIN_PASSWORD', 'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'} | {
-    name + suffix for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR') for suffix in ('_API_KEY', '_PASSWORD')}
+    name + suffix
+    for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR')
+    for suffix in ('_API_KEY', '_PASSWORD')
+}
 # Media logins already belong to the applications. Commands that only log in or
 # forward a value accept any nonempty one; the 16-character rule applies where
 # setup creates the account. These six are read only by setup and may be absent.
-SETUP_ONLY_KEYS = {name+'_PASSWORD' for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR', 'JELLYFIN')}
+SETUP_ONLY_KEYS = {
+    name + '_PASSWORD' for name in ('RADARR', 'SONARR', 'PROWLARR', 'LIDARR', 'BAZARR', 'JELLYFIN')
+}
 MEDIA_PASSWORD_KEYS = SETUP_ONLY_KEYS | {'QBITTORRENT_PASSWORD', 'NAVIDROME_PASSWORD'}
 NEW_ACCOUNT_MINIMUM = 16
 BAMBUDDY_OWNER_KEYS = {'BAMBUDDY_USERNAME', 'BAMBUDDY_PASSWORD'}
 # Retired Kutt inputs: accepted but ignored; remove them from .env.
-KUTT_KEYS = {'KUTT_DB_PASSWORD','KUTT_JWT_SECRET','KUTT_PASSWORD'}
+KUTT_KEYS = {'KUTT_DB_PASSWORD', 'KUTT_JWT_SECRET', 'KUTT_PASSWORD'}
 NTFY_KEYS = {'NTFY_PASSWORD'}
 NTFY_WIDGET_KEYS = {'NTFY_HOMEPAGE_PASSWORD'}
 DNS_KEYS = {'ADGUARD_PASSWORD'}
 IMMICH_KEYS = {'IMMICH_DB_PASSWORD'}
 IMMICH_OAUTH_KEYS = {'IMMICH_GOOGLE_CLIENT_ID', 'IMMICH_GOOGLE_CLIENT_SECRET'}
-ALL_KEYS = BAMBUDDY_OWNER_KEYS | HOMEPAGE_KEYS | MEDIA_KEYS | WIDGET_KEYS | NTFY_KEYS | DNS_KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS
-DERIVED_WIDGET_KEYS = {'HOMEPAGE_VAR_NAVIDROME_TOKEN', 'HOMEPAGE_VAR_RADARR_API_KEY',
-    'HOMEPAGE_VAR_SONARR_API_KEY', 'HOMEPAGE_VAR_LIDARR_API_KEY',
-    'HOMEPAGE_VAR_QBITTORRENT_PASSWORD', 'HOMEPAGE_VAR_ADGUARD_PASSWORD', 'HOMEPAGE_VAR_NTFY_PASSWORD'}
+ALL_KEYS = (
+    BAMBUDDY_OWNER_KEYS
+    | HOMEPAGE_KEYS
+    | MEDIA_KEYS
+    | WIDGET_KEYS
+    | NTFY_KEYS
+    | DNS_KEYS
+    | IMMICH_KEYS
+    | IMMICH_OAUTH_KEYS
+    | NTFY_WIDGET_KEYS
+    | KUTT_KEYS
+)
+DERIVED_WIDGET_KEYS = {
+    'HOMEPAGE_VAR_NAVIDROME_TOKEN',
+    'HOMEPAGE_VAR_RADARR_API_KEY',
+    'HOMEPAGE_VAR_SONARR_API_KEY',
+    'HOMEPAGE_VAR_LIDARR_API_KEY',
+    'HOMEPAGE_VAR_QBITTORRENT_PASSWORD',
+    'HOMEPAGE_VAR_ADGUARD_PASSWORD',
+    'HOMEPAGE_VAR_NTFY_PASSWORD',
+}
 
 
 def admin_widget_environment(root, media):
     """Forward only explicitly selected widget credentials under Homepage aliases."""
     import config
-    values={f'HOMEPAGE_VAR_{name}_API_KEY':media[name+'_API_KEY'] for name in ('RADARR','SONARR','LIDARR')}
-    values['HOMEPAGE_VAR_QBITTORRENT_PASSWORD']=media['QBITTORRENT_PASSWORD']
-    dns=read(root/'.env',set(),DNS_KEYS,config.KEYS | (ALL_KEYS-DNS_KEYS))
+
+    values = {
+        f'HOMEPAGE_VAR_{name}_API_KEY': media[name + '_API_KEY']
+        for name in ('RADARR', 'SONARR', 'LIDARR')
+    }
+    values['HOMEPAGE_VAR_QBITTORRENT_PASSWORD'] = media['QBITTORRENT_PASSWORD']
+    dns = read(root / '.env', set(), DNS_KEYS, config.KEYS | (ALL_KEYS - DNS_KEYS))
     if 'ADGUARD_PASSWORD' in dns:
-        values['HOMEPAGE_VAR_ADGUARD_PASSWORD']=dns['ADGUARD_PASSWORD']
-    reader=read(root/'.env',set(),NTFY_WIDGET_KEYS,config.KEYS | (ALL_KEYS-NTFY_WIDGET_KEYS))
+        values['HOMEPAGE_VAR_ADGUARD_PASSWORD'] = dns['ADGUARD_PASSWORD']
+    reader = read(
+        root / '.env', set(), NTFY_WIDGET_KEYS, config.KEYS | (ALL_KEYS - NTFY_WIDGET_KEYS)
+    )
     if 'NTFY_HOMEPAGE_PASSWORD' in reader:
-        if len(reader['NTFY_HOMEPAGE_PASSWORD'].encode())>72:raise ValueError('NTFY_HOMEPAGE_PASSWORD exceeds bcrypt limit')
-        values['HOMEPAGE_VAR_NTFY_PASSWORD']=reader['NTFY_HOMEPAGE_PASSWORD']
+        if len(reader['NTFY_HOMEPAGE_PASSWORD'].encode()) > 72:
+            raise ValueError('NTFY_HOMEPAGE_PASSWORD exceeds bcrypt limit')
+        values['HOMEPAGE_VAR_NTFY_PASSWORD'] = reader['NTFY_HOMEPAGE_PASSWORD']
     return values
 
 
 def navidrome_widget_environment(media):
     """Subsonic token auth; derive locally, never forward the account password."""
     import hashlib
+
     # Must match the non-secret salt in configs/homepage/services.yaml.
-    token = hashlib.md5((media['NAVIDROME_PASSWORD']+'ohara-homepage').encode()).hexdigest()
+    token = hashlib.md5((media['NAVIDROME_PASSWORD'] + 'ohara-homepage').encode()).hexdigest()
     return {'HOMEPAGE_VAR_NAVIDROME_TOKEN': token}
 
 
@@ -58,7 +94,9 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     except OSError:
-        raise ValueError(f'Missing/unreadable user-created private config: {path.name}; follow docs/credentials.md') from None
+        raise ValueError(
+            f'Missing/unreadable user-created private config: {path.name}; follow docs/credentials.md'
+        ) from None
     with os.fdopen(descriptor) as stream:
         state = os.fstat(stream.fileno())
         if not stat.S_ISREG(state.st_mode) or state.st_mode & 0o077:
@@ -78,10 +116,14 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
                 raise ValueError(f'{key}: control characters are unsupported')
             if key in WIDGET_KEYS:
                 if not re.fullmatch(r'[!-~]{20,512}', value):
-                    raise ValueError(f'{key}: copy the actual application API key into the private file')
+                    raise ValueError(
+                        f'{key}: copy the actual application API key into the private file'
+                    )
             elif key in IMMICH_OAUTH_KEYS:
                 if not value:
-                    raise ValueError(f'{key}: supply the actual Google OAuth client value privately')
+                    raise ValueError(
+                        f'{key}: supply the actual Google OAuth client value privately'
+                    )
             elif key == 'HOMEPAGE_AUTH_ENABLED':
                 if value != 'true':
                     raise ValueError('HOMEPAGE_AUTH_ENABLED must be true')
@@ -89,16 +131,40 @@ def read(path, keys, optional=frozenset(), ignored=frozenset(), *, minimum_lengt
                 if not re.fullmatch(r'[a-fA-F0-9]{32}', value):
                     raise ValueError(f'{key}: supply a 32-character hexadecimal API key')
             else:
-                minimum = (1 if key in DNS_KEYS else
-                           32 if key.endswith('_SECRET') else
-                           8 if key == 'HOMEPAGE_AUTH_PASSWORD' else 16)
+                minimum = (
+                    1
+                    if key in DNS_KEYS
+                    else 32
+                    if key.endswith('_SECRET')
+                    else 8
+                    if key == 'HOMEPAGE_AUTH_PASSWORD'
+                    else 16
+                )
                 minimum = (minimum_lengths or {}).get(key, minimum)
                 if len(value) < minimum:
                     raise ValueError(f'{key}: supply at least {minimum} characters')
             values[key] = value
         if not keys <= set(values):
-            raise ValueError(f'{path.name}: missing required keys: '+', '.join(sorted(keys-set(values))))
+            raise ValueError(
+                f'{path.name}: missing required keys: ' + ', '.join(sorted(keys - set(values)))
+            )
     return values
+
+
+def read_env(root, keys, *, minimum_lengths=None):
+    """Return only KEYS from the private ROOT/.env, validated as in `read`.
+
+    Every other known setting or credential in the file is skipped without
+    being returned, so a caller holds nothing beyond what it asked for.
+    """
+    import config
+
+    return read(
+        root / '.env',
+        keys,
+        ignored=config.KEYS | (ALL_KEYS - keys),
+        minimum_lengths=minimum_lengths,
+    )
 
 
 def require_new_account(values, keys, purpose):
@@ -107,20 +173,37 @@ def require_new_account(values, keys, purpose):
         if key not in values:
             raise ValueError(f'{purpose} needs {key} in .env; see docs/credentials.md')
         if len(values[key]) < NEW_ACCOUNT_MINIMUM:
-            raise ValueError(f'{key}: {purpose} creates this login; supply at least {NEW_ACCOUNT_MINIMUM} characters')
+            raise ValueError(
+                f'{key}: {purpose} creates this login; supply at least {NEW_ACCOUNT_MINIMUM} characters'
+            )
 
 
 def require_present(values, keys, purpose):
     missing = sorted(set(keys) - set(values))
     if missing:
-        raise ValueError(f'{purpose} needs '+', '.join(missing)+' in .env; see docs/credentials.md')
+        raise ValueError(
+            f'{purpose} needs ' + ', '.join(missing) + ' in .env; see docs/credentials.md'
+        )
 
 
 def load(root):
     """Validate all input before provisioning/storage changes; leave sources untouched."""
     import config
-    values = read(root/'.env', HOMEPAGE_KEYS | (MEDIA_KEYS - SETUP_ONLY_KEYS), WIDGET_KEYS | DNS_KEYS | SETUP_ONLY_KEYS,
-                  config.KEYS | IMMICH_KEYS | IMMICH_OAUTH_KEYS | NTFY_KEYS | NTFY_WIDGET_KEYS | KUTT_KEYS | BAMBUDDY_OWNER_KEYS,
-                  minimum_lengths={key: 1 for key in MEDIA_PASSWORD_KEYS})
-    return ({k:v for k,v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
-            {k:v for k,v in values.items() if k in MEDIA_KEYS})
+
+    values = read(
+        root / '.env',
+        HOMEPAGE_KEYS | (MEDIA_KEYS - SETUP_ONLY_KEYS),
+        WIDGET_KEYS | DNS_KEYS | SETUP_ONLY_KEYS,
+        config.KEYS
+        | IMMICH_KEYS
+        | IMMICH_OAUTH_KEYS
+        | NTFY_KEYS
+        | NTFY_WIDGET_KEYS
+        | KUTT_KEYS
+        | BAMBUDDY_OWNER_KEYS,
+        minimum_lengths={key: 1 for key in MEDIA_PASSWORD_KEYS},
+    )
+    return (
+        {k: v for k, v in values.items() if k in HOMEPAGE_KEYS | WIDGET_KEYS},
+        {k: v for k, v in values.items() if k in MEDIA_KEYS},
+    )

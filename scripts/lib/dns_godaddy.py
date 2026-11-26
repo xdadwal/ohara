@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Standalone Certbot DNS hooks; installed outside the checkout for renewal."""
+
 import fcntl
 import hashlib
 import json
@@ -36,9 +37,15 @@ def credentials(path):
     if not isinstance(data, dict) or set(data) != {'domain', 'token'}:
         raise ValueError('DNS credentials require exactly domain and token fields')
     domain = data['domain']
-    if (not isinstance(domain, str) or len(domain) > 253 or '.' not in domain
-            or any(not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label)
-                   for label in domain.split('.'))):
+    if (
+        not isinstance(domain, str)
+        or len(domain) > 253
+        or '.' not in domain
+        or any(
+            not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label)
+            for label in domain.split('.')
+        )
+    ):
         raise ValueError('DNS credential domain must be a lowercase DNS zone name')
     token = data['token']
     if not isinstance(token, str) or not re.fullmatch(r'[!-~]{16,4096}', token):
@@ -64,24 +71,33 @@ class GoDaddy:
 
     def request(self, method, suffix='', body=None):
         request = urllib.request.Request(
-            self.url + suffix, method=method,
+            self.url + suffix,
+            method=method,
             data=None if body is None else json.dumps(body).encode(),
-            headers={'Authorization': 'Bearer ' + self.data['token'],
-                     'Content-Type': 'application/json', 'Accept': 'application/json'})
+            headers={
+                'Authorization': 'Bearer ' + self.data['token'],
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+        )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 raw = response.read()
                 return json.loads(raw) if raw else None
         except urllib.error.HTTPError as error:
             # Provider bodies may echo credentials; expose only the status.
-            raise RuntimeError(f'GoDaddy DNS API returned HTTP {error.code}; check PAT scope and account access') from None
+            raise RuntimeError(
+                f'GoDaddy DNS API returned HTTP {error.code}; check PAT scope and account access'
+            ) from None
         except (OSError, ValueError):
             raise RuntimeError('GoDaddy DNS API request failed; response suppressed') from None
 
     def records(self, name):
         result = []
         for page in range(1, 101):
-            query = urllib.parse.urlencode({'type': 'TXT', 'name': name, 'page': page, 'pageSize': 100})
+            query = urllib.parse.urlencode(
+                {'type': 'TXT', 'name': name, 'page': page, 'pageSize': 100}
+            )
             data = self.request('GET', '?' + query)
             if not isinstance(data, dict) or not isinstance(data.get('items'), list):
                 raise RuntimeError('Unexpected GoDaddy DNS response')
@@ -107,14 +123,17 @@ def challenge(data, env):
 
 def visible(name, value, resolver):
     query = urllib.parse.urlencode({'name': name, 'type': 'TXT', 'cachebust': time.time_ns()})
-    request = urllib.request.Request(resolver + '?' + query,
-                                     headers={'Accept': 'application/dns-json', 'Cache-Control': 'no-cache'})
+    request = urllib.request.Request(
+        resolver + '?' + query,
+        headers={'Accept': 'application/dns-json', 'Cache-Control': 'no-cache'},
+    )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             data = json.load(response)
         return data.get('Status') == 0 and any(
             r.get('type') == 16 and r.get('data', '').strip('"') == value
-            for r in data.get('Answer', []))
+            for r in data.get('Answer', [])
+        )
     except (OSError, ValueError):
         return False
 
@@ -129,8 +148,10 @@ def wait_for_dns(data, state):
     consecutive = 0
     while time.time() < deadline:
         if time.time() >= ready and all(
-                visible('_acme-challenge.' + data['domain'], r['value'], resolver)
-                for r in pending for resolver in RESOLVERS):
+            visible('_acme-challenge.' + data['domain'], r['value'], resolver)
+            for r in pending
+            for resolver in RESOLVERS
+        ):
             consecutive += 1
             if consecutive >= 2:
                 return
@@ -155,23 +176,37 @@ def run_hook(action, data, state=STATE, env=None):
             if journal.exists():
                 saved = json.loads(journal.read_text())
                 for record in records:
-                    if (saved['created'] and record['recordId'] == saved['recordId']
-                            and record['data'] == value):
+                    if (
+                        saved['created']
+                        and record['recordId'] == saved['recordId']
+                        and record['data'] == value
+                    ):
                         api.request('DELETE', '/' + urllib.parse.quote(record['recordId'], safe=''))
                 journal.unlink()
             return
         if not journal.exists():
             ttl = max([3600] + [int(r['ttl']) for r in records])
             if ttl > 3600:
-                raise ValueError('Lower existing challenge TXT TTL to 3600 or less and wait its old TTL before retrying')
+                raise ValueError(
+                    'Lower existing challenge TXT TTL to 3600 or less and wait its old TTL before retrying'
+                )
             found = next((r for r in records if r['data'] == value), None)
             created = found is None
             if created:
-                found = api.request('POST', body={'name': name, 'type': 'TXT', 'data': value, 'ttl': 600})
+                found = api.request(
+                    'POST', body={'name': name, 'type': 'TXT', 'data': value, 'ttl': 600}
+                )
             if not isinstance(found, dict) or not isinstance(found.get('recordId'), str):
                 raise RuntimeError('GoDaddy did not return a DNS record identifier')
-            write_json(journal, {'recordId': found['recordId'], 'created': created,
-                                 'value': value, 'ready_at': time.time() + ttl + 60})
+            write_json(
+                journal,
+                {
+                    'recordId': found['recordId'],
+                    'created': created,
+                    'value': value,
+                    'ready_at': time.time() + ttl + 60,
+                },
+            )
     # Certbot invokes auth hooks sequentially; publish both apex/wildcard values
     # before waiting, preserving the first value until its cleanup hook runs.
     if env.get('CERTBOT_REMAINING_CHALLENGES', '0') == '0':

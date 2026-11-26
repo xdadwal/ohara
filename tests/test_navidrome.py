@@ -31,10 +31,17 @@ class NavidromeTests(unittest.TestCase):
                 test.calls.append(('GET', self.path))
                 if self.path == '/app/':
                     config = json.dumps({'firstTime': test.password is None})
-                    self.reply(200, test.page if test.page is not None else
-                               '<script>window.__APP_CONFIG__ = ' + json.dumps(config) + '</script>')
+                    self.reply(
+                        200,
+                        test.page
+                        if test.page is not None
+                        else '<script>window.__APP_CONFIG__ = ' + json.dumps(config) + '</script>',
+                    )
                 elif self.path == '/api/user/user-id':
-                    if test.reject_token or self.headers.get('X-ND-Authorization') != 'Bearer private-token':
+                    if (
+                        test.reject_token
+                        or self.headers.get('X-ND-Authorization') != 'Bearer private-token'
+                    ):
                         self.reply(401, {'error': 'private-token'})
                     else:
                         self.reply(200, {'id': 'user-id', 'userName': 'admin', 'isAdmin': True})
@@ -55,8 +62,17 @@ class NavidromeTests(unittest.TestCase):
                 if data != {'username': 'admin', 'password': test.password}:
                     self.reply(401, {'error': data['password']})
                     return
-                self.reply(200, {} if test.bad_login else {'id': 'user-id', 'username': 'admin',
-                           'isAdmin': True, 'token': 'private-token'})
+                self.reply(
+                    200,
+                    {}
+                    if test.bad_login
+                    else {
+                        'id': 'user-id',
+                        'username': 'admin',
+                        'isAdmin': True,
+                        'token': 'private-token',
+                    },
+                )
 
         server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -69,9 +85,18 @@ class NavidromeTests(unittest.TestCase):
         navidrome.connect(self.url, 'supplied-secret-value')
         navidrome.connect(self.url, 'supplied-secret-value')
         self.assertEqual(self.password, 'supplied-secret-value')
-        self.assertEqual(self.calls, [('GET', '/app/'), ('POST', '/auth/createAdmin'),
-                         ('POST', '/auth/login'), ('GET', '/api/user/user-id'),
-                         ('GET', '/app/'), ('POST', '/auth/login'), ('GET', '/api/user/user-id')])
+        self.assertEqual(
+            self.calls,
+            [
+                ('GET', '/app/'),
+                ('POST', '/auth/createAdmin'),
+                ('POST', '/auth/login'),
+                ('GET', '/api/user/user-id'),
+                ('GET', '/app/'),
+                ('POST', '/auth/login'),
+                ('GET', '/api/user/user-id'),
+            ],
+        )
 
     def test_first_admin_needs_sixteen_characters_but_existing_login_does_not(self):
         with self.assertRaisesRegex(ValueError, 'first Navidrome setup creates this login'):
@@ -89,8 +114,11 @@ class NavidromeTests(unittest.TestCase):
         self.assertEqual(self.calls, [('GET', '/app/'), ('POST', '/auth/login')])
 
     def test_unknown_bootstrap_state_fails_without_mutation(self):
-        for page in ['<html>proxy error</html>', 'window.__APP_CONFIG__ = {bad}',
-                     'window.__APP_CONFIG__ = {"firstTime": "true"}']:
+        for page in [
+            '<html>proxy error</html>',
+            'window.__APP_CONFIG__ = {bad}',
+            'window.__APP_CONFIG__ = {"firstTime": "true"}',
+        ]:
             self.page = page
             with self.assertRaisesRegex(RuntimeError, 'bootstrap state'):
                 navidrome.connect(self.url, 'supplied-secret-value')

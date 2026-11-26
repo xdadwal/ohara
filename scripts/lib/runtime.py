@@ -1,4 +1,5 @@
 """Bounded subprocess and local stack operations. Never log expanded secrets."""
+
 import json
 import os
 from pathlib import Path
@@ -10,16 +11,83 @@ import urllib.request
 import config
 import credentials as credential_files
 
+# The main stack, in the order scripts/status reports it:
+# service -> (loopback host port, container port, local HTTP path that proves it answers).
+STACK_SERVICES = {
+    'homepage': (3002, 3000, '/api/healthcheck'),
+    'seerr': (5055, 5055, '/api/v1/settings/public'),
+    'speedtest': (3000, 3000, '/'),
+    'jellyfin': (8096, 8096, '/health'),
+    'navidrome': (4533, 4533, '/ping'),
+    'radarr': (7878, 7878, '/'),
+    'sonarr': (8989, 8989, '/'),
+    'lidarr': (8686, 8686, '/ping'),
+    'bazarr': (6767, 6767, '/'),
+    'prowlarr': (9696, 9696, '/'),
+    'qbittorrent': (8081, 8081, '/'),
+}
+# DATA_ROOT directories that containers write as RUN_UID:RUN_GID. Seerr (fixed
+# 1000:1000) and Homepage are checked separately.
+RUN_USER_DIRECTORIES = (
+    'jellyfin',
+    'jellyfin-cache',
+    'navidrome',
+    'radarr',
+    'sonarr',
+    'lidarr',
+    'bazarr',
+    'prowlarr',
+    'qbittorrent',
+)
+# Required layout below MEDIA_ROOT ('' is the root itself).
+MEDIA_DIRECTORIES = (
+    '',
+    'downloads',
+    'downloads/incomplete',
+    'downloads/complete',
+    'downloads/complete/movies',
+    'downloads/complete/tv',
+    'downloads/complete/music',
+    'library',
+    'library/movies',
+    'library/tv',
+    'library/music',
+    'recycle-bin',
+    'recycle-bin/movies',
+    'recycle-bin/tv',
+)
+
 
 def run(args, *, capture=False, timeout=60, env=None, input=None):
-    result = subprocess.run(args, input=input, text=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, timeout=timeout, env=env)
+    result = subprocess.run(
+        args,
+        input=input,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        env=env,
+    )
     if result.returncode:
         # Child stderr can contain credentials/resolved configuration. Do not echo it.
-        raise RuntimeError(f'{Path(args[0]).name}: command failed (exit {result.returncode}); inspect local service logs')
+        raise RuntimeError(
+            f'{Path(args[0]).name}: command failed (exit {result.returncode}); inspect local service logs'
+        )
     if capture:
         return result.stdout
     return None
+
+
+# Filesystems accepted for application state that must stay on local disks.
+LOCAL_FILESYSTEMS = frozenset({'ext4', 'xfs', 'btrfs', 'zfs'})
+
+
+def filesystems_holding(path):
+    """findmnt rows (target, fstype) for PATH, or for its nearest existing ancestor."""
+    while not path.exists():
+        path = path.parent
+    return json.loads(
+        run(['findmnt', '--json', '--target', str(path), '-o', 'TARGET,FSTYPE'], capture=True)
+    )['filesystems']
 
 
 def docker_prefix():
@@ -35,13 +103,82 @@ def docker_prefix():
         raise
 
 
+# Variables a standalone project's Compose child may inherit from the caller.
+# Everything else it needs is passed explicitly as interpolation values.
+COMPOSE_ENVIRONMENT = frozenset(
+    {
+        'PATH',
+        'HOME',
+        'USER',
+        'XDG_RUNTIME_DIR',
+        'DOCKER_CONFIG',
+        'DOCKER_HOST',
+        'DOCKER_CONTEXT',
+        'SSH_AUTH_SOCK',
+    }
+)
+# Compose subcommands that create or start containers.
+LIFECYCLE_COMMANDS = frozenset({'up', 'start', 'restart', 'run', 'create'})
+
+
+def starts_containers(args):
+    return any(a in LIFECYCLE_COMMANDS for a in args)
+
+
+def project_prefix(args):
+    """Rendering a model needs only the Docker CLI; other subcommands need the daemon."""
+    return ['docker'] if args[0] == 'config' else docker_prefix()
+
+
+def project_compose(root, compose_file, values, args, *, prefix=None, capture=False, timeout=60):
+    """Run Compose for one standalone project (everything except the main stack).
+
+    `values` are the interpolation variables of `compose_file`, a path relative
+    to the repository root. The child sees only those and COMPOSE_ENVIRONMENT:
+    never the private .env, and through sudo only the names in `values`.
+    Pass `prefix` when the caller already needed `project_prefix(args)`.
+    """
+    values = dict(values, COMPOSE_DISABLE_ENV_FILE='1')
+    env = {k: v for k, v in os.environ.items() if k in COMPOSE_ENVIRONMENT}
+    env.update(values)
+    if prefix is None:
+        prefix = project_prefix(args)
+    if prefix[:2] == ['sudo', '-n']:
+        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(values))] + prefix[2:]
+    return run(
+        prefix
+        + [
+            'compose',
+            '--project-directory',
+            str(root),
+            '--env-file',
+            '/dev/null',
+            '-f',
+            str(root / compose_file),
+            *args,
+        ],
+        env=env,
+        capture=capture,
+        timeout=timeout,
+    )
+
+
 def compose(c, root, args, *, capture=False, timeout=60, docker=None):
     import media_pool
-    if any(a in {'up', 'start', 'restart', 'run', 'create'} for a in args):
+
+    if starts_containers(args):
         media_pool.require_mount(c)
     # Do not let ambient COMPOSE_* variables or shell interpolation override config.
-    env = {k: v for k, v in os.environ.items()
-           if not k.startswith('COMPOSE_') and k not in config.KEYS | config.IMAGES | credential_files.ALL_KEYS | credential_files.DERIVED_WIDGET_KEYS}
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith('COMPOSE_')
+        and k
+        not in config.KEYS
+        | config.IMAGES
+        | credential_files.ALL_KEYS
+        | credential_files.DERIVED_WIDGET_KEYS
+    }
     env.update(c)
     # Never give Compose the unified dotenv: it would parse/interpolate secrets.
     # Static rendering deliberately uses empty placeholders. Real operations pass
@@ -50,47 +187,59 @@ def compose(c, root, args, *, capture=False, timeout=60, docker=None):
         homepage, media = credential_files.load(root)
         env.update(homepage)
         env.update(credential_files.navidrome_widget_environment(media))
-        env.update(credential_files.admin_widget_environment(root,media))
+        env.update(credential_files.admin_widget_environment(root, media))
     env.update(config.images(root / 'versions/stack.env'))
     env['COMPOSE_DISABLE_ENV_FILE'] = '1'
     prefix = docker if docker is not None else docker_prefix()
     if prefix[:2] == ['sudo', '-n']:
         # sudo normally drops the validated interpolation environment. Preserve
         # names only (never values in argv), including only Homepage credentials.
-        allowed = config.KEYS | config.IMAGES | credential_files.HOMEPAGE_KEYS | credential_files.WIDGET_KEYS | credential_files.DERIVED_WIDGET_KEYS | {'COMPOSE_DISABLE_ENV_FILE'}
-        prefix = prefix[:2]+['--preserve-env='+','.join(sorted(allowed))]+prefix[2:]
+        allowed = (
+            config.KEYS
+            | config.IMAGES
+            | credential_files.HOMEPAGE_KEYS
+            | credential_files.WIDGET_KEYS
+            | credential_files.DERIVED_WIDGET_KEYS
+            | {'COMPOSE_DISABLE_ENV_FILE'}
+        )
+        prefix = prefix[:2] + ['--preserve-env=' + ','.join(sorted(allowed))] + prefix[2:]
     command = prefix + [
-        'compose', '--project-directory', str(root), '--env-file', '/dev/null',
-        '-f', str(root / 'compose/stack.yaml')]
+        'compose',
+        '--project-directory',
+        str(root),
+        '--env-file',
+        '/dev/null',
+        '-f',
+        str(root / 'compose/stack.yaml'),
+    ]
     import jellyfin_theme
+
     command += media_pool.override(c, root) + jellyfin_theme.override(c, root) + args
     return run(command, capture=capture, timeout=timeout, env=env)
 
 
 def validate_model(model, c):
     expected = {
-        'jellyfin': {('127.0.0.1', 8096, 8096, 'tcp')},
-        'navidrome': {('127.0.0.1', 4533, 4533, 'tcp')},
-        'radarr': {('127.0.0.1', 7878, 7878, 'tcp')},
-        'sonarr': {('127.0.0.1', 8989, 8989, 'tcp')},
-        'lidarr': {('127.0.0.1', 8686, 8686, 'tcp')},
-        'bazarr': {('127.0.0.1', 6767, 6767, 'tcp')},
-        'prowlarr': {('127.0.0.1', 9696, 9696, 'tcp')},
-        'qbittorrent': {('127.0.0.1', 8081, 8081, 'tcp')},
-        'homepage': {('127.0.0.1', 3002, 3000, 'tcp')},
-        'seerr': {('127.0.0.1', 5055, 5055, 'tcp')},
-        'speedtest': {('127.0.0.1', 3000, 3000, 'tcp')},
+        name: {('127.0.0.1', host_port, container_port, 'tcp')}
+        for name, (host_port, container_port, _) in STACK_SERVICES.items()
     }
     services = model['services']
     if set(services) != set(expected):
         raise ValueError('Unexpected application inventory in compose/stack.yaml')
     hp = services['homepage'].get('environment', {})
-    if (hp.get('HOMEPAGE_AUTH_ENABLED') != 'true' or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['HOMEPAGE_HOST']
-            or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['HOMEPAGE_HOST']):
-        raise ValueError('Homepage must require login, allow only HOMEPAGE_HOST, and use its HTTPS URL')
+    if (
+        hp.get('HOMEPAGE_AUTH_ENABLED') != 'true'
+        or hp.get('HOMEPAGE_ALLOWED_HOSTS') != c['HOMEPAGE_HOST']
+        or hp.get('HOMEPAGE_EXTERNAL_URL') != 'https://' + c['HOMEPAGE_HOST']
+    ):
+        raise ValueError(
+            'Homepage must require login, allow only HOMEPAGE_HOST, and use its HTTPS URL'
+        )
     for name, service in services.items():
-        ports = {(p.get('host_ip'), int(p['published']), int(p['target']), p.get('protocol', 'tcp'))
-                 for p in service.get('ports', [])}
+        ports = {
+            (p.get('host_ip'), int(p['published']), int(p['target']), p.get('protocol', 'tcp'))
+            for p in service.get('ports', [])
+        }
         if ports != expected[name]:
             raise ValueError(f'{name}: unexpected port exposure')
         if service.get('privileged') or service.get('network_mode') == 'host':
@@ -102,22 +251,39 @@ def validate_model(model, c):
 
 def check(c, root, *, static=False):
     # config rendering needs the CLI, not a running daemon.
-    model = json.loads(compose(c, root, ['config', '--no-env-resolution', '--format', 'json'],
-                               capture=True, docker=['docker']))
+    model = json.loads(
+        compose(
+            c,
+            root,
+            ['config', '--no-env-resolution', '--format', 'json'],
+            capture=True,
+            docker=['docker'],
+        )
+    )
     validate_model(model, c)
     if not static:
         import media_pool
+
         media_pool.require_mount(c)
         credential_files.load(root)
-        bazarr_config = Path(c['DATA_ROOT'])/'bazarr/config/config.yaml'
+        bazarr_config = Path(c['DATA_ROOT']) / 'bazarr/config/config.yaml'
         if not bazarr_config.exists() and not bazarr_config.is_symlink():
             bazarr_config = bazarr_config.with_suffix('.ini')
-        for path in [root / '.env'] + [
-                Path(c['DATA_ROOT'])/name/'config.xml' for name in ('radarr','sonarr','lidarr','prowlarr')
-                ] + [Path(c['DATA_ROOT'])/'qbittorrent/qBittorrent/qBittorrent.conf', bazarr_config]:
+        for path in (
+            [root / '.env']
+            + [
+                Path(c['DATA_ROOT']) / name / 'config.xml'
+                for name in ('radarr', 'sonarr', 'lidarr', 'prowlarr')
+            ]
+            + [Path(c['DATA_ROOT']) / 'qbittorrent/qBittorrent/qBittorrent.conf', bazarr_config]
+        ):
             if path.is_symlink() or not path.is_file() or not os.access(path, os.R_OK):
-                raise ValueError(f'Missing/unreadable private config: {path.name}; run scripts/setup')
-        for path in [Path(c['DATA_ROOT']) / n for n in ['seerr', 'homepage', 'jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']] + [Path(c['MEDIA_ROOT'])]:
+                raise ValueError(
+                    f'Missing/unreadable private config: {path.name}; run scripts/setup'
+                )
+        for path in [
+            Path(c['DATA_ROOT']) / n for n in ('seerr', 'homepage', *RUN_USER_DIRECTORIES)
+        ] + [Path(c['MEDIA_ROOT'])]:
             if path.is_symlink() or not path.is_dir():
                 raise ValueError(f'Missing storage directory: {path}; run scripts/setup')
         for path, uid, gid in [
@@ -125,15 +291,30 @@ def check(c, root, *, static=False):
             (Path(c['DATA_ROOT']) / 'homepage', int(c['RUN_UID']), int(c['RUN_GID'])),
         ]:
             if not config.directory_writable(path, uid, gid):
-                raise ValueError(f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually')
-        for name in ['jellyfin', 'jellyfin-cache', 'navidrome', 'radarr', 'sonarr', 'lidarr', 'bazarr', 'prowlarr', 'qbittorrent']:
-            if not config.directory_writable(Path(c['DATA_ROOT'])/name, int(c['RUN_UID']), int(c['RUN_GID'])):
-                raise ValueError(f'{name}: storage is not writable by RUN_UID/RUN_GID; review ownership manually')
-        for name in ['', 'downloads', 'downloads/incomplete', 'downloads/complete', 'downloads/complete/movies', 'downloads/complete/tv', 'downloads/complete/music', 'library', 'library/movies', 'library/tv', 'library/music', 'recycle-bin', 'recycle-bin/movies', 'recycle-bin/tv']:
-            path = Path(c['MEDIA_ROOT'])/name
-            if path.is_symlink() or not path.is_dir() or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID'])):
-                raise ValueError('Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually')
-    print('Configuration valid' + (' (static only; local storage/secrets not checked)' if static else ''))
+                raise ValueError(
+                    f'Storage is not writable by container UID/GID {uid}:{gid}: {path}; review ownership manually'
+                )
+        for name in RUN_USER_DIRECTORIES:
+            if not config.directory_writable(
+                Path(c['DATA_ROOT']) / name, int(c['RUN_UID']), int(c['RUN_GID'])
+            ):
+                raise ValueError(
+                    f'{name}: storage is not writable by RUN_UID/RUN_GID; review ownership manually'
+                )
+        for name in MEDIA_DIRECTORIES:
+            path = Path(c['MEDIA_ROOT']) / name
+            if (
+                path.is_symlink()
+                or not path.is_dir()
+                or not config.directory_writable(path, int(c['RUN_UID']), int(c['RUN_GID']))
+            ):
+                raise ValueError(
+                    'Media storage missing or not writable by RUN_UID/RUN_GID; review mount and ownership manually'
+                )
+    print(
+        'Configuration valid'
+        + (' (static only; local storage/secrets not checked)' if static else '')
+    )
 
 
 def status(c, root):
@@ -146,17 +327,16 @@ def status(c, root):
         rows = [json.loads(line) for line in data.splitlines() if line.strip()]
     by_name = {r['Service']: r for r in rows}
     good = True
-    for name, port, path in [('homepage', 3002, '/api/healthcheck'), ('seerr', 5055, '/api/v1/settings/public'),
-                              ('speedtest', 3000, '/'),
-                              ('jellyfin', 8096, '/health'), ('navidrome', 4533, '/ping'), ('radarr', 7878, '/'),
-                              ('sonarr', 8989, '/'), ('lidarr', 8686, '/ping'), ('bazarr', 6767, '/'), ('prowlarr', 9696, '/'), ('qbittorrent', 8081, '/')]:
+    for name, (port, _, path) in STACK_SERVICES.items():
         running = by_name.get(name, {}).get('State') == 'running'
         health = by_name.get(name, {}).get('Health', '')
         http = False
         if running:
             try:
-                request = urllib.request.Request(f'http://127.0.0.1:{port}{path}',
-                                                 headers={'Host': c['HOMEPAGE_HOST']} if name == 'homepage' else {})
+                request = urllib.request.Request(
+                    f'http://127.0.0.1:{port}{path}',
+                    headers={'Host': c['HOMEPAGE_HOST']} if name == 'homepage' else {},
+                )
                 with urllib.request.urlopen(request, timeout=5) as response:
                     http = response.status < 400
             except urllib.error.HTTPError as error:
@@ -164,8 +344,12 @@ def status(c, root):
             except (OSError, urllib.error.URLError):
                 pass
         good = good and running and http and health not in ('unhealthy', 'starting')
-        print(f'{name}: container={"running" if running else "stopped/missing"}, '
-              f'HTTP={"reachable" if http else "unreachable"}, health={health or "not configured"}')
-    print('Seerr owner/media-server configuration and request fulfillment require application verification.')
+        print(
+            f'{name}: container={"running" if running else "stopped/missing"}, '
+            f'HTTP={"reachable" if http else "unreachable"}, health={health or "not configured"}'
+        )
+    print(
+        'Seerr owner/media-server configuration and request fulfillment require application verification.'
+    )
     print('Public DNS and HTTPS are not established by this check.')
     return 0 if good else 1

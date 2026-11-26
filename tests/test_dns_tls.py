@@ -1,5 +1,5 @@
-from pathlib import Path
 import json
+from pathlib import Path
 import sys
 import tempfile
 import unittest
@@ -13,14 +13,24 @@ import dns_tls
 import proxy
 
 DATA = {'domain': 'xdadwal.in', 'token': 'private-test-token-123456'}
-ENV = {'CERTBOT_DOMAIN': 'xdadwal.in', 'CERTBOT_VALIDATION': 'a' * 43,
-       'CERTBOT_REMAINING_CHALLENGES': '0'}
+ENV = {
+    'CERTBOT_DOMAIN': 'xdadwal.in',
+    'CERTBOT_VALIDATION': 'a' * 43,
+    'CERTBOT_REMAINING_CHALLENGES': '0',
+}
 
 
 class FakeAPI:
     def __init__(self):
-        self.rows = [{'recordId': 'unrelated', 'type': 'TXT', 'name': '_acme-challenge',
-                      'data': 'keep-me', 'ttl': 600}]
+        self.rows = [
+            {
+                'recordId': 'unrelated',
+                'type': 'TXT',
+                'name': '_acme-challenge',
+                'data': 'keep-me',
+                'ttl': 600,
+            }
+        ]
         self.deleted = []
 
     def records(self, name):
@@ -52,15 +62,24 @@ class DNSTests(unittest.TestCase):
                 dns.credentials(alias)
 
     def test_rejects_wrong_zone_and_bad_challenge(self):
-        for change in ({'CERTBOT_DOMAIN': 'other.in'}, {'CERTBOT_DOMAIN': 'seerr.xdadwal.in'},
-                       {'CERTBOT_VALIDATION': '../bad'}):
+        for change in (
+            {'CERTBOT_DOMAIN': 'other.in'},
+            {'CERTBOT_DOMAIN': 'seerr.xdadwal.in'},
+            {'CERTBOT_VALIDATION': '../bad'},
+        ):
             with self.assertRaises(ValueError):
                 dns.challenge(DATA, dict(ENV, **change))
-        self.assertEqual(dns.challenge(DATA, dict(ENV, CERTBOT_DOMAIN='*.xdadwal.in'))[0], '_acme-challenge')
+        self.assertEqual(
+            dns.challenge(DATA, dict(ENV, CERTBOT_DOMAIN='*.xdadwal.in'))[0], '_acme-challenge'
+        )
 
     def test_two_challenges_preserve_existing_txt_and_cleanup_only_owned_ids(self):
         api = FakeAPI()
-        with tempfile.TemporaryDirectory() as directory, patch.object(dns, 'GoDaddy', return_value=api), patch.object(dns, 'wait_for_dns') as wait:
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(dns, 'GoDaddy', return_value=api),
+            patch.object(dns, 'wait_for_dns') as wait,
+        ):
             state = Path(directory)
             first = dict(ENV, CERTBOT_REMAINING_CHALLENGES='1')
             second = dict(ENV, CERTBOT_VALIDATION='b' * 43)
@@ -80,7 +99,11 @@ class DNSTests(unittest.TestCase):
     def test_preexisting_matching_value_is_never_deleted(self):
         api = FakeAPI()
         api.rows[0]['data'] = ENV['CERTBOT_VALIDATION']
-        with tempfile.TemporaryDirectory() as directory, patch.object(dns, 'GoDaddy', return_value=api), patch.object(dns, 'wait_for_dns'):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(dns, 'GoDaddy', return_value=api),
+            patch.object(dns, 'wait_for_dns'),
+        ):
             dns.run_hook('auth', DATA, Path(directory), ENV)
             dns.run_hook('cleanup', DATA, Path(directory), ENV)
         self.assertEqual(api.deleted, [])
@@ -89,7 +112,11 @@ class DNSTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
             (state / 'test.json').write_text(json.dumps({'ready_at': 0, 'value': 'a' * 43}))
-            with patch.object(dns.time, 'time', side_effect=[0, 0, 0, 1000]), patch.object(dns.time, 'sleep'), patch.object(dns, 'visible', return_value=False):
+            with (
+                patch.object(dns.time, 'time', side_effect=[0, 0, 0, 1000]),
+                patch.object(dns.time, 'sleep'),
+                patch.object(dns, 'visible', return_value=False),
+            ):
                 with self.assertRaisesRegex(RuntimeError, 'timed out'):
                     dns.wait_for_dns(DATA, state)
 
@@ -97,7 +124,11 @@ class DNSTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
             (state / 'test.json').write_text(json.dumps({'ready_at': 0, 'value': 'a' * 43}))
-            with patch.object(dns.time, 'time', return_value=0), patch.object(dns.time, 'sleep') as sleep, patch.object(dns, 'visible', return_value=True) as visible:
+            with (
+                patch.object(dns.time, 'time', return_value=0),
+                patch.object(dns.time, 'sleep') as sleep,
+                patch.object(dns, 'visible', return_value=True) as visible,
+            ):
                 dns.wait_for_dns(DATA, state)
                 self.assertEqual(visible.call_count, 4)
                 sleep.assert_called_once_with(30)
@@ -105,6 +136,7 @@ class DNSTests(unittest.TestCase):
     def test_api_errors_hide_response_body_and_token(self):
         import io
         import urllib.error
+
         error = urllib.error.HTTPError('url', 403, 'denied', {}, io.BytesIO(DATA['token'].encode()))
         with patch.object(dns.urllib.request, 'urlopen', side_effect=error):
             with self.assertRaises(RuntimeError) as caught:
@@ -115,7 +147,9 @@ class DNSTests(unittest.TestCase):
     def test_pagination_keeps_all_challenge_values(self):
         api = dns.GoDaddy(DATA)
         rows = [{'type': 'TXT', 'name': '_acme-challenge'}] * 100
-        with patch.object(api, 'request', side_effect=[{'items': rows}, {'items': rows[:1]}]) as request:
+        with patch.object(
+            api, 'request', side_effect=[{'items': rows}, {'items': rows[:1]}]
+        ) as request:
             self.assertEqual(len(api.records('_acme-challenge')), 101)
             self.assertIn('page=2', request.call_args.args[1])
 
@@ -144,7 +178,14 @@ class DNSTests(unittest.TestCase):
             certdir = Path(directory) / 'cert'
             certdir.mkdir()
             (certdir / 'fullchain.pem').touch()
-            with patch.object(dns_tls.proxy, 'TARGET', target), patch.object(dns_tls, 'CERT_DIR', certdir), patch.object(dns, 'credentials', return_value=DATA), patch.object(dns, 'GoDaddy'), patch.object(dns_tls, 'install'), patch.object(dns_tls, 'run', side_effect=RuntimeError('ACME failed')) as run:
+            with (
+                patch.object(dns_tls.proxy, 'TARGET', target),
+                patch.object(dns_tls, 'CERT_DIR', certdir),
+                patch.object(dns, 'credentials', return_value=DATA),
+                patch.object(dns, 'GoDaddy'),
+                patch.object(dns_tls, 'install'),
+                patch.object(dns_tls, 'run', side_effect=RuntimeError('ACME failed')) as run,
+            ):
                 with self.assertRaisesRegex(RuntimeError, 'ACME failed'):
                     dns_tls.activate(c, ROOT, Path('ignored'), renewal_only=True, agree=True)
                 self.assertEqual(target.read_text(), old)
@@ -157,14 +198,23 @@ class DNSTests(unittest.TestCase):
             target = Path(directory) / 'nginx.conf'
             old = proxy.render(c, ROOT, https=False)
             target.write_text(old)
-            with patch.object(dns_tls.proxy, 'TARGET', target), patch.object(dns, 'credentials', return_value=DATA), patch.object(dns, 'GoDaddy'), patch.object(dns_tls, 'install') as install, patch.object(dns_tls, 'run') as run, patch.object(proxy, 'apply_config') as apply:
+            with (
+                patch.object(dns_tls.proxy, 'TARGET', target),
+                patch.object(dns, 'credentials', return_value=DATA),
+                patch.object(dns, 'GoDaddy'),
+                patch.object(dns_tls, 'install') as install,
+                patch.object(dns_tls, 'run') as run,
+                patch.object(proxy, 'apply_config') as apply,
+            ):
                 dns_tls.activate(c, ROOT, Path('ignored'), staging=True, agree=True)
                 install.assert_called_once_with(ROOT, DATA, True)
                 self.assertEqual(run.call_count, 1)
                 args = run.call_args.args[0]
                 self.assertIn('--staging', args)
                 self.assertIn('/etc/letsencrypt-staging', args)
-                self.assertIn('/usr/bin/python3 /usr/local/lib/ohara/dns_godaddy_staging.py auth', args)
+                self.assertIn(
+                    '/usr/bin/python3 /usr/local/lib/ohara/dns_godaddy_staging.py auth', args
+                )
                 self.assertNotIn(DATA['token'], ' '.join(args))
                 apply.assert_not_called()
                 self.assertEqual(target.read_text(), old)
@@ -173,13 +223,17 @@ class DNSTests(unittest.TestCase):
         c = config.load(ROOT / '.env.example')
         c.update(HOMEPAGE_HOST='ohara.xdadwal.in', PORTFOLIO_PORT='8010')
         old = proxy.render(c, ROOT, https=True)
-        retired = ('\nserver {\n    listen 443 ssl;\n    server_name files.xdadwal.in;\n'
-                   '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
-                   '    location / {\n        proxy_pass http://127.0.0.1:3923;\n    }\n}\n')
-        private = ('\nserver {\n    listen 443 ssl;\n    server_name admin.xdadwal.in;\n'
-                   '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
-                   '    allow 192.168.1.0/24;\n    deny all;\n'
-                   '    location / { proxy_pass http://127.0.0.1:7878; }\n}\n')
+        retired = (
+            '\nserver {\n    listen 443 ssl;\n    server_name files.xdadwal.in;\n'
+            '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
+            '    location / {\n        proxy_pass http://127.0.0.1:3923;\n    }\n}\n'
+        )
+        private = (
+            '\nserver {\n    listen 443 ssl;\n    server_name admin.xdadwal.in;\n'
+            '    ssl_certificate /old/cert;\n    ssl_certificate_key /old/key;\n'
+            '    allow 192.168.1.0/24;\n    deny all;\n'
+            '    location / { proxy_pass http://127.0.0.1:7878; }\n}\n'
+        )
         result = dns_tls.nginx_config(old + retired + private, c, ROOT)
         self.assertNotIn('server_name files.xdadwal.in;', result)
         self.assertNotIn('127.0.0.1:3923', result)
@@ -191,18 +245,21 @@ class DNSTests(unittest.TestCase):
     def test_dns_rejects_nested_dashboard_before_api_or_host_changes(self):
         c = config.load(ROOT / '.env.example')
         c['HOMEPAGE_HOST'] = 'nested.ohara.xdadwal.in'
-        with patch.object(dns, 'credentials', return_value=DATA), \
-                patch.object(dns, 'GoDaddy') as api, patch.object(dns_tls, 'install') as install:
+        with (
+            patch.object(dns, 'credentials', return_value=DATA),
+            patch.object(dns, 'GoDaddy') as api,
+            patch.object(dns_tls, 'install') as install,
+        ):
             with self.assertRaisesRegex(ValueError, 'direct subdomains'):
                 dns_tls.activate(c, ROOT, Path('ignored'), staging=True, agree=True)
             api.assert_not_called()
             install.assert_not_called()
 
     def test_dns_migration_adds_music_without_replacing_existing_routes(self):
-        c = config.load(ROOT/'.env.example')
+        c = config.load(ROOT / '.env.example')
         old = proxy.render(c, ROOT, https=True)
-        old = old.replace('\n'+proxy.navidrome_config(c, ROOT), '')
-        old = old.replace(c['NAVIDROME_HOST']+' ', '')
+        old = old.replace('\n' + proxy.navidrome_config(c, ROOT), '')
+        old = old.replace(c['NAVIDROME_HOST'] + ' ', '')
         old += '\nserver {\n server_name private.xdadwal.in;\n ssl_certificate /old/cert;\n ssl_certificate_key /old/key;\n deny all;\n}\n'
         result = dns_tls.nginx_config(old, c, ROOT)
         self.assertIn('server_name music.xdadwal.in;', result)
@@ -213,8 +270,8 @@ class DNSTests(unittest.TestCase):
         self.assertIn('/live/ohara-wildcard/', result)
 
     def test_dns_migration_does_not_overwrite_existing_music_host(self):
-        c = config.load(ROOT/'.env.example')
+        c = config.load(ROOT / '.env.example')
         old = proxy.render(c, ROOT, https=True)
-        old = old.replace('\n'+proxy.navidrome_config(c, ROOT), '')
+        old = old.replace('\n' + proxy.navidrome_config(c, ROOT), '')
         with self.assertRaisesRegex(ValueError, 'inspect before DNS activation'):
             dns_tls.nginx_config(old, c, ROOT)

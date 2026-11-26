@@ -1,10 +1,12 @@
 """Managed Nginx bootstrap, explicit ACME activation, rollback-safe config updates."""
+
 import fcntl
 import os
-import re
 from pathlib import Path
+import re
 import tempfile
 
+import config
 from runtime import run
 
 TARGET = Path('/etc/nginx/conf.d/ohara.conf')
@@ -17,9 +19,9 @@ def render(c, root, https=False, acme_names=()):
         text += '\n' + navidrome_config(c, root)
     if https and int(c.get('PORTFOLIO_PORT', '0')):
         text += '\n' + (root / 'configs/nginx/portfolio.template').read_text()
-    for key in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST']:
+    for key in config.HOST_KEYS:
         text = text.replace('@' + key + '@', c[key])
-    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST']}
+    names = config.hostnames(c)
     # Keep renewal challenges for certificate names retained for rollback, while
     # never restoring their retired HTTPS application routes.
     text = text.replace('@HOSTS@', ' '.join(sorted(names | set(acme_names))))
@@ -32,8 +34,10 @@ def render(c, root, https=False, acme_names=()):
 def navidrome_config(c, root):
     text = (root / 'configs/nginx/navidrome.template').read_text()
     text = text.replace('@NAVIDROME_HOST@', c['NAVIDROME_HOST'])
-    return text.replace('include /etc/nginx/ohara-proxy-headers.conf;',
-                        (root / 'configs/nginx/proxy-headers.conf').read_text())
+    return text.replace(
+        'include /etc/nginx/ohara-proxy-headers.conf;',
+        (root / 'configs/nginx/proxy-headers.conf').read_text(),
+    )
 
 
 def atomic_write(path, text, mode=0o644):
@@ -78,7 +82,9 @@ def bootstrap(c, root):
     Path('/var/lib/ohara/acme').mkdir(parents=True, exist_ok=True, mode=0o755)
     if TARGET.exists() and '# HTTPS active:' in TARGET.read_text():
         run(['nginx', '-t'])
-        print('Existing HTTPS configuration preserved. Use scripts/tls for deliberate domain changes.')
+        print(
+            'Existing HTTPS configuration preserved. Use scripts/tls for deliberate domain changes.'
+        )
         return
     # Nginx must be running for a reload; empty managed config is valid on first start.
     run(['systemctl', 'start', 'nginx'], timeout=60)
@@ -93,21 +99,25 @@ def configured_names(text):
 
 
 def challenge_config(old, c):
-    names = {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST']}
+    names = config.hostnames(c)
     missing = sorted(names - configured_names(old))
     if not missing:
         return old
-    return old + ("\n# Temporary ACME routes for new names; existing HTTPS stays active.\n"
-                  "server {\n    listen 80;\n    server_name " + ' '.join(missing) + ";\n"
-                  "    location ^~ /.well-known/acme-challenge/ {\n"
-                  "        root /var/lib/ohara/acme;\n        default_type text/plain;\n"
-                  "        try_files $uri =404;\n    }\n"
-                  "    location / { return 503; }\n}\n")
+    return old + (
+        '\n# Temporary ACME routes for new names; existing HTTPS stays active.\n'
+        'server {\n    listen 80;\n    server_name ' + ' '.join(missing) + ';\n'
+        '    location ^~ /.well-known/acme-challenge/ {\n'
+        '        root /var/lib/ohara/acme;\n        default_type text/plain;\n'
+        '        try_files $uri =404;\n    }\n'
+        '    location / { return 503; }\n}\n'
+    )
 
 
 def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     if c['HOMEPAGE_HOST'] != c['DOMAIN']:
-        raise ValueError('Use --dns-provider godaddy when a separate portfolio serves DOMAIN; existing routes must be preserved')
+        raise ValueError(
+            'Use --dns-provider godaddy when a separate portfolio serves DOMAIN; existing routes must be preserved'
+        )
     if not agree:
         raise ValueError('Supply --agree-tos after reviewing the ACME subscriber agreement')
     if not staging and not accounts_ready:
@@ -118,16 +128,35 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     challenge = challenge_config(previous, c)
     # Retain old names in the certificate during cutover so restoring the previous
     # HTTPS config still serves a certificate covering its original names.
-    names = sorted(configured_names(previous) | {c[k] for k in ['DOMAIN', 'REQUESTS_HOST', 'SPEED_HOST', 'JELLYFIN_HOST', 'HOMEPAGE_HOST', 'NAVIDROME_HOST']})
-    args = ['certbot', 'certonly', '--webroot', '-w', '/var/lib/ohara/acme',
-            '--non-interactive', '--agree-tos', '--email', c['ACME_EMAIL'],
-            '--cert-name', 'ohara', '--keep-until-expiring', '--expand']
+    names = sorted(configured_names(previous) | config.hostnames(c))
+    args = [
+        'certbot',
+        'certonly',
+        '--webroot',
+        '-w',
+        '/var/lib/ohara/acme',
+        '--non-interactive',
+        '--agree-tos',
+        '--email',
+        c['ACME_EMAIL'],
+        '--cert-name',
+        'ohara',
+        '--keep-until-expiring',
+        '--expand',
+    ]
     for name in names:
         args.extend(['-d', name])
     if staging:
         # Staging certificates never replace production state or activate routes.
-        args += ['--staging', '--config-dir', '/etc/letsencrypt-staging',
-                 '--work-dir', '/var/lib/letsencrypt-staging', '--logs-dir', '/var/log/letsencrypt-staging']
+        args += [
+            '--staging',
+            '--config-dir',
+            '/etc/letsencrypt-staging',
+            '--work-dir',
+            '/var/lib/letsencrypt-staging',
+            '--logs-dir',
+            '/var/log/letsencrypt-staging',
+        ]
         if challenge != previous:
             apply_config(challenge)
         try:
@@ -149,7 +178,9 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
         if not (Path('/etc/letsencrypt/live/ohara') / name).is_file():
             if challenge != previous:
                 apply_config(previous)
-            raise ValueError('Production certificate files are missing; current Nginx configuration preserved')
+            raise ValueError(
+                'Production certificate files are missing; current Nginx configuration preserved'
+            )
     hook = Path('/etc/letsencrypt/renewal-hooks/deploy/ohara-nginx')
     hook.parent.mkdir(parents=True, exist_ok=True)
     if hook.exists() and hook.read_text() != RENEW_HOOK:
@@ -157,7 +188,9 @@ def activate(c, root, *, staging=False, accounts_ready=False, agree=False):
     atomic_write(hook, RENEW_HOOK, 0o755)
     apply_config(render(c, root, https=True, acme_names=names))
     run(['systemctl', 'enable', '--now', 'certbot.timer'])
-    run(['certbot', 'renew', '--cert-name', 'ohara', '--dry-run', '--run-deploy-hooks'], timeout=300)
+    run(
+        ['certbot', 'renew', '--cert-name', 'ohara', '--dry-run', '--run-deploy-hooks'], timeout=300
+    )
     print('HTTPS routes activated; renewal dry run passed. Verify from an external network.')
 
 

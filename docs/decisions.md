@@ -19,7 +19,8 @@
   handling remain unchanged.
 - Immich will run on the same machine, as confirmed by the user, in a separate
   Compose project. Hostname is confirmed as immich.xdadwal.in. Storage, hardware capacity and
-  backup destination remain to be configured. See immich-next.md.
+  backup destination remain to be configured. See immich-next.md. (Deployed on
+  2026-10-22; current state is in [immich.md](immich.md).)
 - Seerr uses the included Jellyfin, Radarr and Sonarr. Prowlarr and qBittorrent
   provide indexer sync and downloads; chosen indexers and a permitted end-to-end
   request must still be verified before reporting fulfillment as ready.

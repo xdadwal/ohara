@@ -6,6 +6,7 @@ Sonarr/Radarr path mappings. Schema and MD5 password encoding follow upstream:
 https://github.com/morpheus65535/bazarr/blob/v1.6.2/bazarr/app/config.py
 https://github.com/morpheus65535/bazarr/blob/v1.6.2/bazarr/utilities/helper.py
 """
+
 import hashlib
 import json
 
@@ -38,7 +39,10 @@ def prepare(data, values, create_owned, uid, gid):
     }
     for service, port in (('sonarr', 8989), ('radarr', 7878)):
         settings[service] = {
-            'ip': service, 'port': port, 'ssl': False, 'base_url': '/',
+            'ip': service,
+            'port': port,
+            'ssl': False,
+            'base_url': '/',
             'apikey': values[service.upper() + '_API_KEY'],
         }
     # JSON is valid YAML, preserving strings such as "true", quotes and newlines

@@ -1,4 +1,5 @@
 """Apply explicitly selected non-secret settings to an existing media stack."""
+
 import json
 
 import credentials
@@ -8,12 +9,18 @@ from media import Client
 def apply(root, *, urls=None):
     _, values = credentials.load(root)
     profile = json.loads((root / 'configs/media/ohara.json').read_text())
-    if (set(profile) != {'indexers', 'rename'} or profile['rename'] is not True
-            or not isinstance(profile['indexers'], list)
-            or not all(isinstance(x, str) for x in profile['indexers'])):
+    if (
+        set(profile) != {'indexers', 'rename'}
+        or profile['rename'] is not True
+        or not isinstance(profile['indexers'], list)
+        or not all(isinstance(x, str) for x in profile['indexers'])
+    ):
         raise ValueError('Invalid Ohara media profile')
-    urls = urls or {'radarr': 'http://127.0.0.1:7878',
-                    'sonarr': 'http://127.0.0.1:8989', 'prowlarr': 'http://127.0.0.1:9696'}
+    urls = urls or {
+        'radarr': 'http://127.0.0.1:7878',
+        'sonarr': 'http://127.0.0.1:8989',
+        'prowlarr': 'http://127.0.0.1:9696',
+    }
     prowlarr = Client(urls['prowlarr'], values['PROWLARR_API_KEY'])
     existing = prowlarr.call('/api/v1/indexer')
     schemas = prowlarr.call('/api/v1/indexer/schema')
@@ -26,9 +33,14 @@ def apply(root, *, urls=None):
     if missing:
         raise ValueError('Unavailable Prowlarr definitions: ' + ', '.join(sorted(missing)))
     for name in profile['indexers']:
-        if any(row.get('definitionName') == name or any(
+        if any(
+            row.get('definitionName') == name
+            or any(
                 f.get('name') == 'definitionFile' and f.get('value') == name
-                for f in row.get('fields', [])) for row in existing):
+                for f in row.get('fields', [])
+            )
+            for row in existing
+        ):
             print('Existing indexer preserved: ' + name)
             continue
         row = available[name]
@@ -50,5 +62,7 @@ def apply(root, *, urls=None):
             client.call('/api/v3/config/naming', naming, 'PUT')
         print(name + ': renaming enabled; existing formats preserved')
     prowlarr.call('/api/v1/command', {'name': 'ApplicationIndexerSync'})
-    print('Indexer synchronization queued. Check each application for category/search failures; '
-          'full download/import/playback verification is still required.')
+    print(
+        'Indexer synchronization queued. Check each application for category/search failures; '
+        'full download/import/playback verification is still required.'
+    )

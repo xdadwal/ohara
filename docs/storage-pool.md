@@ -105,8 +105,9 @@ On boot, the UUID-based fstab entries mount both external disks. The generated
 pool unit requires both disk mounts, and Docker activation pulls in the enabled
 media unit, which waits for the pool before starting its eight consumers. With a
 missing disk, `nofail` lets the host boot while pool-dependent services remain
-unavailable. Startup ordering is configured and inspected, but a full host reboot
-has not been tested.
+unavailable. Startup ordering is configured and inspected. A full host reboot on
+2026-11-18 brought up both disk mounts, the pool and `ohara-media.service`; see the
+H-01 entry in the [verification record](verification.md).
 
 Runtime USB reconnect alone is not an automatic retry mechanism. The optional
 watchdog below adds bounded recovery after both disks return. When systemd stops the pool mount, the media

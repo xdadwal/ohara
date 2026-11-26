@@ -1,10 +1,11 @@
-from deployment_fixtures import copy_deployment
-from pathlib import Path
 import json
+from pathlib import Path
 import sys
 import tempfile
 import unittest
 from unittest.mock import Mock
+
+from deployment_fixtures import copy_deployment
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/lib'))
@@ -18,8 +19,12 @@ class BazarrTests(unittest.TestCase):
         self.data = Path(self.temporary.name)
         self.directory = self.data / 'bazarr/config'
         self.directory.mkdir(parents=True)
-        self.values = {'BAZARR_API_KEY': 'true', 'BAZARR_PASSWORD': 'password',
-                       'SONARR_API_KEY': 'sonarr-key', 'RADARR_API_KEY': 'radarr-key'}
+        self.values = {
+            'BAZARR_API_KEY': 'true',
+            'BAZARR_PASSWORD': 'password',
+            'SONARR_API_KEY': 'sonarr-key',
+            'RADARR_API_KEY': 'radarr-key',
+        }
         self.create = Mock()
 
     def prepare(self):
@@ -28,17 +33,33 @@ class BazarrTests(unittest.TestCase):
     def test_private_auth_and_shared_library_integrations(self):
         self.prepare()
         path, content, uid, gid, mode = self.create.call_args.args
-        self.assertEqual((path, uid, gid, mode),
-                         (self.directory / 'config.yaml', 123, 456, 0o600))
+        self.assertEqual((path, uid, gid, mode), (self.directory / 'config.yaml', 123, 456, 0o600))
         settings = json.loads(content)
-        self.assertEqual(settings['auth'], {'apikey': 'true', 'type': 'form',
-                         'username': 'admin', 'password': '5f4dcc3b5aa765d61d8327deb882cf99'})
+        self.assertEqual(
+            settings['auth'],
+            {
+                'apikey': 'true',
+                'type': 'form',
+                'username': 'admin',
+                'password': '5f4dcc3b5aa765d61d8327deb882cf99',
+            },
+        )
         self.assertNotIn('"password": "password"', content)
         for name, port in [('sonarr', 8989), ('radarr', 7878)]:
-            self.assertEqual(settings[name], {'ip': name, 'port': port, 'ssl': False,
-                             'base_url': '/', 'apikey': name + '-key'})
-        self.assertEqual(settings['general'], {'use_sonarr': True, 'use_radarr': True,
-                         'path_mappings': [], 'path_mappings_movie': [], 'enabled_providers': []})
+            self.assertEqual(
+                settings[name],
+                {'ip': name, 'port': port, 'ssl': False, 'base_url': '/', 'apikey': name + '-key'},
+            )
+        self.assertEqual(
+            settings['general'],
+            {
+                'use_sonarr': True,
+                'use_radarr': True,
+                'path_mappings': [],
+                'path_mappings_movie': [],
+                'enabled_providers': [],
+            },
+        )
 
     def test_quotes_newlines_and_unicode_are_preserved(self):
         self.values['SONARR_API_KEY'] = '"quoted"\\newline\n雪: true'
@@ -70,26 +91,33 @@ class BazarrTests(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
+
 class BazarrLegacyStartupTests(unittest.TestCase):
     def test_runtime_check_allows_preserved_ini_to_reach_application_migration(self):
         import os
         import shutil
+
         import config
         import credential_fixtures
         import host
         import runtime
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            shutil.copytree(ROOT/'configs', root/'configs')
+            shutil.copytree(ROOT / 'configs', root / 'configs')
             for name in ['compose/stack.yaml', 'versions/stack.env']:
-                copy_deployment(root,name)
+                copy_deployment(root, name)
             credential_fixtures.write(root)
-            c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'),
-                     RUN_UID=str(os.getuid()), RUN_GID=str(os.getgid()))
+            c = config.load(ROOT / '.env.example')
+            c.update(
+                DATA_ROOT=str(root / 'data'),
+                MEDIA_ROOT=str(root / 'media'),
+                RUN_UID=str(os.getuid()),
+                RUN_GID=str(os.getgid()),
+            )
             host.prepare_storage(c, root)
-            (root/'data/seerr').chmod(0o777)
-            yaml = root/'data/bazarr/config/config.yaml'
+            (root / 'data/seerr').chmod(0o777)
+            yaml = root / 'data/bazarr/config/config.yaml'
             legacy = yaml.with_suffix('.ini')
             yaml.rename(legacy)
             before = legacy.read_bytes()

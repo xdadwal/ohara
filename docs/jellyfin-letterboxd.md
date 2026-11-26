@@ -5,7 +5,8 @@ watchlist-only integration. The reference blog's `main/manifest.json` URL return
 404. The upstream repository uses `master`; the reviewed manifest is recorded in
 `configs/jellyfin/letterboxd-sync.json` with release/archive and assembly SHA-256
 hashes and source commit. The upstream minimum ABI is 10.11.9.0; this artifact was
-loaded successfully on the exact official Jellyfin 12.2 image used here.
+loaded successfully on the exact official Jellyfin 12.2 image in use when it was
+reviewed (the stack has since moved to 12.4).
 
 ## Installation and verification
 

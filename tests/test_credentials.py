@@ -1,24 +1,29 @@
-from deployment_fixtures import copy_deployment
 from pathlib import Path
 import sys
 import tempfile
 import unittest
 
+from deployment_fixtures import copy_deployment
+
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT/'scripts/lib'))
+sys.path.insert(0, str(ROOT / 'scripts/lib'))
 import config
 import host
+
 
 class UserCredentialTests(unittest.TestCase):
     def test_shorter_web_passwords_are_accepted_without_weakening_media_or_secrets(self):
         import credentials
+
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory).resolve() / 'credentials'
-            for key, value, accepted in [('HOMEPAGE_AUTH_PASSWORD', 'chosen08', True),
-                                         ('HOMEPAGE_AUTH_PASSWORD', 'short07', False),
-                                         ('JELLYFIN_PASSWORD', 'chosen08', False),
-                                         ('HOMEPAGE_AUTH_SECRET', 'chosen08', False)]:
-                path.write_text(key+'='+value+'\n')
+            for key, value, accepted in [
+                ('HOMEPAGE_AUTH_PASSWORD', 'chosen08', True),
+                ('HOMEPAGE_AUTH_PASSWORD', 'short07', False),
+                ('JELLYFIN_PASSWORD', 'chosen08', False),
+                ('HOMEPAGE_AUTH_SECRET', 'chosen08', False),
+            ]:
+                path.write_text(key + '=' + value + '\n')
                 path.chmod(0o600)
                 if accepted:
                     self.assertEqual(credentials.read(path, {key})[key], value)
@@ -29,19 +34,20 @@ class UserCredentialTests(unittest.TestCase):
     def test_missing_user_files_fail_before_storage_creation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
+            c = config.load(ROOT / '.env.example')
+            c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'))
             with self.assertRaisesRegex(ValueError, 'user-created|user-supplied'):
                 host.prepare_storage(c, root)
-            self.assertFalse((root/'data').exists())
-            self.assertFalse((root/'local').exists())
+            self.assertFalse((root / 'data').exists())
+            self.assertFalse((root / 'local').exists())
 
     def test_literals_and_private_permissions(self):
         import credentials
+
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory).resolve()/'credentials'
+            path = Path(directory).resolve() / 'credentials'
             password = 'User supplied $value#with=punctuation!'
-            path.write_text('PASSWORD='+password+'\n')
+            path.write_text('PASSWORD=' + password + '\n')
             path.chmod(0o600)
             self.assertEqual(credentials.read(path, {'PASSWORD'})['PASSWORD'], password)
             path.chmod(0o644)
@@ -50,8 +56,9 @@ class UserCredentialTests(unittest.TestCase):
 
     def test_missing_and_invalid_values_are_not_echoed(self):
         import credentials
+
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory).resolve()/'credentials'
+            path = Path(directory).resolve() / 'credentials'
             path.write_text('PASSWORD=short-private\n')
             path.chmod(0o600)
             with self.assertRaises(ValueError) as caught:
@@ -60,11 +67,14 @@ class UserCredentialTests(unittest.TestCase):
 
     def test_invalid_inputs_block_package_and_proxy_changes(self):
         from unittest.mock import patch
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            with patch.object(host.os, 'geteuid', return_value=0), \
-                    patch.object(host, 'preflight') as preflight, \
-                    patch.object(host, 'ensure_packages') as packages:
+            with (
+                patch.object(host.os, 'geteuid', return_value=0),
+                patch.object(host, 'preflight') as preflight,
+                patch.object(host, 'ensure_packages') as packages,
+            ):
                 with self.assertRaises(ValueError):
                     host.prepare({}, root)
                 preflight.assert_not_called()
@@ -72,31 +82,36 @@ class UserCredentialTests(unittest.TestCase):
 
     def test_blank_templates_and_symlinks_cannot_be_used(self):
         import credentials
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            path = root/'input'
-            path.write_text('HOMEPAGE_AUTH_ENABLED=true\nHOMEPAGE_AUTH_PASSWORD=\nHOMEPAGE_AUTH_SECRET=\n')
+            path = root / 'input'
+            path.write_text(
+                'HOMEPAGE_AUTH_ENABLED=true\nHOMEPAGE_AUTH_PASSWORD=\nHOMEPAGE_AUTH_SECRET=\n'
+            )
             path.chmod(0o600)
             with self.assertRaises(ValueError):
                 credentials.read(path, credentials.HOMEPAGE_KEYS)
-            link = root/'link'
+            link = root / 'link'
             link.symlink_to(path)
             with self.assertRaisesRegex(ValueError, 'Symlink'):
                 credentials.read(link, credentials.HOMEPAGE_KEYS)
 
     def test_missing_service_config_blocks_upstream_credential_fallback(self):
+        import shutil
+
         import credential_fixtures
         import runtime
-        import shutil
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            shutil.copytree(ROOT/'configs', root/'configs')
-            for name in ['compose/stack.yaml','versions/stack.env']:
-                copy_deployment(root,name)
+            shutil.copytree(ROOT / 'configs', root / 'configs')
+            for name in ['compose/stack.yaml', 'versions/stack.env']:
+                copy_deployment(root, name)
             credential_fixtures.write(root)
-            c = config.load(ROOT/'.env.example')
-            c.update(DATA_ROOT=str(root/'data'), MEDIA_ROOT=str(root/'media'))
+            c = config.load(ROOT / '.env.example')
+            c.update(DATA_ROOT=str(root / 'data'), MEDIA_ROOT=str(root / 'media'))
             host.prepare_storage(c, root)
-            (root/'data/qbittorrent/qBittorrent/qBittorrent.conf').unlink()
+            (root / 'data/qbittorrent/qBittorrent/qBittorrent.conf').unlink()
             with self.assertRaisesRegex(ValueError, 'qBittorrent.conf'):
                 runtime.check(c, root)

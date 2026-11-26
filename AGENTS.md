@@ -1,214 +1,345 @@
 # Working on Ohara
 
-Ohara provisions a small Linux homeserver. Read README.md, docs/stack.md and docs/operations.md
-before changing deployment behavior. See docs/deployment-layout.md for canonical
-compose/PROJECT.yaml and versions/PROJECT.env paths; overrides live in compose/overrides/. The approved migration plan is under
-docs/superpowers/plans/. For future service additions, follow
-[docs/adding-services.md](docs/adding-services.md), including live Homepage/AdGuard
-integration, exact privileged commands and LAN-only owner onboarding where needed.
+Ohara provisions a small Linux homeserver. This file holds the rules that apply
+to every change. Each service's detail lives in its guide; the rules here win if
+a guide disagrees.
+
+## Start here
+
+- Read `README.md`, `docs/stack.md` and `docs/operations.md` before changing
+  deployment behavior. `docs/README.md` indexes every guide by task.
+- See `docs/deployment-layout.md` for canonical `compose/PROJECT.yaml` and
+  `versions/PROJECT.env` paths; overrides live in `compose/overrides/`.
+  `configs/README.md` says which config files are seeds, rendered templates or
+  copies of installed files. `scripts/README.md` lists the commands and the
+  shared library helpers.
+- The approved plans are under `docs/superpowers/plans/`.
+- When tasked with initial setup, follow `docs/agent-setup.md`: inspect the target
+  machine and existing configuration first, then ask only for missing facts or
+  choices that cannot be safely inferred. Do not assume example IPs/emails are real.
+  Continue independent checks while waiting; do not guess required answers.
+- For future service additions, follow `docs/adding-services.md`, including live
+  Homepage/AdGuard integration, exact privileged commands and LAN-only owner
+  onboarding where needed.
+
+## Rules that always apply
+
+### Secrets
+
+- Use independent per-service credentials in the single private `.env`; a shared
+  authentication service is explicitly deferred. Read `.env` as documented in
+  `docs/credentials.md`.
+- Never invent or generate passwords, API keys or session secrets. If files/values
+  are missing, ask the user to fill the private files; never request values in chat.
+  Preserve inputs and keep values out of logs/Git.
+- Never source `.env` or pass the whole file to containers. Never execute dotenv
+  contents. Add configuration validation before consumption.
+- `.env` and `local/` are private. Never print secrets or resolved Compose config.
+- Migrate legacy split files with `scripts/migrate-credentials` before setup/up.
+- Media setup preserves account state; changing input values alone does not rotate
+  existing passwords. Jellyfin and the five Arr/Bazarr login passwords are
+  setup-only and may be absent from `.env` (the owner removed them on this host);
+  ask for one only when a command names it. The 16-character media minimum applies
+  where setup creates a login.
+
+### The live host
+
+- Setup prepares a supported Linux host; `up` starts local services; TLS activation
+  is a separate explicit step after owner/account setup. Do not deploy to a live
+  host merely because a code change was requested.
+- Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,
+  SSH access, networking, and host DNS. No recursive chown or destructive cleanup.
+- Backend web ports bind to loopback; only host Nginx uses public 80/443. There is
+  no host firewall; keep new listeners on loopback.
+- Do not modify router/client DNS or delete retired DNS data during repo changes.
+- Do not introduce additional infrastructure or assume indexer/source credentials.
+
+### Documentation is part of the change
 
 - Treat every setup, deployment and deliberate live configuration change as work
   another agent must reproduce on a fresh machine. Update the relevant setup,
   operations and replication documentation in the same change; documentation is
-  part of completion, not a follow-up. Include exact commands, prerequisites,
-  target-specific discovery, private input locations, persistence, verification
-  and rollback. Distinguish repository templates from installed runtime files,
-  fresh setup from existing-state recovery, and verified behavior from pending
-  tests or explicit owner deferrals. Never rely on chat history, this host's
-  example identities, ignored one-off files or undocumented manual steps as the
-  only setup instructions. Keep agent entry points linked to the current guides
-  and remove contradictory/outdated guidance when behavior changes. If privileged
-  application is pending, document the prepared commands and report that limit.
+  part of completion, not a follow-up.
+- Include exact commands, prerequisites, target-specific discovery, private input
+  locations, persistence, verification and rollback.
+- Distinguish repository templates from installed runtime files, fresh setup from
+  existing-state recovery, and verified behavior from pending tests or explicit
+  owner deferrals.
+- Never rely on chat history, this host's example identities, ignored one-off
+  files or undocumented manual steps as the only setup instructions.
+- Keep agent entry points linked to the current guides and remove
+  contradictory/outdated guidance when behavior changes. State each fact in one
+  guide and link to it from the others (`docs/README.md` names the home of each topic).
+- If privileged application is pending, document the prepared commands and report
+  that limit.
 
-- Optional ntfy notifications use scripts/ntfy, scripts/ntfy-proxy, docs/ntfy.md
-  and docs/alerts.md for host/printer alerts, native Seerr new-request delivery
-  and the optional Homepage widget. Its separate owner-supplied
-  NTFY_HOMEPAGE_PASSWORD is restricted to reading ohara-alerts; only that reader
-  credential may reach Homepage through its narrow runtime alias. Use
-  sudo scripts/ntfy widget after ntfy/Homepage HTTPS and login work.
-  Keep its independent SQLite/config storage outside the media pool and backend
-  loopback-only. The login username is admin (a regular scoped user, not an admin role).
-  Use the documented offline rotate-account workflow for an existing ohara login;
-  preserve its account ID, ACLs, tokens and message cache. An explicit owner
-  NTFY_ALLOW_SHORT_PASSWORD exception affects ntfy only; keep nonempty/72-byte bounds.
-  Deny anonymous topic access, disable public signup, and use the
-  privately supplied NTFY_PASSWORD; never generate passwords/tokens or forward it
-  to Homepage. Ask for phone platform and obtain explicit approval before enabling
-  the ntfy.sh iPhone wake-up relay. Install the separate host alert timer only
-  after authentication is verified; read actual configured disk UUIDs and preserve
-  storage-watchdog recovery. Verify phone delivery separately from publishing.
-- Kutt was retired on 2026-11-25 by owner decision: its project, data, route and
-  Homepage card were removed and its links deleted. Do not reintroduce a URL
-  shortener without an owner decision. Leftover KUTT_* keys in .env are ignored.
-- Active applications: Seerr (Jellyseerr's successor),
-  OpenSpeedTest, Homepage, Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
-- Homepage serves HOMEPAGE_HOST (ohara.xdadwal.in on this host) with password login;
-  the separate portfolio service serves the apex; no Docker socket. Media widgets
-  read application-issued API keys supplied in .env. Selected queue/torrent/DNS
-  widgets use narrow runtime aliases for existing Arr keys and qBittorrent/AdGuard
-  credentials; no other account passwords are forwarded. See docs/homepage-widgets.md.
-  Navidrome's Now Playing widget uses a Subsonic token derived locally from the
-  existing NAVIDROME_PASSWORD; never forward that plaintext password to Homepage.
-  Immich is implemented as an optional separate Compose project with machine
-  learning disabled; owner onboarding is complete and public HTTPS is active.
-  Homepage has its link and native statistics widget using the privately supplied
-  HOMEPAGE_VAR_IMMICH_API_KEY (server.statistics). The owner verified Google
-  login and accepted capacity for the current single-user release. Independent
-  backups/restore testing are explicitly deferred by the owner; do not treat
-  them as release blockers or claim they are implemented.
-  Use scripts/immich and docs/immich.md; preserve its independent
-  database/cache and stable /data container path. Google OAuth must remain
-  invite-only (autoRegister=false), with Google-only login and password login
-  disabled by operator request. Pre-create approved users by exact Google email;
-  leave their password fields empty and disable required password change. Use
-  scripts/immich oauth and docs/immich-google-oauth.md; actual Google client inputs
-  belong only in private .env, never in the versioned JSON or Homepage.
-  Media services are explicitly approved; follow docs/media.md. Do not introduce
-  additional infrastructure or assume indexer/source credentials.
-- Use independent per-service credentials in the single private `.env`; a shared
-  authentication service is explicitly deferred. Read `.env` as documented in
-  docs/credentials.md. Never invent or generate passwords, API keys or session
-  secrets. If files/values are missing, ask the user to fill the private files;
-  never request values in chat. Preserve inputs and keep values out of logs/Git.
-  Migrate legacy split files with `scripts/migrate-credentials` before setup/up;
-  never source `.env` or pass the whole file to containers. Media setup preserves
-  account state; changing input values alone does not rotate existing passwords.
-  Jellyfin and the five Arr/Bazarr login passwords are setup-only and may be absent
-  from .env (the owner removed them on this host); ask for one only when a command
-  names it. The 16-character media minimum applies where setup creates a login.
-- When tasked with initial setup, follow docs/agent-setup.md: inspect the target
-  machine and existing configuration first, then ask only for missing facts or
-  choices that cannot be safely inferred. Do not assume example IPs/emails are real.
-  Continue independent checks while waiting; do not guess required answers.
-- `compose/stack.yaml`, `.env.example`, and `versions/stack.env` define deployment;
-  `.env` and `local/` are private. Never print secrets or resolved Compose config.
-- Commands resolve their own repository path. Use `scripts/setup --help`,
-  `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`, and `scripts/tls --help`.
-- Setup prepares a supported Linux host; `up` starts local services; TLS activation
-  is a separate explicit step after owner/account setup. Do not deploy to a live
-  host merely because a code change was requested.
-- For media setup, confirm the real owner email and mounted media storage; run
-  scripts/media-setup after local startup. Ask for chosen indexers and required
-  external account/API credentials; never invent them. Credentials are in
-  .env; preserve the setup journal. Verify permitted movie/TV
-  acquisition, import, playback and availability sync before declaring it ready.
-  Lidarr handles music acquisition directly and Navidrome handles music playback;
-  Seerr has no music request flow. Fresh Jellyfin setup seeds only Movies/TV Shows.
-  Preserve any existing Jellyfin Music library; the operator may hide/remove its
-  library definition manually without deleting music files. Navidrome uses the
-  supplied NAVIDROME_PASSWORD and supported first-run/login APIs, never a reset.
-  NAVIDROME_HOST defaults to music.xdadwal.in; verify target DNS before activation. Ask for Bazarr
-  subtitle languages/providers and any provider credentials; never assume them.
-  Preserve existing Bazarr configuration and manually verify its connections.
-  Jellyfin's approved optional Abyss theme includes a persistent read-only web
-  overlay and Spotlight; use scripts/jellyfin-theme and docs/jellyfin-theme.md.
-  Preserve existing branding and user preferences. Refresh the generated index
-  after changing its image pin; do not patch a running container's web files.
-  The owner-installed Enhanced plugin is configured with scripts/jellyfin-enhanced
-  and docs/jellyfin-enhanced.md; preserve its private integrations and unrelated
-  personal preferences. The owner-approved synced profile includes automatic
-  next-season requests (all watched required) and Seerr automatic user import.
-  Do not add other request automation or directly import/grant users during setup.
-  Existing Intro Skipper analysis policies are preserved.
-  Optional LetterboxdSync uses scripts/jellyfin-letterboxd and
-  docs/jellyfin-letterboxd.md; preserve all accounts and repositories, verify the
-  reviewed artifact, and never restart with playback loaded. External account
-  linking stays in its HTTPS UI; do not enable imports/requests or assume tokens.
-  Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
-  LAN-only administration subdomains for these and the other internal services
-  are explicitly approved; follow docs/lan-services.md and scripts/lan-proxy.
-  On this host the owner also made the Seerr site LAN-only (2026-11-18) and
-  skipped its image upgrade; do not reopen it publicly or drop the /imageproxy
-  denial without an explicit owner decision. Remote requests go through Jellyfin.
-  A future NAS/multiple-node topology is discussed, not implemented; these services
-  run in the current Compose stack, with a future acquisition node intended.
-- This host uses the mergerfs media pool at `/ohara/mnt`; see docs/storage-pool.md.
-  Preserve its branch directories, guarded media startup unit and container paths.
-  Do not move/copy data between the pool and its own branches.
-  For an authorized new pool/watchdog setup, follow docs/agent-setup.md: discover
-  the target's actual filesystem UUIDs, mountpoints and HDD serial; create ignored
-  local/storage-watchdog.json and install it with scripts/storage-watchdog.
-  Never install the example's host-specific identities blindly. Verify the installed
-  /etc/ohara/storage-watchdog.json and timer; ordinary setup does not enable it.
-- Optional Bambuddy for the owner's Bambu Lab A1 mini uses scripts/bambuddy and
-  docs/bambuddy.md. Use LAN-only first-owner onboarding; the owner approved public HTTPS after
-  native password login, explicitly without requiring MFA. The owner later enabled
-  TOTP two-factor on the admin account (present 2026-11-25); keep it, never bypass
-  or reset it, and never reset the owner password from the database. Keep the backend
-  loopback-only and use scripts/bambuddy-proxy with the owner-ready guard.
-  Preserve other LAN-only admin routes and the dedicated SQLite/archive directory. Owner/printer access codes stay in its UI;
-  never assume credentials or start/queue a print during deployment. Use bridge
-  networking and manual printer IP; do not enable virtual printers, additional unapproved slicer
-  sidecars, shared authentication, host networking or Docker socket access.
-- For existing media accounts, use `scripts/media-setup --storage-only` for storage
-  policy, not the first-run owner flow. Follow docs/media.md recovery guidance.
-  A completed command or cached Available label is not evidence of a present file:
-  verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
-  Preserve source torrents during metadata repair; never redownload or delete library
-  files to fix metadata. The selected storage policy seeds for 240 cumulative minutes, then
-  qBittorrent stops torrents and preserves download files; ratio/inactivity limits are disabled.
-  Review imports/hardlinks before applying it; resume stopped torrents deliberately.
-  Disable managed Arr completed-download cleanup before applying qBittorrent
-  seeding limits, because reaching a limit can immediately trigger source deletion.
-- Use `scripts/media-setup --quality-only` for the bounded HD-1080p policy on
-  existing accounts. Size definitions affect all profiles; preserve existing
-  files and do not search/redownload to enforce future acquisition preferences.
-- Optional remote SSH uses the host Tailscale client; see docs/tailscale.md and
-  scripts/tailscale --help. Install only on an authorized target; enrollment
-  requires the owner browser login, never generated auth keys. Use ordinary
-  OpenSSH and preserve existing SSH keys. Do not enable Tailscale SSH, DNS
-  acceptance, subnet routing, exit nodes, Serve or Funnel. Review existing
-  client roles before changing preferences; restrict tailnet network policy to
-  the intended SSH users/devices and port. No public SSH port forward.
-- This host uses key-only SSH (configs/ssh/90-ohara-keys-only.conf) and has
-  Samba disabled and Avahi masked by owner decision (a merely disabled Avahi is
-  restarted by cups-browsed); follow "Optional host hardening"
-  in docs/agent-setup.md. Do not re-enable password login or those services,
-  and never install the SSH policy elsewhere before every owner device has a
-  verified key. There is no host firewall; keep new listeners on loopback.
-- Public DNS records are managed at GoDaddy. Optional AdGuard Home is explicitly
-  approved for LAN DNS/filtering in the separate compose/adguard.yaml project;
-  follow docs/adguard.md and scripts/adguard. DNS binds the verified reserved LAN
-  IPv4 with a LAN client allowlist; dashboard 3003 stays loopback. Never publish
-  DNS to the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
-  The bundled project's only upstream is Cloudflare DoH; apply that policy with
-  scripts/adguard upstreams, never by stopping DNS.
-  Since 2026-11-24 the bundled AdGuard is stopped on this host by owner decision.
-  LAN DNS runs on the owner's separate OpenWrt device (DNS_IP in private .env):
-  AdGuard Home, then Unbound resolving recursively, with the owner's plain resolver
-  only as fallback; no Cloudflare or Quad9 in the path. This repository does not
-  manage that device beyond configs/openwrt/setup.sh, which reproduces its
-  network role and the AdGuard/Unbound installation; its accounts, Wi-Fi and
-  AdGuard settings stay manual. With DNS_IP set, scripts/adguard status, the
-  service scripts' rewrite steps, the alert DNS probe and the Homepage widget use
-  that device (ADGUARD_PASSWORD is its login), the LAN route https://adguard.DOMAIN
-  proxies to it, and scripts/adguard up/upstreams refuse to run. Do not restart the bundled project
-  or change that device without an owner decision. Read docs/network.md first for
-  the topology, DNS path, OpenWrt configuration and open items.
-  Optional Maintainerr is approved as the separate compose/maintainerr.yaml project;
-  use scripts/maintainerr and docs/maintainerr.md. It has no login: keep the full
-  UI/API LAN-only. Reuse existing private application keys, preserve its state,
-  and create no cleanup rules or destructive actions without an owner policy.
-  Backend web ports bind to loopback; only host Nginx uses public 80/443.
-  Do not modify router/client DNS or delete retired DNS data during repo changes.
-- `configs/nginx/deployed/` tracks the stable xdadwal.in host baseline, including
-  localhost and www-redirect routes. Keep it aligned with deliberate live changes;
-  do not deploy host-specific certificate/IP assumptions to arbitrary fresh hosts.
-- Preserve configuration, volumes, existing files/ownership, unrelated Nginx sites,
-  SSH access, networking, and host DNS. No recursive chown or destructive cleanup.
-- Never execute dotenv contents. Add configuration validation before consumption.
-- Verify with `python3 -m unittest discover -s tests -v`, `tests/test_setup.sh`,
-  `tests/test_cli.sh`, and `tests/static.sh`. Docker smoke tests: `tests/smoke.sh`.
+### Verification and Git
+
+- Verify with `tests/verify.sh`, which runs `tests/lint.sh` (ruff, pinned in
+  `requirements-dev.txt`), `python3 -m unittest discover -s tests`,
+  `tests/test_setup.sh`, `tests/test_cli.sh`, and `tests/static.sh`. Docker smoke
+  tests: `tests/smoke.sh`. Format Python with `tests/lint.sh --fix`; style is
+  defined in `ruff.toml`.
 - Report static checks, disposable runtime checks, real Linux provisioning, and
   public reachability separately. One does not establish the others.
 - Commit feature work, push its feature branch, and open a PR unless opted out.
   Never merge or rewrite Git history without authorization.
 
-- Optional owner-approved headless OrcaSlicer uses scripts/orcaslicer and
-  docs/orcaslicer.md. Keep it private on Bambuddy’s bridge, with independent
-  state and resource limits. Owner UI enables slicing; never start/queue prints.
+## Repository map
+
+- `compose/stack.yaml`, `.env.example`, and `versions/stack.env` define deployment.
+  `compose/stack.yaml` includes the main stack's group files in `compose/stack/`;
+  services that call each other share a file (see `compose/README.md`).
+- Commands resolve their own repository path. Use `scripts/setup --help`,
+  `scripts/check`, `scripts/up`, `scripts/status`, `scripts/media-setup --help`,
+  and `scripts/tls --help`.
+- Each file in `scripts/` is a thin argparse entry point that ends with `cli.run`
+  (`scripts/lib/cli.py`); put operational logic in a `scripts/lib` module, where
+  tests import it. Only `scripts/setup` is bash, because it may have to install
+  Python first.
+- `configs/nginx/deployed/` tracks the stable xdadwal.in host baseline, including
+  localhost and www-redirect routes. Keep it aligned with deliberate live changes;
+  do not deploy host-specific certificate/IP assumptions to arbitrary fresh hosts.
+
+## This host (xdadwal.in)
+
+Facts and owner decisions about the one deployed server. They are not defaults
+for another host.
+
+- Active applications: Seerr (Jellyseerr's successor), OpenSpeedTest, Homepage,
+  Jellyfin, Radarr, Sonarr, Prowlarr, Lidarr, Bazarr, Navidrome, and qBittorrent
+  (eleven applications). Nginx and Certbot run on the host. Domain: xdadwal.in.
+- Homepage serves `HOMEPAGE_HOST` (ohara.xdadwal.in on this host) with password
+  login; the separate portfolio service serves the apex.
+- Public DNS records are managed at GoDaddy.
+- Storage: this host uses the mergerfs media pool at `/ohara/mnt`; see
+  "Media storage pool" below.
+- SSH and services: this host uses key-only SSH
+  (`configs/ssh/90-ohara-keys-only.conf`) and has Samba disabled and Avahi masked
+  by owner decision (a merely disabled Avahi is restarted by cups-browsed); follow
+  "Optional host hardening" in `docs/agent-setup.md`. Do not re-enable password
+  login or those services, and never install the SSH policy elsewhere before every
+  owner device has a verified key.
+- LAN DNS: since 2026-11-24 the bundled AdGuard is stopped on this host by owner
+  decision, and DNS runs on the owner's separate OpenWrt device; see "AdGuard and
+  LAN DNS" below. Read `docs/network.md` first for the topology, DNS path, OpenWrt
+  configuration and open items.
+- Seerr: on this host the owner also made the Seerr site LAN-only (2026-11-18) and
+  skipped its image upgrade; do not reopen it publicly or drop the `/imageproxy`
+  denial without an explicit owner decision. Remote requests go through Jellyfin.
+- A future NAS/multiple-node topology is discussed, not implemented; these services
+  run in the current Compose stack, with a future acquisition node intended.
+
+## Service rules
+
+One block per service. The named guide holds setup, verification and recovery.
+
+### Homepage
+
+Guide: `docs/homepage-widgets.md`.
+
+- No Docker socket. Media widgets read application-issued API keys supplied in
+  `.env`. Selected queue/torrent/DNS widgets use narrow runtime aliases for
+  existing Arr keys and qBittorrent/AdGuard credentials; no other account passwords
+  are forwarded.
+- Navidrome's Now Playing widget uses a Subsonic token derived locally from the
+  existing `NAVIDROME_PASSWORD`; never forward that plaintext password to Homepage.
+
+### Media stack
+
+Guide: `docs/media.md`. Media services are explicitly approved.
+
+- For media setup, confirm the real owner email and mounted media storage; run
+  `scripts/media-setup` after local startup. Ask for chosen indexers and required
+  external account/API credentials; never invent them. Credentials are in `.env`;
+  preserve the setup journal. Verify permitted movie/TV acquisition, import,
+  playback and availability sync before declaring it ready.
+- Lidarr handles music acquisition directly and Navidrome handles music playback;
+  Seerr has no music request flow. Fresh Jellyfin setup seeds only Movies/TV Shows.
+  Preserve any existing Jellyfin Music library; the owner may hide/remove its
+  library definition manually without deleting music files.
+- Navidrome uses the supplied `NAVIDROME_PASSWORD` and supported first-run/login
+  APIs, never a reset. `NAVIDROME_HOST` defaults to music.xdadwal.in; verify target
+  DNS before activation.
+- Ask for Bazarr subtitle languages/providers and any provider credentials; never
+  assume them. Preserve existing Bazarr configuration and manually verify its
+  connections.
+- Existing accounts, storage: use `scripts/media-setup --storage-only` for storage
+  policy, not the first-run owner flow. Follow `docs/media.md` recovery guidance.
+  A completed command or cached Available label is not evidence of a present file:
+  verify host/container paths, Radarr/Sonarr records and hardlink inode/device.
+  Preserve source torrents during metadata repair; never redownload or delete
+  library files to fix metadata.
+- Seeding: the selected storage policy seeds for 240 cumulative minutes, then
+  qBittorrent stops torrents and preserves download files; ratio/inactivity limits
+  are disabled. Review imports/hardlinks before applying it; resume stopped
+  torrents deliberately. Disable managed Arr completed-download cleanup before
+  applying qBittorrent seeding limits, because reaching a limit can immediately
+  trigger source deletion.
+- Existing accounts, quality: use `scripts/media-setup --quality-only` for the
+  bounded HD-1080p policy. Size definitions affect all profiles; preserve existing
+  files and do not search/redownload to enforce future acquisition preferences.
+
+### Jellyfin add-ons
+
+- Abyss theme (`scripts/jellyfin-theme`, `docs/jellyfin-theme.md`): Jellyfin's
+  approved optional Abyss theme includes a persistent read-only web overlay and
+  Spotlight. Preserve existing branding and user preferences. Refresh the generated
+  index after changing its image pin; do not patch a running container's web files.
+- Enhanced plugin (`scripts/jellyfin-enhanced`, `docs/jellyfin-enhanced.md`): the
+  owner-installed Enhanced plugin is configured with the script; preserve its
+  private integrations and unrelated personal preferences. The owner-approved
+  synced profile includes automatic next-season requests (all watched required)
+  and Seerr automatic user import. Do not add other request automation or directly
+  import/grant users during setup. Existing Intro Skipper analysis policies are
+  preserved.
+- LetterboxdSync (`scripts/jellyfin-letterboxd`, `docs/jellyfin-letterboxd.md`):
+  optional; preserve all accounts and repositories, verify the reviewed artifact,
+  and never restart with playback loaded. External account linking stays in its
+  HTTPS UI; do not enable imports/requests or assume tokens.
+
+### LAN-only administration
+
+Guide: `docs/lan-services.md`; command: `scripts/lan-proxy`.
+
+- Lidarr (8686) and Bazarr (6767) stay private, without public admin access.
+- LAN-only administration subdomains for these and the other internal services
+  are explicitly approved.
+
+### Media storage pool
+
+Guide: `docs/storage-pool.md`.
+
+- Preserve its branch directories, guarded media startup unit and container paths.
+  Do not move/copy data between the pool and its own branches.
+- For an authorized new pool/watchdog setup, follow `docs/agent-setup.md`: discover
+  the target's actual filesystem UUIDs, mountpoints and HDD serial; create ignored
+  `local/storage-watchdog.json` and install it with `scripts/storage-watchdog`.
+  Never install the example's host-specific identities blindly. Verify the
+  installed `/etc/ohara/storage-watchdog.json` and timer; ordinary setup does not
+  enable it.
+
+### Immich
+
+Guides: `docs/immich.md`, `docs/immich-google-oauth.md`; command: `scripts/immich`.
+
+- Immich is implemented as an optional separate Compose project with machine
+  learning disabled; owner onboarding is complete and public HTTPS is active.
+  Preserve its independent database/cache and stable `/data` container path.
+- Homepage has its link and native statistics widget using the privately supplied
+  `HOMEPAGE_VAR_IMMICH_API_KEY` (server.statistics).
+- The owner verified Google login and accepted capacity for the current
+  single-user release. Independent backups/restore testing are explicitly deferred
+  by the owner; do not treat them as release blockers or claim they are implemented.
+- Google OAuth must remain invite-only (`autoRegister=false`), with Google-only
+  login and password login disabled by owner request. Pre-create approved users by
+  exact Google email; leave their password fields empty and disable required
+  password change. Use `scripts/immich oauth`; actual Google client inputs belong
+  only in private `.env`, never in the versioned JSON or Homepage.
+
+### Bambuddy and OrcaSlicer
+
+Guides: `docs/bambuddy.md`, `docs/orcaslicer.md`; commands: `scripts/bambuddy`,
+`scripts/bambuddy-proxy`, `scripts/orcaslicer`.
+
+- Optional Bambuddy is for the owner's Bambu Lab A1 mini. Use LAN-only first-owner
+  onboarding; the owner approved public HTTPS after native password login,
+  explicitly without requiring MFA.
+- The owner later enabled TOTP two-factor on the admin account (present
+  2026-11-25); keep it, never bypass or reset it, and never reset the owner
+  password from the database.
+- Keep the backend loopback-only and use `scripts/bambuddy-proxy` with the
+  owner-ready guard. Preserve other LAN-only admin routes and the dedicated
+  SQLite/archive directory.
+- Owner/printer access codes stay in its UI; never assume credentials or
+  start/queue a print during deployment.
+- Use bridge networking and manual printer IP; do not enable virtual printers,
+  additional unapproved slicer sidecars, shared authentication, host networking or
+  Docker socket access.
+- Optional owner-approved headless OrcaSlicer: keep it private on Bambuddy's
+  bridge, with independent state and resource limits. Owner UI enables slicing;
+  never start/queue prints.
+
+### ntfy and alerts
+
+Guides: `docs/ntfy.md`, `docs/alerts.md`; commands: `scripts/ntfy`,
+`scripts/ntfy-proxy`.
+
+- Optional ntfy notifications cover host/printer alerts, native Seerr new-request
+  delivery and the optional Homepage widget.
+- Deny anonymous topic access, disable public signup, and use the privately
+  supplied `NTFY_PASSWORD`; never generate passwords/tokens or forward it to
+  Homepage.
+- Its separate owner-supplied `NTFY_HOMEPAGE_PASSWORD` is restricted to reading
+  ohara-alerts; only that reader credential may reach Homepage through its narrow
+  runtime alias. Use `sudo scripts/ntfy widget` after ntfy/Homepage HTTPS and login
+  work.
+- Keep its independent SQLite/config storage outside the media pool and backend
+  loopback-only.
+- The login username is admin (a regular scoped user, not an admin role). Use the
+  documented offline rotate-account workflow for an existing ohara login; preserve
+  its account ID, ACLs, tokens and message cache.
+- An explicit owner `NTFY_ALLOW_SHORT_PASSWORD` exception affects ntfy only; keep
+  nonempty/72-byte bounds.
+- Ask for phone platform and obtain explicit approval before enabling the ntfy.sh
+  iPhone wake-up relay.
+- Install the separate host alert timer only after authentication is verified;
+  read actual configured disk UUIDs and preserve storage-watchdog recovery. Verify
+  phone delivery separately from publishing.
+
+### AdGuard and LAN DNS
+
+Guides: `docs/adguard.md`, `docs/network.md`; command: `scripts/adguard`.
+
+- Optional AdGuard Home is explicitly approved for LAN DNS/filtering in the
+  separate `compose/adguard.yaml` project. DNS binds the verified reserved LAN IPv4
+  with a LAN client allowlist; dashboard 3003 stays loopback. Never publish DNS to
+  the Internet or enable AdGuard DHCP. Preserve existing config/accounts.
+- The bundled project's only upstream is Cloudflare DoH; apply that policy with
+  `scripts/adguard upstreams`, never by stopping DNS.
+- On this host, LAN DNS runs on the owner's separate OpenWrt device (`DNS_IP` in
+  private `.env`): AdGuard Home, then Unbound resolving recursively, with the
+  owner's plain resolver only as fallback; no Cloudflare or Quad9 in the path.
+- This repository does not manage that device beyond `configs/openwrt/setup.sh`,
+  which reproduces its network role and the AdGuard/Unbound installation; its
+  accounts, Wi-Fi and AdGuard settings stay manual.
+- With `DNS_IP` set, `scripts/adguard status`, the service scripts' rewrite steps,
+  the alert DNS probe and the Homepage widget use that device (`ADGUARD_PASSWORD`
+  is its login), the LAN route https://adguard.DOMAIN proxies to it, and
+  `scripts/adguard up`/`upstreams` refuse to run.
+- Do not restart the bundled project or change that device without an owner
+  decision.
+
+### Maintainerr
+
+Guide: `docs/maintainerr.md`; command: `scripts/maintainerr`.
+
+- Optional Maintainerr is approved as the separate `compose/maintainerr.yaml`
+  project. It has no login: keep the full UI/API LAN-only.
+- Reuse existing private application keys, preserve its state, and create no
+  cleanup rules or destructive actions without an owner policy.
+
+### Tailscale
+
+Guide: `docs/tailscale.md`; command: `scripts/tailscale --help`.
+
+- Optional remote SSH uses the host Tailscale client. Install only on an authorized
+  target; enrollment requires the owner browser login, never generated auth keys.
+- Use ordinary OpenSSH and preserve existing SSH keys. Do not enable Tailscale SSH,
+  DNS acceptance, subnet routing, exit nodes, Serve or Funnel.
+- Review existing client roles before changing preferences; restrict tailnet
+  network policy to the intended SSH users/devices and port. No public SSH port
+  forward.
+
+### Retired: Kutt
+
+- Kutt was retired on 2026-11-25 by owner decision: its project, data, route and
+  Homepage card were removed and its links deleted. Do not reintroduce a URL
+  shortener without an owner decision. Leftover `KUTT_*` keys in `.env` are ignored.
+
+## Adding services and integrations
 
 - For future integrations, identify API-key versus owner-session restrictions
   before implementation. Explain required owner UI steps early with exact values;
   prefer a short documented UI step over collecting another account password.
-  Never broaden read-only keys by inference. See docs/adding-services.md.
+  Never broaden read-only keys by inference. See `docs/adding-services.md`.
